@@ -1,0 +1,56 @@
+ Module ECINT("iAPX286");
+ begin insert ECOMN,EBASE,ECENT;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---                       (C-interface)                       ---
+       ---  Selection Switches:                                      ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     C - MS C modifications to XENIX                       ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+       record descriptor;
+       begin  ref() nextfree;
+              ref() lastfree;
+       end;
+
+Visible routine MALLOC;
+import size lng; export ref() res;
+begin range(0:MaxArea) savedMAXALLOC, savednarea, sequ;
+      ref(descriptor) area; size alength;
+      sequ:=MaxArea;
+  L1: if sequ <= narea
+      then STAT("MALLOC-0",xq_imposs); res:=none; goto E1 endif;
+      area:=WRKBEG(sequ).AsOaddr;
+      if area = none
+      then -- allocate an area for malloc use
+           savednarea:=narea;
+           if MAXALLOC >= sequ then MAXALLOC:=sequ-1 endif;
+           savedMAXALLOC:=MAXALLOC; MAXALLOC:=sequ;
+           alength:=SIZEIN(1,sequ);
+           if alength=WRKTAIL then WRKTAIL:=0 endif;
+           area:=DWAREA(sequ,alength);
+           if status<>0 then res:=none; goto E2 endif;
+           area.nxtfree:= area+size(descriptor);
+           area.lastfree:= area+alength;
+           MAXALLOC:=savedMAXALLOC; narea:=savednarea;
+      endif;
+      if (area.nextfree+lng) >= area.lastfree
+      then sequ:=sequ-1; goto L1 endif;
+      res:=area.nextfree; area.nextfree:=area.nextfree+lng;
+E1:E2:end;
+
+end;
+
+end;

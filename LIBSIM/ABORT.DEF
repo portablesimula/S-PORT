@@ -1,0 +1,55 @@
+Module abort_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent,mntr;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("abort")abort;
+       import infix(txtqnt) mess;
+       ---  abort execution with the indicated error message by
+       ---  entering SIMOB
+       begin infix(string) mstr;
+             if mess.ent <> none
+             then mstr.nchr:=mess.lp-mess.sp;
+                  mstr.chradr:=name(mess.ent.cha(mess.sp));
+                  ED_OUT;
+%                 PRT("Execution terminated due to call on ABORT");
+%                 ED_STR("Message: ");
+                  PRT(mstr);
+             endif;
+             enterdebug(false);
+       end;
+
+
+       Visible routine ("enterdebug")enterdebug;
+       import boolean mayctn;
+       ---  enter SIMOB. After SIMOB session, execution is
+       ---  continued (mayctn TRUE) or terminated (mayctn FALSE)
+       begin 
+             bio.GCval:=0;
+             bio.obsEvt:=EVT_SST; bio.smbP1:=none; observ;
+             if not mayctn then TRMP endif;
+       end;
+
+
+       Visible routine ("exit")exitx;
+       import short integer code;
+       ---  code=0: terminate immediately
+       ---  code=1: terminate_program
+       ---  code=2: activate SIMOB
+       begin if code<0 then --- terminate with exit code "-code"
+                TERMIN(-code,nostring);
+             elsif code>2 then --- illegal value, terminate w/mess
+                PRT("Parameter to EXIT out of range (-maxsint,2)");
+                TRMP;
+             else case 0:2 (code)
+             when 0: TERMIN(0,nostring);
+             when 1: TRMP;
+             when 2: enterdebug(true);
+             endcase endif;
+       end;
+
+end;

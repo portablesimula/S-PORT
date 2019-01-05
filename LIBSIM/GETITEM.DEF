@@ -1,0 +1,113 @@
+Module getitem_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent,fil,edit;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("getitem")getitem;
+       import name(infix(txtqnt)) tt;
+       export infix(txtqnt) res;
+       ---  returns next item (ident, number, any other char)
+       ---  as a subtext, and updates tt.pos 
+       ---  skips leading FORMAT characters (NB - DEC skips SP/TAB)
+       begin infix(string) str;
+             res:=var(tt);
+             str.nchr:=res.lp-res.cp;
+             if str.nchr <> 0
+             then str.chradr:=name(res.ent.cha(res.cp)); gtitem(str);
+                  if itkind = 0 -- nothing but FORMAT
+                  then var(tt).cp:=res.lp; res:=notext;
+                  else res.cp:=res.sp:=res.cp + itstrt;
+                       res.lp:=res.sp + itleng; var(tt).cp:=res.lp;
+                  endif;
+             else res:=notext; endif;
+       end;
+
+       Visible routine ("initem")initem;
+       import ref(filent) fil;
+       export infix(txtqnt) res;
+       ---  preform getitem on file.image if possible
+       begin character i;
+             res:=notext;
+             if fil<>none then case 0:MAX_FIL (fil.type)
+             when FIL_IN, FIL_DIR:
+                  if not LAST(Fil)
+                  then res:=GETITEM(name(fil.img)) endif
+             when FIL_INBYTE, FIL_DIRBYTE:
+                  res:=BLANKS(1); i:=' ';
+                  repeat while (i = ' ') or (i = '!9!')
+                  do i:=INBYTE(fil) qua character endrepeat;
+                  res.ent.cha(0):=i;
+             endcase endif;
+       end;
+
+       define initS    = 0, -- initial state
+              inIdentS = 1, -- in identifier (first letter seen)
+              inIntS   = 2, -- in number, no dot seen
+              dotSeenS = 3, -- in number (prev. state inInt)
+              inFracS  = 4, -- in number, after dot-digit
+              otherS   = 5, -- no letter/digit seen
+              mstate   = 5;
+
+       const range(0:4) state2kind(5) = (0,2,3,4,2,1);
+
+       range(0:4) itKind; range(0:MAX_TXT) itstrt,itleng;
+
+       routine gtitem;
+       import infix(string) str;
+       --- return: itkind - 2:ident, 3:int, 4:real,
+       ---                  1:other, 0:nothing (STRIP(str)=nostring)
+       ---         itstrt - pos in str of first non-format symbol
+       ---         itleng - length of the item (0 if none found)
+       begin range(0:MAX_TXT) pos,lookpos,firstpos;
+             range(0:mstate) state;
+             state:=InitS; lookpos:=pos:=0;
+             repeat while pos < str.nchr
+             do case 0:255 (var(str.chradr)(pos) qua range(0:255))
+                when 65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                     80,81,82,83,84,85,86,87,88,89,90,
+                     97,98,99,100,101,102,103,104,105,106,107,108,
+                     109,110,111,112,113,114,115,116,117,118,119,
+                     120,121,122:   -- letter
+                     case 0:mstate (state)
+                     when inIdentS:
+                     when initS:
+                          state:=inIdentS; firstpos:=pos;
+                     otherwise goto F1 endcase
+                when 48,49,50,51,52,53,54,55,56,57:   -- digit
+                     case 0:mstate (state)
+                     when inIdentS,inIntS:
+                     when dotSeenS:
+                          state:=inFracS;
+                     when initS:
+                          state:=inIntS; firstpos:=pos;
+                     otherwise goto F2 endcase
+                when 46:   -- dot
+                     case 0:mstate (state)
+                     when initS: firstpos:=pos;
+                     when inIntS: lookpos:=pos;
+                     otherwise goto F3 endcase;
+                     state:=dotSeenS;
+---             when 8,9,10,11,12,13,32:   -- format
+                when 9,32:   -- format
+                     if state <> initS then goto F4 endif;
+                otherwise
+                     if state =  initS
+                     then state:=otherS; firstpos:=pos;
+                     else
+       F1:F2:F3:F4:       pos:=pos-1 endif;
+---                  case 0:mstate (state)
+---                  when initS: state:=otherS; firstpos:=pos;
+---                  otherwise
+---    F1:F2:F3:F4:            pos:=pos-1 endcase;
+                     goto E;
+                endcase;
+                pos:=pos+1;
+             endrepeat;
+       E:    itkind:=state2kind(state);
+             itstrt:=firstpos; itleng:=pos - firstpos + 1;
+       end;
+end;

@@ -1,0 +1,604 @@
+%-FBL Module EINFO("iAPX286");
+%+F   Module EXFEC("iAPX286");
+%+B   Module EXBEC("iAPX286");
+%+L   Module EXSML("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT;
+%-D begin insert ECOMN,EBASE,      ECENT;
+      -----------------------------------------------------------------
+      ---  COPYRIGHT 1989 by                                        ---
+      ---  Simula a.s.                                              ---
+      ---                                                           ---
+      ---              P O R T A B L E     S I M U L A              ---
+      ---                                                           ---
+      ---                 F O R    i A P X    2 8 6                 ---
+      ---                                                           ---
+      ---                                                           ---
+      ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+      ---                                                           ---
+      ---         I N F O R M A T I O N    E X C H A N G E          ---
+      ---                                                           ---
+      ---                                                           ---
+      ---  Selection Switches:                                      ---
+      ---                                                           ---
+      ---     D - Includes tracing dumps                            ---
+      ---     F - Info-exchange for FEC                             ---
+      ---     B - Info-exchange for BEC                             ---
+      ---     L - Info-exchange for SML                             ---
+      ---     E - Extended mode -- 32 Bit 386                       ---
+      -----------------------------------------------------------------
+
+Infix(ASCIIZ:12) XCLID1; -- Current Class/Procedure/Module id
+Infix(ASCIIZ:12) XCLID2; -- Insert: Class/Procedure/Module id
+Infix(ASCIIZ:72) XCLID3; -- Insert: Attr. File Specification
+
+%title ******  I N I T I A T E   P A R A M - B L O C K  ******
+
+Routine InitParBlk;
+begin
+%-E   infix(Any2Byte) b2; range(0:MaxWord) key,n;
+%+E   infix(Any4Byte) b2; integer          key,n;
+%+M   infix(AnyRef) img;
+      ParBlk:=DEFBLK(size(ParamBlock));
+      if ParBlk=none then TERMIN(3,"Can't get work space") endif;
+%+D   if TRCSW > 0 then begtrace("PP-0"); outtrace endif;   --- ??????????????
+      key:=OPFILE("inform.xcg",F_inbytefile,nostring,0);
+%+D   if TRCSW > 0 then begtrace("PP-x"); outtrace endif;   --- ??????????????
+      if Status <> 0
+      then ParBlk:=none; TERMIN(3,"Can't Open(read) inform.xcg") endif;
+%+D   if TRCSW > 0 then begtrace("PP-1"); outtrace endif;   --- ??????????????
+      b2.AsSize:=size(ParamBlock);
+%+D   if TRCSW > 0 then begtrace("PP-2"); outtrace endif;   --- ??????????????
+%-E   ParLng:=b2.AsWrd;
+%+E   ParLng:=b2.AsInt;
+%+D   if TRCSW > 0 then begtrace("PP-3"); outtrace endif;   --- ??????????????
+%+M   img.rf:=ParBlk; img.ofst.AsWrd:=0;
+%+M   n:=DOS_READ(key-1,b2.AsWrd,img.nam);
+%+O   OS2_READ(key-1,ParBlk,b2.AsWrd,name2ref(@n));
+%+X %-E  n:=XNX_READ(b2.AsWrd,ParBlk,key-1);
+%+XE  n:=XNX_READ(b2.AsInt,ParBlk,key-1);
+%+D   if TRCSW > 0 then begtrace("PP-4"); outtrace endif;   --- ??????????????
+      if OsStat <> 0
+      then ParBlk:=none; TERMIN(3,"Can't Read inform.xcg") endif;
+%+D   if TRCSW > 0 then begtrace("PP-5"); outtrace endif;   --- ??????????????
+      CLFILE(key,nostring); Status:=0;
+      --- Move Some Parameters from ParBlk ---
+      inptlng:=ParBlk.INPLTH; ouptlng:=ParBlk.OUTLTH; LPPAGE:=ParBlk.LPPAGE;
+      BUFLNG:=ParBlk.BUFLNG;  MINFREE:=ParBlk.MINFREE;
+      MINALLOC:=ParBlk.MINALLOC;  STEPSIZE:=ParBlk.STEPSIZE;
+      MAXALLOC:=ParBlk.MAXALLOC;  WRKTAIL:=ParBlk.WRKTAIL;
+      SMBSW:=Option('T'); BNKSW:=Option('S');
+%+D   TRCSW:=Option('C'); ERRSW:=Option('E'); FILSW:=Option('F');
+end;
+
+%title ******  G E T   I N T E G E R   I N F O R M A T I O N  ******
+
+ Visible Routine GINTIN;
+ import range(0:35) index; export integer result;
+ begin range(0:MaxWord) n;
+%+D    if TRCSW > 0
+%+D    then begtrace("GINTIN("); edwrd(trcbuf,index);
+%+D         edchar(trcbuf,')'); outtrace;
+%+D    endif;
+
+%-FBL  if (index < 1) or (index > 33)
+%+F    if (index < 1) or (index > 43)
+%+B    if (index < 1) or (index > 35)
+%+L    if (index < 1) or (index > 41)
+       then STAT("GINTIN-1",xq_argrange); result:=0; goto E1 endif;
+%+F    if ParBlk=none then InitParBlk endif;
+%+B    if ParBlk=none then InitParBlk endif;
+%+L    if ParBlk=none then InitParBlk endif;
+%-FBL  case 0:33 (index)
+%+F    case 0:43 (index)
+%+B    case 0:35 (index)
+%+L    case 0:41 (index)
+%+F    when 1:  -- Should FEC generate S-code even if errors?
+%+F             -- Result=0 means no, otherwise yes.
+%+F             result:=option('G');
+%+L    when 1:  -- Should SML generate S-code even if errors?
+%+L             -- Result=0 means no, otherwise yes.
+%+L             result:=option('G');
+% %+L    when 1:  -- Should Simuletta compiler handle params on its own?
+% %+L             -- Result=0 means no, otherwise yes.
+% %+L             result:=option('Z');
+%+B    when 2:  result := ParBlk.SEGLIM;
+%+B    when 3:  result:=option('D');   -- S-Compiler Major Event Trace
+%-FBL  when 4:  result:=50;            -- Max number of Errors
+%+F    when 4:  result:=ParBlk.MAXERR; -- Max number of Errors
+%+L    when 4:  result:=ParBlk.MAXERR; -- Max number of Errors
+%-FBL  when 5:  result:=0              -- >0: Suppress Warnings
+%+F    when 5:  result:=option('N');   -- >0: Suppress Warnings
+%+L    when 5:  result:=option('N');   -- >0: Suppress Warnings
+%+B    when 5:  result:=option('N');   -- >0: Suppress Warnings
+%+B    when 6:  result:=ParBlk.MASSLV; -- Massage Level
+%+F    when 7:  result:=ouptlng;       -- ListFile Line Length
+%+B    when 7:  result:=ParBlk.BNKLNK; -- >0: Prepare code for BANKING
+%+F    when 8:  result:=inptlng;       -- Source Line Length
+%+B    when 8:  result:=ParBlk.SYSGEN; -- 0:USER, 1:RTS, 2:BEC, 3:ENV
+%+F    when 9:  result:=option('R');   -- >0: Remove none-tests
+%+B    when 9:  result:=ParBlk.QBFLIM; -- No.of Q-instr before Exhaust
+%+B    when 10: result:=ParBlk.MAXERR; -- Max number of errors
+%+B    when 11: result:=ParBlk.SK1LIN; -- BEC-Trace - Pass 1 start line
+%+B    when 12: result:=ParBlk.SK1TRC; -- Pass 1 Trace level=SEOMTI
+%+B    when 13: result:=ParBlk.SK2LIN; -- BEC-Trace - Pass 2 start line
+%+B    when 14: result:=ParBlk.SK2TRC; -- Pass 2 Trace level=SEOMTI
+%-FBL  when 19: -- Should the Runtime system enter SIMOB prior to the execution
+%-FBL           -- of users program. An answer greater then zero will give this
+%-FBL           -- effect.
+%-FBL           if SMBSW > 10 then result := 10 else result:=SMBSW endif;
+%+F    when 19: -- What is the level of rts-tracing wanted? This will be used
+%+F             -- for debugging of the rts. The answer should be between 0
+%+F             -- and 10, 0 for no rts-tracing, 10 for maximum tracing.
+%+F             n := option('T');
+%+F             if n > 10 then result := 10 else result:=n endif;
+%+L    when 19: -- What is the level of rts-tracing wanted? This will be used
+%+L             -- for debugging of the rts. The answer should be between 0
+%+L             -- and 10, 0 for no rts-tracing, 10 for maximum tracing.
+%+L             n := option('T');
+%+L             if n > 10 then result := 10 else result:=n endif;
+%+F    when 20: -- What is the significant linelength of the source file image ?
+%+F             result:=inptlng;
+%+F    when 22: -- What is the mode of this separat compilation?
+%+F             -- 0: normal separate compilation, 1: recompilation
+%+F             result:=ParBlk.RECOMP;
+%+B    when 22: --  Debuging level (0: skip all debug info)
+%+B             result := ParBlk.BECDEB;
+%+B    when 23: --  >0: generate line info to LIN_CODE Segment
+%+B             result := ParBlk.LINTAB;
+%-FBL  when 24: -- How many work ares may be requested?
+%-FBL           result:=MINALLOC;
+%+F    when 24: -- How many work ares may be requested?
+%+F             result:=MINALLOC;
+%+B    when 24: --  >0: produce integer --> char range check
+%+B             result := ParBlk.RNGCHK;
+%+L    when 24: -- How many work ares may be requested?
+%+L             result:=MINALLOC;
+%+B    when 25: --  >0: produce array index check
+%+B             result := ParBlk.IDXCHK;
+%+B    when 26: --  >0: produce overflow-test after 86-aritm-instructions
+%+B             result := ParBlk.TSTOFL;
+%+B    when 27: result := ParBlk.CBIND;
+%+B    when 28: result := ParBlk.CPUID;
+%+B    when 29: result := ParBlk.NUMID;
+%+F    when 30: -- What information shall be included for Simob (by compiler)?
+%+F             -- 0: Only info necessary for error reporting.
+%+F             --    Simob cannot be used.
+%+F             -- 1: observation at descriptor level, about blocks (instances)
+%+F             --    Simob may be used.
+%+F             -- 2: at descriptor and entity level, all attributes
+%+F             --    Simob may be used.
+%+F             -- 3: in addition, enable statement break setting
+%+F             result:=ParBlk.DEBMOD;
+%+B    when 30: result:=ParBlk.DEBMOD;
+%+B    when 31: result := ParBlk.TARGET;
+%+B    when 32: result := ParBlk.CHKSTK;
+%-FBL  when 33: -- Interactive execution?   -- 0: no, 1: yes
+%-FBL           result:=1;
+%+F    when 33: -- Interactive execution?   -- 0: no, 1: yes
+%+F             result:=1;
+%+L    when 33: -- Interactive execution?   -- 0: no, 1: yes
+%+L             result:=1;
+%+F    when 43: -- Is real arithmetic available ?.
+%+F             -- 0: yes, otherwise: no
+%+F             result:=0;
+  otherwise STAT("GINTIN-2",xq_argrange); result:=0 endcase;
+
+%+D    if TRCSW > 0
+%+D    then begtrace("GINTIN: Result = ");
+%+D         edwrd(trcbuf,result); outtrace;
+%+D    endif;
+
+E1:end;
+
+%title ******  G E T   T E X T   I N F O R M A T I O N  ******
+
+ Visible Routine GTEXIN;
+ import range(0:23) index; infix(string) result;
+ export integer filled;
+ begin infix(string) S;
+
+%+D    if TRCSW > 0
+%+D    then begtrace("GTEXIN("); edwrd(trcbuf,index);
+%+D         edchar(trcbuf,')'); outtrace;
+%+D    endif;
+
+       S.nchr:=0; PickupEdtbuf;
+%-FBL  if (index < 1) or (index > 23)
+%+F    if (index < 1) or (index > 23)
+%+B    if (index < 1) or (index > 23)
+%+L    if (index < 1) or (index > 23)
+       then STAT("GTEXIN-1",xq_argrange); goto E1 endif;
+%+F    if ParBlk=none then InitParBlk endif;
+%+B    if ParBlk=none then InitParBlk endif;
+%+L    if ParBlk=none then InitParBlk endif;
+%-FBL  case 0:23 (index)
+%+F    case 0:23 (index)
+%+B    case 0:23 (index)
+%+L    case 0:23 (index)
+%+F when 1:  -- What is the name of the source input file?
+%+F          -- Result will give the name.
+%+F          S:=ASCIIZ2String(name2ref(@ParBlk.SOURCE),72);
+%+L when 1:  -- What is the name of the source input file?
+%+L          -- Result will give the name.
+%+L          S:=ASCIIZ2String(name2ref(@ParBlk.SOURCE),72);
+%+F when 2:  -- What is the name of the listing file?
+%+F          -- Result will give the file name. If no such output is to
+%+F          -- be produced, then the string will be empty.
+%+F          S:=ASCIIZ2String(name2ref(@ParBlk.LISTFIL),72);
+%+L when 2:  -- What is the name of the listing file?
+%+L          -- Result will give the file name. If no such output is to
+%+L          -- be produced, then the string will be empty.
+%+L          S:=ASCIIZ2String(name2ref(@ParBlk.LISTFIL),72);
+%+F when 4:  -- What is the name of the file for storing the normal S-Code?
+%+F          -- Result will give the file name. If no such output is to
+%+F          -- be produced, then the string will be empty.
+%+F          S:=ASCIIZ2String(name2ref(@ParBlk.SCODE),72);
+%+B when 4:  -- What is the name of the file containing the normal S-Code?
+%+B          -- Result will give the file name.
+%+B          S:=ASCIIZ2String(name2ref(@ParBlk.SCODE),72);
+%+L when 4:  -- What is the name of the file for storing the normal S-Code?
+%+L          -- Result will give the file name. If no such output is to
+%+L          -- be produced, then the string will be empty.
+%+L          S:=ASCIIZ2String(name2ref(@ParBlk.SCODE),72);
+%+B when 5:  -- What is the name of the file for storing relocatable output?
+%+B          -- Result will give the file name. If no such output is to
+%+B          -- be produced, then the string will be empty.
+%+B          S:=ASCIIZ2String(name2ref(@ParBlk.RELCODE),72);
+%+B when 6:  -- What is the name of the file for Assembly source ouput?
+%+B          -- Result will give the file name. If no such output is to
+%+B          -- be produced, then the string will be empty.
+%+B          if Option('A') > 0
+%+B          then S:=ASCIIZ2String(name2ref(@ParBlk.RELCODE),72) endif;
+%+F when 7:  -- What is the name of the scratch file to be used for
+%+F          -- storing the intermediate code between the passes.
+%+F          -- Result will give the name of the file.
+%+F          S:=ASCIIZ2String(name2ref(@ParBlk.SCRATCH),72);
+%+B when 7:  -- What is the name of the scratch file to be used for
+%+B          -- storing the intermediate code between the passes in the
+%+B          -- front-end?
+%+B          -- Result will give the name of the file.
+%+B          S:=ASCIIZ2String(name2ref(@ParBlk.SCRATCH),72);
+%+L when 7:  -- What is the name of the scratch file to be used for
+%+L          -- storing the intermediate code between the passes.
+%+L          -- Result will give the name of the file.
+%+L          S:=ASCIIZ2String(name2ref(@ParBlk.SCRATCH),72);
+%+B when 8:  -- What is the Prefix String to be used when forming
+%+B          -- external symbols?
+%+B          S:=ASCIIZ2String(name2ref(@ParBlk.PRFXID),6);
+%+B when 9:  S:=ASCIIZ2String(name2ref(@ParBlk.CSEGNAM),6);
+%+B when 10: S:=ASCIIZ2String(name2ref(@ParBlk.DSEGNAM),6);
+%+F when 11: -- What is the name of the attribute file for the current
+%+F          -- compilation? This will only be necessary for a separate
+%+F          -- compilation. This file will be used as the front-end's
+%+F          -- attribute file. (Cf. section 4.6)
+%+F          -- Result will give the name of the file.
+%+F          edEdtbuf(ASCIIZ2String(name2ref(@XCLID1),72));
+%+F          edEdtbuf(".at1"); S:=PickupEdtbuf;
+%+B when 11: -- What is the name of the attribute file for the current
+%+B          -- compilation? This will only be necessary for a separate
+%+B          -- module. Before this request is issued, the environment
+%+B          -- will have received the module identifier
+%+B          --      through givetextinfo(1, ...).
+%+B          -- This file will be used as the S-Compiler's attribute file.
+%+B          -- Result will give the name of the file.
+%+B          edEdtbuf(ASCIIZ2String(name2ref(@XCLID1),9));
+%+B          edEdtbuf(".at2"); S:=PickupEdtbuf;
+%+F when 12: -- What is the name of the attribute file for an external
+%+F          -- declaration?
+%+F          -- Before this request is issued, the environment will have
+%+F          -- received the identifier and the external identifier for
+%+F          -- the external declaration through the routine give_textinfo
+%+F          -- described below. (Cf. section 4.6)
+%+F          -- Result will give the name of the file.
+%+F          S:=ASCIIZ2String(name2ref(@XCLID3),72);
+%+F          if S.nchr > 0 then edEdtbuf(S)
+%+F          else
+%+FM              edEdtbuf("$SLIB\");
+%+FO              edEdtbuf("$SLIB\");
+%+FX              edEdtbuf("$SLIB/");
+%+F               edEdtbuf(ASCIIZ2String(name2ref(@XCLID2),9));
+%+F          endif;
+%+F          edEdtbuf(".at1"); S:=PickupEdtbuf;
+%+B when 12: -- What is the name of the attribute file for an INSERT ?
+%+B          -- Before this request is issued, the environment will have
+%+B          -- received the module identifier through givetextinfo(2, ...).
+%+B          -- Result will give the name of the file.
+%+B          S:=ASCIIZ2String(name2ref(@XCLID3),72);
+%+B          if S.nchr > 0 then edEdtbuf(S)
+%+B          else
+%+BM              edEdtbuf("$SLIB\");
+%+BO              edEdtbuf("$SLIB\");
+%+BX              edEdtbuf("$SLIB/");
+%+B               edEdtbuf(ASCIIZ2String(name2ref(@XCLID2),9));
+%+B          endif;
+%+B          edEdtbuf(".at2"); S:=PickupEdtbuf;
+%+L when 12: -- What is the name of the attribute file for an external
+%+L          -- declaration?
+%+L          -- Before this request is issued, the environment will have
+%+L          -- received the identifier and the external identifier for
+%+L          -- the external declaration through the routine give_textinfo
+%+L          -- described below. (Cf. section 4.6)
+%+L          -- Result will give the name of the file.
+%+L          S:=ASCIIZ2String(name2ref(@XCLID3),72);
+%+L          if S.nchr > 0 then edEdtbuf(S)
+%+L          else edEdtbuf(ASCIIZ2String(name2ref(@XCLID2),9)) endif;
+%+L          edEdtbuf(".at1"); S:=PickupEdtbuf;
+%-FBL  when 13: -- What is the environment part of the program head? (See below)
+%-FBL            -- Result will give the text string.
+%-FBL            edEdtbuf("iAPX..86/");
+%-FBL            edEdtbuf("SIMULA A.S.");       ---  T E M P  ---
+%-FBL            S:=PickupEdtbuf;
+%+F when 13: -- What is the environment part of the program head? (See below)
+%+F          -- Result will give the text string.
+%+F          edEdtbuf("iAPX..86/");
+%+F          edEdtbuf("SIMULA A.S.");       ---  T E M P  ---
+%+F          S:=PickupEdtbuf;
+%+L when 13: -- What is the environment part of the program head? (See below)
+%+L          -- Result will give the text string.
+%+L          edEdtbuf("iAPX..86/");
+%+L          edEdtbuf("SIMULA A.S.");       ---  T E M P  ---
+%+L          S:=PickupEdtbuf;
+%+F when 14: -- What is the module identifier to be used for the current
+%+F          -- compilation? (Cf. section 4.6)
+%+F          -- This call will only be made for a separate compilation.
+%+F          -- Result will give the text string.
+%+F          S:=ASCIIZ2String(name2ref(@XCLID1),9);
+%+B when 14: -- What is the name of the attribute file for an SYSINSERT ?
+%+B          -- Before this request is issued, the environment will have
+%+B          -- received the module identifier through givetextinfo(2, ...).
+%+B          -- Result will give the name of the file.
+%+B          if ParBlk.SYSGEN = 0
+%+B          then edEdtbuf(ASCIIZ2String(name2ref(@ParBlk.SIMLIB),72));
+%+B               edEdtbuf(ASCIIZ2String(name2ref(@ParBlk.SYSPFX),6));
+%+B          endif;
+%+B          edEdtbuf(ASCIIZ2String(name2ref(@XCLID2),9));
+%+B          edEdtbuf(".at2"); S:=PickupEdtbuf;
+%+F when 15: -- What is the check code to be used for the current
+%+F          -- compilation? (Cf. section 4.6)
+%+F          -- This call will only be made for a separate compilation.
+%+F          -- Result will give the text string.
+%+F          -- If the empty string is delivered then the date_and_time
+%+F          -- string identifying this compilation will be used.
+%+F               --------- No action.  i.e. empty string
+%+F when 16: -- What is the SELECTION:OPTION string?
+%+F          -- The length of the debugging string will not exceed 16.
+%+F          -- Result will be the initial value of the string.
+%+F          S:=ASCIIZ2String(name2ref(@ParBlk.SELECT),72);
+%+L when 16: -- What is the selection string?
+%+L          S:=ASCIIZ2String(name2ref(@ParBlk.SELECT),72);
+%+F when 19: -- What is the file name of the attribute file for the
+%+F          -- predefined classes and procedures (the class PREDEF)?
+%+F          if Parblk.Standard=0
+%+F          then S:=ASCIIZ2String(name2ref(@ParBlk.SIMPRE),72);
+%+F          else S:=ASCIIZ2String(name2ref(@ParBlk.STAPRE),72); endif
+%-FBL   when 23: -- What is the file name of a file containing seldom used
+%-FBL            -- information for the run time system, such as extended
+%-FBL            -- error messages.
+%-FBL            S:="NOT-IMPLEMENTED";
+%+F when 22: -- What is the file name of the error message file
+%+F          -- for the front end compiler and the runtime system.
+%+F          S:=ASCIIZ2String(name2ref(@ParBlk.ERRFIL),72);
+  otherwise STAT("GTEXIN-2",xq_argrange) endcase;
+       if S.nchr=0 then filled:=0
+       else SMOVE(S,result,' '); filled:=S.nchr endif;
+
+%+D    if TRCSW > 0
+%+D    then begtrace("GTEXIN: filled = "); edwrd(trcbuf,filled);
+%+D         ed(trcbuf,", Item = "); ed(trcbuf,result); outtrace;
+%+D    endif;
+
+E1:end;
+
+%title ******  G I V E   T E X T   I N F O R M A T I O N  ******
+
+ Visible Routine GIVINF;  --- give textinfo;
+ import range(0:3) index; infix(string) inf;
+ begin infix(string) par;
+
+%+D    if TRCSW > 0
+%+D    then begtrace("GIVINF("); edwrd(trcbuf,index); edchar(trcbuf,',');
+%+D         ed(trcbuf,inf); edchar(trcbuf,')'); outtrace;
+%+D    endif;
+
+%-FBL  STAT("GIVINF",xq_argrange);                    --- DUMMY VERSION
+%+F    if (index < 1) or (index > 3)
+%+B    if (index < 1) or (index > 3)
+%+L    if (index < 1) or (index > 3)
+%+F    then STAT("GIVINF-1",xq_argrange); goto E1 endif;
+%+B    then STAT("GIVINF-1",xq_argrange); goto E1 endif;
+%+L    then STAT("GIVINF-1",xq_argrange); goto E1 endif;
+%+F    if ParBlk=none then InitParBlk endif;
+%+B    if ParBlk=none then InitParBlk endif;
+%+L    if ParBlk=none then InitParBlk endif;
+%+F    case 0:3 (index)
+%+B    case 0:3 (index)
+%+L    case 0:3 (index)
+%+F when 1:  -- The string info is the identifier of a class or procedure
+%+F          -- being separately compiled.
+%+F          if inf.nchr>8 then inf.nchr:=8 endif;
+%+F          par.chradr:=@XCLID1.chr; par.nchr:=9;
+%+F          SMOVE(inf,par,0 qua character);
+%+B when 1:  -- The string info is the identifier of a class or procedure
+%+B          -- being separately compiled.
+%+B          if inf.nchr>8 then inf.nchr:=8 endif;
+%+B          par.chradr:=@XCLID1.chr; par.nchr:=9;
+%+B          SMOVE(inf,par,0 qua character);
+%+F when 2:  -- The string info is the identifier given in an external
+%+F          -- declaration that is being processed.
+%+F          XCLID3.chr:=0 qua character;
+%+F          if inf.nchr>8 then inf.nchr:=8 endif;
+%+F          par.chradr:=@XCLID2.chr; par.nchr:=9;
+%+F          SMOVE(inf,par,0 qua character);
+%+B when 2:  -- The string info is the identifier given in an external
+%+B          -- declaration that is being processed.
+%+B          XCLID3.chr:=0 qua character;
+%+B          if inf.nchr>8 then inf.nchr:=8 endif;
+%+B          par.chradr:=@XCLID2.chr; par.nchr:=9;
+%+B          SMOVE(inf,par,0 qua character);
+%+L when 2:  -- The string info is the identifier given in an external
+%+L          -- declaration that is being processed.
+%+L          XCLID3.chr:=0 qua character;
+%+L          if inf.nchr>8 then inf.nchr:=8 endif;
+%+L          par.chradr:=@XCLID2.chr; par.nchr:=9;
+%+L          SMOVE(inf,par,0 qua character);
+%+F when 3:  -- The string info is the external identification given in an
+%+F          -- external declaration that is being processed.
+%+F          if inf.nchr>71 then inf.nchr:=71 endif;
+%+F          par.chradr:=@XCLID3.chr; par.nchr:=72;
+%+F          SMOVE(inf,par,0 qua character);
+%+B when 3:  -- The string info is the external identification given in an
+%+B          -- external declaration that is being processed.
+%+B          if inf.nchr>71 then inf.nchr:=71 endif;
+%+B          par.chradr:=@XCLID3.chr; par.nchr:=72;
+%+B          SMOVE(inf,par,0 qua character);
+%+L when 3:  -- The string info is the external identification given in an
+%+L          -- external declaration that is being processed.
+%+L          if inf.nchr>71 then inf.nchr:=71 endif;
+%+L          par.chradr:=@XCLID3.chr; par.nchr:=72;
+%+L          SMOVE(inf,par,0 qua character);
+
+%+F  otherwise STAT("GIVINF-2",xq_argrange) endcase; E1:
+%+B  otherwise STAT("GIVINF-2",xq_argrange) endcase; E1:
+%+L  otherwise STAT("GIVINF-2",xq_argrange) endcase; E1:
+
+end;
+
+%title ******  G I V E   I N T E G E R   I N F O R M A T I O N  ******
+
+ Visible Routine GVIINF;  --- give intinfo;
+ import range(0:5) index; integer inf;
+ begin
+%+D    if TRCSW > 0
+%+D    then begtrace("GIVINF("); edwrd(trcbuf,index); edchar(trcbuf,',');
+%+D         edwrd(trcbuf,inf); edchar(trcbuf,')'); outtrace;
+%+D    endif;
+
+%-FBL  STAT("GVIINF",xq_argrange);                    --- DUMMY VERSION
+%+F    if (index < 1) or (index > 5)
+%+B    if (index < 1) or (index > 5)
+%+L    if (index < 1) or (index > 5)
+%+F    then STAT("GVIINF-1",xq_argrange); goto E1 endif;
+%+B    then STAT("GVIINF-1",xq_argrange); goto E1 endif;
+%+L    then STAT("GVIINF-1",xq_argrange); goto E1 endif;
+%+F    if ParBlk=none then InitParBlk endif;
+%+B    if ParBlk=none then InitParBlk endif;
+%+L    if ParBlk=none then InitParBlk endif;
+%+F    case 0:5 (index)
+%+B    case 0:5 (index)
+%+L    case 0:5 (index)
+%+F when 1:  ParBlk.CCODE:=inf;  -- 0:pass ok, 1:error, >1:fatal error
+%+B when 1:  ParBlk.CCODE:=inf;  -- 0:pass ok, 1:error, >1:fatal error
+%+L when 1:  ParBlk.CCODE:=inf;  -- 0:pass ok, 1:error, >1:fatal error
+%+F when 2:  -- No longer in use
+%+F when 3:  ParBlk.nLINE:=inf; -- The number of source lines in the program
+%+L when 3:  ParBlk.nLINE:=inf; -- The number of source lines in the program
+%+F when 4:  ParBlk.nERR:=ParBlk.nERR+inf;   -- Number of errors detected
+%+B when 4:  ParBlk.nERR:=ParBlk.nERR+inf;   -- The number of errors detected
+%+L when 4:  ParBlk.nERR:=ParBlk.nERR+inf;   -- Number of errors detected
+%+F when 5:  ParBlk.nWARN:=ParBlk.nWARN+inf; -- Number of warnings given
+%            --- NOTE: GVIINF(5,...) is the LAST THING FEC DOES -
+%            --- Here the program may be terminated, with swap DIRECTLY
+%            --- to BEC
+%+F          if option('G') <> 0 then ParBlk.Ccode:=0 endif;
+%+F          if option('K')+ParBlk.Ccode = 0
+%+F          then ParBlk.State:=2; ParBlk.Ccode:=255;
+%+F               TERMIN(20+ParBlk.BECVER+ParBlk.TrcDisp,nostring) endif;
+%+B when 5:  ParBlk.nWARN:=ParBlk.nWARN+inf; -- The number of warnings given
+%+L when 5:  ParBlk.nWARN:=ParBlk.nWARN+inf; -- Number of warnings given
+
+%+F  otherwise STAT("GVIINF-2",xq_argrange) endcase; E1:
+%+B  otherwise STAT("GVIINF-2",xq_argrange) endcase; E1:
+%+L  otherwise STAT("GVIINF-2",xq_argrange) endcase; E1:
+end;
+%title ******  G E T   S I Z E   I N F O R M A T I O N  ******
+ ---
+ ---    NOTE: currently not fully implemented !!!
+ ---
+
+ Visible Routine SIZEIN;
+ import range(0:3) index; range(0:MaxByte) sequ; export size result;
+ begin
+%-E    infix(Any2Byte) S;
+%+E    infix(Any4Byte) S;
+%+M    infix(WRKPAK) y; range(0:Maxword) w;
+
+%+D    if TRCSW > 0
+%+D    then begtrace("SIZEIN("); edwrd(trcbuf,index); edchar(trcbuf,',');
+%+D         edwrd(trcbuf,sequ); edchar(trcbuf,')'); outtrace;
+%+D    endif;
+
+       if (index < 1) or (index > 3)
+       then STAT("SIZEIN-1",xq_argrange); result:=nosize; goto E1 endif;
+%+F    if ParBlk=none then InitParBlk endif;
+%+B    if ParBlk=none then InitParBlk endif;
+%+L    if ParBlk=none then InitParBlk endif;
+       case 0:3 (index)
+       when 1:  -- What amount of working storage should be requested initially
+                -- for this area? -- Result will give the SIZE of the area.
+
+                if sequ<MAXALLOC then -- Nothing
+                elsif MAXALLOC=0 then -- Nothing
+                elsif sequ = MAXALLOC
+                then if WRKTAIL <> 0
+                     then
+%-E                       S.AsWrd:=WRKTAIL;
+%+E                       S.AsInt:=WRKTAIL;
+                          goto Lx;
+                     endif;
+                elsif sequ > MAXALLOC
+                then STAT("SIZEIN-2",xq_argrange); result:=nosize; goto E2 endif
+
+%-E             S.AsWrd:=STEPSIZE;
+%+E             S.AsInt:=STEPSIZE;
+%+M             if WRKBEG(sequ).AsOaddr <> none then -- Nothing
+%+M             else
+--  %+M                  if MINALLOC=0 then -- Nothing
+--  %+M                  elsif sequ > MINALLOC
+--  %+M                  then STAT("SIZEIN-2",xq_argrange); goto E2 endif;
+%+M                  y:=DOS_ALOC(STEPSIZE/16);
+%+M                  if OsStat=0 then WRKBEG(sequ).AsOaddr:=y.area
+%+M                  else w:=y.maxs; OsStat:=0;
+%+M                       if w <= 25 then S.AsWrd:=0; MINALLOC:=sequ-1;
+%+M                       else S.AsWrd:=(w-4)*16; MINALLOC:=sequ endif;
+%+MD                      if TRCSW >= 0
+%+MD                      then BegTrace("SIZEIN: Last Pool size: ");
+%+MD                           EdWrd(TrcBuf,S.AsWrd); OutTrace;
+%+MD                      endif;
+%+M                  endif;
+%+M             endif;
+     Lx:        result:=S.AsSize;
+
+       when 2:  -- What is the size of any extension to this area?
+                                         --- Expansion not allowed
+                result := nosize;        --- yet, since it is not
+                                         --- allowed by MS-DOS
+
+       when 3:
+%-E             S.AsWrd:=MINFREE; result:=S.AsSize;
+%+E             S.AsInt:=MINFREE; result:=S.AsSize;
+
+       otherwise STAT("SIZEIN-3",xq_argrange); result:=nosize endcase;
+
+%+D    if TRCSW > 0
+%+D    then begtrace("SIZEIN: Result = ");
+%+D         edsize(trcbuf,result); outtrace;
+%+D         begtrace("MINALLOC: "); edint(trcbuf,MINALLOC);
+%+D         ed(trcbuf,", MAXALLOC: "); edint(trcbuf,MAXALLOC);
+%+D         ed(trcbuf,", STEPSIZE: "); edint(trcbuf,STEPSIZE);
+%+D         ed(trcbuf,", MINFREE: "); edint(trcbuf,MINFREE);
+%+D         ed(trcbuf,", WRKTAIL: "); edint(trcbuf,WRKTAIL); outtrace;
+%+D         if ParBlk <> none
+%+D         then begtrace("MINALLOC: "); edint(trcbuf,ParBlk.MINALLOC);
+%+D              ed(trcbuf,", MAXALLOC: "); edint(trcbuf,ParBlk.MAXALLOC);
+%+D              ed(trcbuf,", STEPSIZE: "); edint(trcbuf,ParBlk.STEPSIZE);
+%+D              ed(trcbuf,", MINFREE: "); edint(trcbuf,ParBlk.MINFREE);
+%+D              ed(trcbuf,", WRKTAIL: "); edint(trcbuf,ParBlk.WRKTAIL);
+%+D              outtrace;
+%+D         endif;
+%+D    endif;
+
+--  %+M E2:
+E1:E2:end;
+
+
+end;

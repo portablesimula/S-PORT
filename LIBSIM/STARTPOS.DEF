@@ -1,0 +1,14 @@
+Module startpos_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("startpos")startpos;
+       import infix(txtqnt) txt; export short integer res;
+       ---  return start pos. of t within t.main, or zero
+       begin if txt.lp=0 then res:=0 else res:=txt.sp+1 endif end;
+end;

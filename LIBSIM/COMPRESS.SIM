@@ -1,0 +1,2 @@
+    external library procedure compress is
+    text procedure compress(t,c); text t; character c; ;

@@ -1,0 +1,43 @@
+begin class counter;
+      begin text csymb;
+            short integer line,index,len;
+            procedure outcomment;
+            inspect output do
+            begin outtext("%          " & csymb.sub(1,len) & " (l. ");
+                  outint(line,0); outchar(')'); setpos(tab); outint(index,0);
+                  outimage;
+            end;
+
+            procedure init;
+            begin index:=nsym; nsym:=nsym+1; len:=word.length;
+                  if tab < len then tab:=len;
+                  sysout.image:=notext; sysout.setpos(1); outint(index,0);
+                  csymb:- word & "_X_" & sysout.image.strip;
+                  lastctr:-lastctr.next:-this counter;
+            end;
+
+      end;
+
+      ref(counter) firstctr, lastctr, ctr;
+      short integer nsym,tab;
+
+      firstctr:-lastctr:-new counter; !dummy - to make insert easier;
+      input :- new infile(source);
+      inspect input do begin
+         if not open(blank(60)) then error("can't open input");
+         inimage;
+         while not endfile do begin
+            inword;
+            if word="procedure" then begin
+               inword; new counter.init;
+            end;
+         end;
+         close;
+         open(blanks(60));
+         inspect new outfile(dest) do begin
+            open(blanks(90));
+            outline("BEGIN !***** call frequency added *****;");
+            outtext("      integer array STAT_X_FREQ(0:");
+            outint(nsym-1,0); outtext("); !counts the calls;"); outimage;
+            ctr:-firstctr.next;
+            while ctr =/= none do begin ctr.outcomment; ctr:-ctr.next end;

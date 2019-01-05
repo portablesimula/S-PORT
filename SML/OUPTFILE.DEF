@@ -1,0 +1,163 @@
+External class Common;
+
+%REUSE ON
+
+outbytefile Class OuptFile(comn); ref(Common) comn;
+%      ----------------------------------------------------------------
+%      ---                                                          ---
+%      ---  COPYRIGHT 1989 by                                       ---
+%      ---  Simula a.s.                                             ---
+%      ---  Oslo, Norway                                            ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                 P O R T A B L E     S I M U L A          ---
+%      ---                                                          ---
+%      ---              S I M U L E T T A    C O M P I L E R        ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                  C l a s s    O u p t F i l e            ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      --- Selection switches:                                      ---
+%      ---                                                          ---
+%      ---    'D' Included when dump is wanted                      ---
+%      ---    'I' Included to make compiler use inserted mnemonics  ---
+%      ---    'N' Included to produce ND-500 version                ---
+%      ---    'P' Included to use PRIOR procedures                  ---
+%      ---    'U' Included to produce UNIVAC version                ---
+%      ---    'X' Included to produce XENIX version                 ---
+%      ---                                                          ---
+%      ----------------------------------------------------------------
+begin
+
+%BOUNDCHECK OFF
+%QUACHECK OFF
+%NONECHECK OFF
+
+      text TRCBUFF; short integer output_trace;
+      boolean lowercase;
+
+%+D   procedure outinst(i); character i;
+%+D   begin if output_trace > 0
+%+D         then TRC("Outinstr",comn.symtab(0).val(rank(i)).symbol);
+%+D         outbyte(rank(i));
+%+D   end;
+
+%+D   procedure outbyt(i); character i;
+%+D   begin if output_trace > 0
+%+D         then TRC("Outbyt",comn.leftint(rank(i)));
+%+D         outbyte(rank(i));
+%+D   end;
+
+%+D   procedure outnumber(n); integer n;
+%+D   begin if output_trace > 0
+%+D         then TRC("Outnumber",comn.leftint(n));
+%+D         out2byte(n);
+%+D   end;
+
+%+P   prior
+      procedure outident(hi,lo); character hi,lo;
+      begin
+%+D         if output_trace > 0 then TRC("Outident",
+%+D          lowcase(copy(comn.symtab(rank(hi)).val(rank(lo)).symbol)));
+            outbyte(rank(hi)); outbyte(rank(lo));
+      end;
+
+%+D   procedure uttag(t); character t; !*** output known tag ***;
+%+D   begin 
+%+D         if t='!0!' then comn.WARNING("UTTAG = ZERO???");
+%+D         if output_trace > 0
+%+D         then TRC("Uttag",comn.TagName('!0!',t));
+%+D         out2byte(rank(t));
+%+D   end;
+
+%+P   prior
+      procedure outtag(hi,lo); character hi,lo;
+      begin
+%+D      if lo='!0!' and then hi='!0!' then comn.WARNING("TAG = ZERO");
+%+D      if output_trace > 0
+%+D      then TRC("Outtag",comn.TagName(hi,lo));
+         out2byte(rank(hi)*256+rank(lo));
+      end;
+
+%REUSE OFF
+      procedure outtagid(hi,lo); character hi,lo;
+      begin text id;
+        inspect comn do begin
+%+D         if lo='!0!' and then hi='!0!'
+%+D         then WARNING("Illegal output tag: ZERO");
+            id:-tagtab(rank(hi)).val(rank(lo)).symbol;
+            if id==notext then outtag(hi,lo)
+       else begin
+               out2byte(0); outtag(hi,lo);
+               id:-copy(id); upcase(id);
+               outbyte(id.length); outtext(id);
+            end;
+        end inspect comn
+      end;
+%REUSE ON
+
+      procedure outentry(hi,lo); character hi,lo;
+      inspect comn do begin
+          if option(rank('L'))<>NUL then begin
+%+D         if lo='!0!' and then hi='!0!'
+%+D         then WARNING("Illegal output tag: ZERO");
+            inspect tagtab(rank(hi)).val(rank(lo)) do begin
+               if symbol==notext then outtag(hi,lo)
+               else begin
+                  out2byte(0); outtag(hi,lo);
+                  outbyte(symbol.length); outtext(symbol);
+               end;
+            end;
+          end else outtagid(hi,lo);
+      end;
+
+%+P   prior
+      procedure outstring(t); text t;
+      begin
+%+D         if output_trace > 0
+%+D         then TRC("Outstring","""" & t & """");
+            outbyte(t.length); outtext(t);
+      end;
+
+%+P   prior
+      procedure outlongstring(t); text t;
+      begin
+%+D         if output_trace > 0
+%+D         then TRC("Outlongstring","""" & t & """");
+            out2byte(t.length); outtext(t);
+      end;
+
+%+D %BOUNDCHECK ON
+%+D %QUACHECK ON
+%+D %NONECHECK ON
+
+%+D   procedure outcode;
+%+D   if TRCBUFF.pos > 1 then inspect sysout do begin
+%+D      outtext("Output:");
+%+D      setpos(25); outtext(TRCBUFF.strip);
+%+D      outimage; TRCBUFF:=notext; TRCBUFF.setpos(1);
+%+D   end;
+
+%+D   procedure TRC(m,v); value m; text m,v;
+%+D   begin short integer p,l;
+%+D      inspect sysout do begin
+%+D         if output_trace > 1 then begin
+%+D            outtext("Line"); outint(comn.curline,6);
+%+D            setpos(54); outtext(m);
+%+D            outchar(':'); setpos(65); outtext(v); outimage;
+%+D         end
+%+D         else begin
+%+D            p:=TRCBUFF.pos; l:=v.length;
+%+D            if p+l > TRCBUFF.length then begin outcode; p:=1 end;
+%+D            TRCBUFF.sub(p,l):=v;
+%+D            TRCBUFF.setpos(if p+l+1<14 then 14 else p+l+1);
+%+D         end;
+%+D      end;
+%+D   end;
+
+      if not open then comn.openerror(filename);
+%+D   TRCBUFF:-blanks(80);
+
+end *** OuptFile ***;

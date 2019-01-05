@@ -1,0 +1,2 @@
+    external library procedure hash is
+    integer procedure hash(t,n); text t; integer n; ;

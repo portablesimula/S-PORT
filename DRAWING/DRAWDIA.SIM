@@ -1,0 +1,24 @@
+begin short integer n;
+  external class drawing;
+  n:= 13;
+  outtext("Graphic mode: (4,5,13,14 - or other?"); breakoutimage; n:= inint;
+  drawing (n) begin
+    integer array a(3:5), b(1:10);
+    a(3):= 10; a(4):= 70; a(5):=  0;
+    b(1):= 10; b(4):=  8; b(7):=  0;
+    b(2):= 16; b(5):= 20; b(8):=  5;
+    b(3):= 12; b(6):= 12; b(9):= 10; b(10):= 5;
+    SetColour(1);
+    DrawDiagram(a, 80,10,100,100,1);
+    Setpos(TextLine(80)+2,
+           TextPos(50*(Upperbound(a,1)-Lowerbound(a,1)+1)-7));
+    outtext("Continue?"); inchar;
+    Setcolor(2);
+    DrawDiagram(b,180,10,300,30,12);
+    Setpos(TextLine(180)+2,
+           TextPos(10*(Upperbound(b,1)-Lowerbound(b,1)+1)-14));
+    Outtext("CR when through looking.");
+    Inchar;
+  end;
+end;
+

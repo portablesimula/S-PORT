@@ -1,0 +1,2 @@
+    external library procedure from is
+    text procedure from(t,i); text t; short integer i; ;

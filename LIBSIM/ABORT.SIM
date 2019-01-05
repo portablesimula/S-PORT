@@ -1,0 +1,2 @@
+    external library procedure abort is
+    procedure abort(mess); text mess; ;

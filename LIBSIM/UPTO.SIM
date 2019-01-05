@@ -1,0 +1,2 @@
+    external library procedure upto is
+    text procedure upto(t,p); text t; short integer p; ;

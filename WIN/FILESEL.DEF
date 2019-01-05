@@ -1,0 +1,308 @@
+%SPORT ON
+external class sysclass;
+
+sysclass class filesel;
+begin
+
+%title ***    S T A N D A R D   --   S E L E C T   F I L E   F O R M    ***
+
+%+f   text procedure getdir(template,resName); text template,resName;
+%+f   !*** performs 'dir/ls template' and returns the name of a
+%+f        file containing the resulting list (sorted), stripped of
+%+f        blank lines etc. (DOS), and with concatenated
+%+f        file names (XENIX/UNIX eg: ls */*.sim);
+%+f   begin text fname,t,v; ref(infile) tmp; ref(outfile) res;
+%+f         character ch; text prefix;
+
+%+f         if resName==notext then resName:-TempFile;
+%+f         res:-new outfile(resName);
+%+f         if not res.open(blanks(72)) then goto ERR;
+%+f         nFiles:=0; fname:-TempFile;
+%+M %+f     System ("dir " & Template & " | sort >" & fname);
+%+O %+f     System ("dir " & Template & " >" & fname);
+%+X %+f     System ("ls >" & fname & " 2>/dev/null " & Template);
+%+f         tmp:-new infile(fname);
+%+f         if not tmp.open(blanks(72)) then goto ERR1;
+%+f         getdir:-resName; goto LOOP;
+
+%+f            while not tmp.endfile do begin
+%+f               t:-tmp.image;
+%+f               ch:=loadchar(t,0); if ch = ' ' then goto LOOP;
+%-X %+f           if ch='.' or else digit(ch) then goto LOOP;
+%-X %+f           lowcase(t);
+%-X %+f           v:-t.sub(10,3).strip;
+%-X %+f           res.outtext(t.sub(1,8).strip);
+%-X %+f           if v=/=notext then res.outtext("." & v);
+%+X %+f           t:-t.Strip;
+%+X %+f           if loadchar(t,t.length-2)=':'
+%+X %+f           then begin prefix:-t.sub(1,t.length-1) & "/"; goto LOOP end;
+%+X %+f           res.outtext(prefix); res.outtext(t);
+%+f               res.outimage; !outtext("!13!!10!");
+%+f               nFiles:=nFiles+1;
+%+f      LOOP:    tmp.inimage;
+%+f            end;
+
+%+f   ERR1: tmp.close; DeleteFile(fname);
+%+f   ERR:  res.close;
+%+f   end getdir;
+
+%+f   procedure newfilesel(template); text template;
+%+f   !*** this procedure to avoid double swap in banked case ***;
+%+f   begin call(new fileselectform(13,76,YellowOnBlue,template)) end;
+
+%+f   Form Class fileSelectForm(Template);
+%+f   text Template;
+%+f   hidden protected tmp;
+%+f   begin ref(Infile) tmp;
+%+f         ref(TagField) Sel;
+%+f         short integer First;
+%+f         text oldTemplate,directory;
+%+f         text Title = "Select File:";
+
+%+f         Procedure Initiate;
+%+f         begin text t; Border1;
+%+f               t:-Blanks(Width-(Title.length+6));
+%+f               t:=Template; Template:-t;
+%+f         end;
+
+%+f         Procedure EventHandler(Event); character Event;
+%+f         begin short integer offset;
+%+f               if Event=eChanged then
+%+f               begin if Current==Sel then
+%+f                     begin First:=0; goto REP end;
+%+f               end else
+%+f               if Event=ePressed then
+%+f               begin FileSelected:-Copy(Sel.Fld qua TextField.val);
+%+f                     FileSelected:=Current qua Button.val.main;
+%+f                     Sel.Fld qua TextField.val:-FileSelected;
+%+f                     Sel.Fld.Paint; Current:-Sel; !LastKey.map:='!0!';
+%+f               end else
+%+f               if Event=eKeyin then begin
+%+f                  offset:=6*(Width//14);
+%+f                  if LastKey.map=PgUpKey then begin
+%+f                     if First>0 then begin
+%+f                        First:=First-offset;
+%+f                        if First<0 then First:=0; goto REP end;
+%+f                     LastKey.map:='!0!'; goto PRO;
+%+f                  end
+%+f             else if LastKey.map=PgDnKey then begin
+%+f                     if First+offset<nFiles then begin
+%+f                        First:=First+offset; goto REP end;
+%+f                     LastKey.map:='!0!'; goto PRO;
+%+f                  end
+%+f               end;
+%+f         end;
+
+%+f         Procedure Display;
+%+f         begin short integer Lin,Pos; integer i; text t,Scratch;
+%+f               EraseWindow; Border1; FieldSet.Clear; SetPos(3,3);
+%+f               Sel:-new TagField(2,3,Title
+%+f                  ,"Enter: edit file selection template, Arrows: navigate"
+%+f                  ,New TextField(2,Title.length+5,Template));
+%+f               Paint; if not Showed then ShowAt(4,3);
+%+M %+f           setpos(2,17+Template.strip.length); !*** 'file not found' ;
+%+f               if oldTemplate<>Template.strip or else directory==notext
+%+f               then begin
+%+f                  if tmp=/=none then DeleteFile(tmp.filename);
+%+f                  oldTemplate:-copy(Template.strip);
+%+f                  directory:-getdir(oldTemplate,directory);
+%+f                  tmp:-new infile(directory);
+%+f               end;
+%+f               if tmp.open(Blanks(80)) then
+%+f               begin for i:=1 step 1 until First
+%+f                      do if not tmp.EndFile then tmp.inimage;
+%+f                     Lin:=3; Pos:=Width;
+%+f                     if not tmp.endfile then goto LOOP;
+%+f                     while not tmp.endfile do begin
+%+f                           t:-tmp.image.strip;
+%+f                           Pos:=Pos+14;
+%+f                           if Pos+14 > Width then
+%+f                           begin Lin:=Lin+1; Pos:=3;
+%+f                                 if Lin+1 > Height then goto L;
+%+f                           end;
+%+f                           New Button(Lin,Pos,copy(t),
+%+f                              "Enter: select file, "
+%+f                              "Arrows: navigate, Home: close this window");
+%+f                     LOOP: tmp.inimage;     
+%+f                     end;
+%+f               L:    tmp.Close;
+%+f                     Current:-FieldSet.First.suc;
+%+f               end else Message("No files found");
+%+f         end;
+
+%+f   REP:  Display; Paint; ! if not Showed then ShowAt(4,3);
+%+f   PRO:  if nFiles=1 then EventHandler(ePressed) else Process;
+%           if Current is Button then
+%           begin FileSelected:-Copy(Sel.Fld qua Button.val);
+%                 FileSelected:=Current qua Button.val.main;
+%                 Sel.Fld qua TextField.val:-FileSelected;
+%                 Sel.Fld.Paint; Current:-Sel; goto PRO;
+%           end else
+%+f         FileSelected:-Sel.Fld qua TextField.val;
+
+%+f         DeleteFile(directory); tmp:-none; Hide;
+
+%+f   end fileselectform;
+
+%+g   Form Class FileForm(FileName,inputlng);
+%+g         text FileName; short integer inputlng;
+%+g   hidden protected filpos,wSize,toprec,pctpos,input,expltext;
+%+g   !*** display contents of indicated file one page at a time ***;
+%+g   begin short integer filpos, ! nb. of last RECORD read from input;
+%+g                       toprec, ! nb. of top line on window;
+%+g                       wSize,  !number of lines displayed (constant);
+%+g                       pctPos, !- see proc. Expl;
+%+g                       fileSize; !number of records in file (constant);
+%+g         ref(infile) input; text explText;
+
+%+g         procedure copyFile; !find size of file;
+%+g         begin text t;
+%+g               inspect input when infile do begin
+%+g                  openInput; fileSize:=-1;
+%+g                  while not endfile do begin
+%+g                        inrecord; fileSize:=fileSize+1 end;
+%+g                  if fileSize<=0 then begin
+%+g                     message(" the file is empty! "); goto Term end;
+%+g                  showHome;
+%+g               end
+%+g               otherwise begin
+%+g                  message(" input is not an infile "); goto Term end;
+%+g         end;
+
+%+g         procedure initiate;
+%+g         begin if FileName==notext then begin
+%+g                  message(" no filename? "); goto Term end;
+%+g               explText:-"Esc: close window, "
+%+g                        "PgUp/PgDn/Home/End: scan file           ";
+%+g               pctPos:=explText.length-3;
+%+g               explText:-explText & "%"; !NOTE implicit copy;
+%+g               input:-new infile(FileName);
+%+g               !*** DO NOT OPEN (input may not exist!) ***;
+%+g               wSize:=height;
+%+g         end;
+
+%+g         procedure display;
+%+g         begin short integer i,len;
+%+g            inspect input do if not endfile then begin
+%+g               !hide; erasewindow;
+%+g               i:=wSize; toprec:=filpos;
+%+g               while i>0 and not EndFile do begin i:=i-1;
+%+g                  inrecord; filpos:=filpos+1;
+%+g                  if endfile then print(" ---  EOF  ---")
+%+g                  else begin
+%+g                     len:=image.pos-1; if len>=Width then len:=Width-1;
+%+g                     print(Image.sub(1,len));
+%+g                  end;
+%+g               end;
+%+g               !show; Expl;
+%+g            end;
+%+g         end;
+
+%+g         procedure Expl;
+%+g         begin if input.endfile then filpos:=filpos-1;
+%+g               explText.sub(pctPos,3).putint((100*(filpos-1))//fileSize);
+%+g               Explain(explText);
+%+g         end;
+
+%+g         Procedure EventHandler(Event); character Event;
+%+g         begin
+%+g               if lastkey.map < ' ' then
+%+g               switch('!0!':'!31!') lastkey.map begin
+%+g                 when EscKey  do goto ClEx;
+%+g                 when PgUpKey do showPage(topRec-wSize);
+%+g                 when PgDnKey do display;
+%+g                 when CrKey   do scrollPage;
+%+g                 when HomeKey do showHome;
+%+g                 when EndKey  do showPage(fileSize-wSize+2);
+% g                 when UpKey   do;
+% g                 when DownKey do;
+%+g                 when FuncKey do begin
+%+g                    if lastkey.fkey < 13 
+%+g                    then switch(0:12) lastkey.fkey begin
+%+g                      when F11 do showPage(toprec-filesize//10);
+%+g                      when F12 do showPage(toprec+filesize//10);
+%+g                    end;
+%+g                 end;
+%+g               end;
+%+g               lastKey.map:='!0!';
+%+g         end;
+
+%+g         procedure openInput;
+%+g         begin text t;
+%+g               inspect input do begin
+%+g                  t:-image; if t==notext then t:-blanks(inputlng);
+%+g                  close; !does no harm if not open;
+%+g                  if not open(t) then begin
+%+g                     message(" can't open " & filename); goto Term;
+%+g                  end;
+%+g               end
+%+g               otherwise begin
+%+g                     message(" input is not an infile "); goto Term;
+%+g               end;
+%+g               toprec:=0; filpos:=1;
+%+g         end;
+
+%+g         procedure showHome;  if toprec <> 1 then
+%+g         begin openInput; display; end;
+
+%+g         procedure scrollPage;  !(short integer N);
+%+g         begin short integer len;
+%+g               !***** autowrap CANNOT be used here.
+%+g                ***** it destroys last line on screen;
+%+g               external library procedure SCROLL="E@SCROLL" is
+%+g               procedure SCROLL(i,ch); short integer i; character ch; ;
+%+g            inspect input do if not endfile then begin
+%+g               inrecord; filpos:=filpos+1; toprec:=toprec+1;
+%+g               SCROLL(1,curAttr.encoding);
+%+g               if endfile then print(" ---  EOF  ---")
+%+g               else begin
+%+g                  len:=image.pos-1; if len>=Width then len:=Width-1;
+%+g                  print(Image.sub(1,len));
+%+g               end;
+%+g               Expl;
+%+g            end;
+%+g         end;
+
+%+g         procedure showPage(recN); short integer recN;
+%+g         ! recN is the record number wanted on top line.
+%+g           recN = topRec: do nothing (except show the window)
+%+g           recN < topRec: rewind file (i.e.close - open), and
+%+g                          force input as under 'otherwise' below
+%+g           recN < topRec+wSize: read and scroll
+%+g           otherwise: file is now positioned at topRec+wSize.
+%+g                      First scan until file is at recN.
+%+g                      Then showpage ;
+%+g           
+%+g         begin
+%+g            if recN<>topRec then inspect input do begin
+%+g               !*** avoid an empty screen ***;
+%+g         REP:  if not isOpen or else recN<=1 then showHome
+%+g          else if recN<topRec then begin
+%+g                  openInput; !*** locate(1);
+%+g                  while recN > 1 and not endfile do begin
+%+g                        inrecord; filpos:=filpos+1; recN:=recN-1 end;
+%+g                  display;
+%+g               end
+%            else if recN < topRec+wSize//2 then scrollPage(topRec-recN)
+%+g               else begin !*** recN is above current page ***;
+%+g                  if recN+wSize > fileSize+2 then begin
+%+g                     recN:=fileSize-wSize//2-1;
+%+g                     if recN<topRec then goto REP;
+%+g                  end;
+%+g                  while recN>filpos and not endfile do begin
+%+g                     !*** skip ***;
+%+g                     inrecord; filpos:=filpos+1; end;
+%+g                  ! now file is positioned ;
+%+g                  display;
+%+g               end;
+%+g           Ex: !Expl;
+%+g            end inpect input;
+%+g         end showPage;
+
+%+g         showAt(3,3); copyFile;
+%+g         while true do Process;
+%+g   ClEx: input.Close;
+%+g   Term: hide;
+%+g   end fileform;
+
+end;

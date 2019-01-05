@@ -1,0 +1,144 @@
+ Module EARRX("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT,EKNWN;
+%-D begin insert ECOMN,EBASE,      ECENT,EKNWN;
+
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1989 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---                                                           ---
+       ---          A r r a y   K n o w n   R o u t i n e s          ---
+       ---                                                           ---
+       ---              S u b s t i t u t e    P a r t               ---
+       ---                                                           ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+Define MAX_DIM=10;
+Define MAX_SORT=21;
+
+Define S_ARHEAD = 10;  --  Array Head Entity
+Define S_ARBODY = 11;  --  Array Body Entity      (3 or more dimensions)
+Define S_ARBREF = 12;  --  ref-Array Body Entity  (3 or more dimensions)
+Define S_ARBTXT = 13;  --  text-Array Body Entity (3 or more dimensions)
+Define S_ARENT2 = 14;  --  Array Body Entity      (two dimensions)
+Define S_ARREF2 = 15;  --  ref-Array Body Entity  (two dimensions)
+Define S_ARTXT2 = 16;  --  text-Array Body Entity (two dimensions)
+Define S_ARENT1 = 17;  --  Array Body Entity      (one dimension)
+Define S_ARREF1 = 18;  --  ref-Array Body Entity  (one dimension)
+Define S_ARTXT1 = 19;  --  text-Array Body Entity (one dimension)
+
+Define ENO_ARR_2=45;   -- Incorrect number of array indicies.
+Define ENO_ARR_3=46;   -- Array index value is less than value of lower bound.
+Define ENO_ARR_4=47;   -- Array index value > value of upper bound.
+%title ***  D e c l a r e d    A r r a y    I n d e x i n g  ***
+
+ Visible known("ARGIND") ARGIND;
+ import ref(arhead) head; integer dim,ind(MAX_DIM);
+ begin integer i,neg_base,subscript; infix(arrbnd) bnd;
+       dim:=dim-1; bnd:=head.bound(dim);
+       neg_base:=bnd.neg_base; subscript:=ind(dim);
+       if subscript < bnd.lb then ERROR(ENO_ARR_3) endif;
+       if subscript > bnd.ub then ERROR(ENO_ARR_4) endif;
+       repeat while dim > 0
+       do dim:=dim - 1; bnd:=head.bound(dim); i:=ind(dim);
+          if i < bnd.lb then ERROR(ENO_ARR_3) endif;
+          if i > bnd.ub then ERROR(ENO_ARR_4) endif;
+          subscript:=subscript * bnd.dope  +  i;
+       endrepeat;
+       ---  The index will later be accessed from the compiler produced code.
+       tmp.int:=subscript + neg_base;
+ end;
+
+
+%-E Visible known("AR2IND") AR2IND;
+%-E import ref(arent2) arr; integer ind_1,ind_2;
+%-E begin if ind_1 < arr.lb_1 then ERROR(ENO_ARR_3) endif;
+%-E       if ind_1 > arr.ub_1 then ERROR(ENO_ARR_4) endif;
+%-E       if ind_2 < arr.lb_2 then ERROR(ENO_ARR_3) endif;
+%-E       if ind_2 > arr.ub_2 then ERROR(ENO_ARR_4) endif;
+%-E       ---  The index will later be accessed from the compiler produced code.
+%-E       tmp.int:=ind_2 * arr.dope + ind_1 + arr.neg_base;
+%-E end;
+
+
+-- Visible known("AR1IXX") AR1IXX;
+-- import ref(arent1) arr; integer ind;
+-- begin if ind < arr.lb then ERROR(ENO_ARR_3) endif;
+--       if ind > arr.ub then ERROR(ENO_ARR_4) endif;
+--       ---  The index will later be accessed from the compiler produced code.
+--       tmp.int:=ind - arr.lb;
+-- end;
+
+%-E Visible known("AR1IND") AR1IND;
+%-E import ref(arent1) arr; integer ind;
+%-E begin ---  The index will later be accessed from the compiler produced code.
+%-E       tmp.int:=ind-arr.lb;
+%-E       if ind > arr.ub then ERROR(ENO_ARR_4)
+%-E       elsif tmp.int<0 then ERROR(ENO_ARR_3) endif;
+%-E end;
+
+%title ***  P a r a m e t e r    A r r a y    I n d e x i n g  ***
+
+-- ??  Visible known("PAGIND") PAGIND;
+-- ??  import ref(arhead) head; integer dim,ind(MAX_DIM);
+-- ??  begin integer i,neg_base,subscript; infix(arrbnd) bnd;
+-- ??        if head.sort <> S_ARHEAD then ERROR(ENO_ARR_2) endif;
+-- ??        if head.ndim <> dim then ERROR(ENO_ARR_2) endif;
+-- ??        dim:=dim-1; bnd:=head.bound(dim);
+-- ??        neg_base:=bnd.neg_base; subscript:=ind(dim);
+-- ??        if subscript < bnd.lb then ERROR(ENO_ARR_3) endif;
+-- ??        if subscript > bnd.ub then ERROR(ENO_ARR_4) endif;
+-- ??        repeat while dim > 0
+-- ??        do dim:=dim - 1; bnd:=head.bound(dim); i:=ind(dim);
+-- ??           if i < bnd.lb then ERROR(ENO_ARR_3) endif;
+-- ??           if i > bnd.ub then ERROR(ENO_ARR_4) endif;
+-- ??           subscript:=subscript * bnd.dope  +  i;
+-- ??        endrepeat;
+-- ??        ---  The index will be accessed from the compiler produced code.
+-- ??        tmp.int:=subscript + neg_base;
+-- ??  end;
+
+
+-- ??  Visible known("PA2IND") PA2IND;
+-- ??  import ref(arent2) arr; integer ind_1,ind_2;
+-- ??  begin case  0:MAX_SORT (arr.sort)
+-- ??        when  S_ARENT2,S_ARREF2,S_ARTXT2:       --  It is two-dimensional.
+-- ??        otherwise ERROR(ENO_ARR_2) endcase;
+-- ??        if ind_1 < arr.lb_1 then ERROR(ENO_ARR_3) endif;
+-- ??        if ind_1 > arr.ub_1 then ERROR(ENO_ARR_4) endif;
+-- ??        if ind_2 < arr.lb_2 then ERROR(ENO_ARR_3) endif;
+-- ??        if ind_2 > arr.ub_2 then ERROR(ENO_ARR_4) endif;
+-- ??        ---  The index will be accessed from the compiler produced code.
+-- ??        tmp.int:=ind_2 * arr.dope + ind_1 + arr.neg_base;
+-- ??  end;
+
+
+-- ??  Visible known("PA1IND") PA1IND;
+-- ??  import ref(arent1) arr; integer ind;
+-- ??  begin case  0:MAX_SORT (arr.sort)
+-- ??        when  S_ARENT1,S_ARREF1,S_ARTXT1:       --  It is one-dimensional.
+-- ??        otherwise ERROR(ENO_ARR_2) endcase;
+-- ??        if ind < arr.lb then ERROR(ENO_ARR_3) endif;
+-- ??        if ind > arr.ub then ERROR(ENO_ARR_4) endif;
+-- ??        ---  The index will be accessed from the compiler produced code.
+-- ??        tmp.int:=ind - arr.lb;
+-- ??  end;
+
+
+end;
+

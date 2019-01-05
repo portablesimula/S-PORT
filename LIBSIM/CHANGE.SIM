@@ -1,0 +1,2 @@
+    external library procedure change is
+    boolean procedure change(m,o,n); name m; text m,o,n; ;

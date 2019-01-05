@@ -1,0 +1,1739 @@
+ Module EMNTR("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT,EUTIM,EPERI;
+%-D begin insert ECOMN,EBASE,      ECENT,EUTIM,EPERI;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---          S  I  M  U  L  A    M  O  N  I  T  O  R          ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     Z - Interim system only                               ---
+       ---     c - EXCLUDE interactive part (command line monitor)   ---
+       -----------------------------------------------------------------
+
+%INSERT sportid.def
+Define iAPX86=1,iAPX186=2,iAPX286=3,iAPX386=4;
+Define NoNPX=0,iAPX87=1,iAPX287=2,iAPX387=3,WTLx167=4;
+Define oMSDOS     = 0; -- DOS    without numeric coprocessor
+Define oMSDOS87   = 1; -- DOS       with 8087 or higher
+Define oMSOS2     = 2; -- OS/2      with 8087 or higher
+Define oXENIX286  = 3; -- XENIX/286 with 80287 (or emulator) or higher
+Define oXENIX386  = 4; -- XENIX/386 with 80287 (or emulator) or higher
+Define oXENIX386W = 5; -- XENIX/386 with Weitek 1167 or higher
+Define oUNIX386   = 6; -- UNIX/386  with 80287 (or emulator) or higher
+Define oUNIX386W  = 7; -- UNIX/386  with Weitek 1167 or higher
+Define oMaxOS     = 7;
+-- Define oSINTRAN   = 8; -- SINTRAN/ND500
+const infix(string) targetText(oMaxOS) = (
+  "  0:  MS-DOS without coprocessor",
+  "  1:  MS-DOS with 8087 or 80x87",
+  "  2:  MS-OS/2 with 80x87",
+  "  3:  XENIX/286 with 80x87 or emul.",
+  "  4:  XENIX/386 with 80x87 or emul.",
+  "  5:  XENIX/386 with Weitek x167",
+  "  6:  UNIX/386 with 80x87 or emul.",
+  "  7:  UNIX/386 with Weitek x167"
+);
+
+Define C_UNSP=0,C_COMP=1,C_CMNT=2,C_DBMD=3,C_EXIT=4;
+Define C_HELP=5,C_INCL=6,C_LOAD=7,C_LIBR=8,C_RCMP=9;
+Define C_SAVE=10,C_SET=11,C_STAT=12,C_CMND=13;
+Define C_max=13;
+
+Define
+   P_UNSP=0,     P_TARGET=1,   P_SELECT=2,   P_MAXERR=3,   P_MINALLOC=4,
+   P_MAXALLOC=5, P_CHKSTK=6,   P_MINFREE=7,  P_QBFLIM=8,   P_MASSLV=9,
+   P_LPPAGE=10,  P_OPTION=11,  P_STANDARD=12,
+   P_DEBMOD=13,  P_BNKLNK=14,  P_CBIND=15,   P_SYSMODE=16, P_LINTAB=17,
+   P_RNGCHK=18,  P_IDXCHK=19,  P_TSTOFL=20,
+   P_max1=20;
+
+Define
+   P_SCRATCH=21, P_SCODE=22,
+   P_LANGUA=23,  P_VERSION=24, P_BECDEB=25,  P_SYSGEN=26,
+   P_SYSPFX=27,
+   P_SIMLIB=28,  P_SEGLIM=29,  P_STEPSIZE=30,P_PRFXID=31,
+   P_CSEGNAM=32, P_DSEGNAM=33, P_WRKTAIL=34,
+   P_SK1LIN=35,  P_SK1TRC=36,  P_SK2LIN=37,  P_SK2TRC=38,
+%-Z              P_max2=38;
+%+Z P_SIMPRE=39, P_max2=39;
+
+Define H_CMND=1, H_SETM=2, H_INT=3,   H_FILE=4, H_OPTN=5,
+       H_DEBM=6, H_TARG=7, H_CBIND=8, H_RNGC=9, H_SEL=10,
+       H_max=10;
+
+%-X %+V Define CR = "!13!!10!"
+%+X %+V Define CR = "!10!"
+
+%title ***   G L O B A L    V A R I A B L E S   ***
+
+%-c -- The command names, first must be in UPPER CASE (see routine match)
+%-c const infix(string) CMID(C_max) = (
+%-c     "COMPILE SourceFile ListFile ObjectFile ExecuteFile",    -- C_COMP
+%-c     "CC comment ........",                                   -- C_CMNT
+%-c     "DEBUG-MODE DebugLevel",                                 -- C_DBMD
+%-c     "EXIT",                                                  -- C_EXIT
+%-c     "HELP",                                                  -- C_HELP
+%-c     "INCLUDE ObjectFile",                                    -- C_INCL
+%-c     "LOAD",                                                  -- C_LOAD
+%-c     "LIBRARY LibraryFile",                                   -- C_LIBR
+%-c     "RECOMPILE SourceFile ListFile ObjectFile ExecuteFile",  -- C_RCMP
+%-c     "SAVE",                                                  -- C_SAVE
+%-c     "SET mnemonic value",                                    -- C_SET
+%-c     "STATUS",                                                -- C_STAT
+%-c     "@ ShellCommand",                                        -- C_CMND
+%-c     "?"   );                                                 -- C_
+
+infix(string) InitFile;
+Ref(MonitorBlock) MonBlk; -- Copy of ParBlk with extended qualification
+character nxtchar;      -- Next input character
+character curchar;      -- Current input character
+Boolean LF_flg;         -- Set to true whenever LF is read by prompt
+Boolean EOF;            -- End-of-File Detected on Sysin
+Boolean mayLink;        -- TRUE: autolink.par produced
+Range(0:MaxWord) NLINE; -- Number of LF's outputed by NEWLINE
+Range(0:MaxWord) initkey;   -- 
+Range(0:MaxWord) savekey;   -- 
+Range(0:H_max) ininthlp;
+Range(0:1) monType;     -- 0: interactive monitor
+infix(string) argument;
+
+Record MonitorBlock:ParamBlock;
+begin
+      ---  MONITOR SPECIFIC PART OF PARAMETER BLOCK   --  AT +1024 !!  ---
+   
+      Range(0:MaxByte) LANGUA;     --1024-- 0:Simula, 1:Simuletta
+      Range(0:MaxByte) noLink;     --1025-- 0:do not LINK!!!
+      Range(0:MaxByte) SYSMODE;    --1026-- 0:User, else System Maintenance Mode
+      Range(0:MaxByte) argdex;     --1027-- Argument index
+   
+      Infix(ASCIIZ:72) EXEFILE;    --1028-- Executable output file spec
+      Infix(ASCIIZ:72) DOSLNK;     --1100-- Name of DOS-Linker
+      Infix(ASCIIZ:72) DOSLIB;     --1172-- Path of DOS-Library
+      Infix(ASCIIZ:72) OS2LNK;     --1244-- Name of OS2-Linker
+      Infix(ASCIIZ:72) OS2LIB;     --1316-- Path of OS2-Library
+      Infix(ASCIIZ:72) XNX286LNK;  --1388-- Name of XENIX/286-Linker
+      Infix(ASCIIZ:72) XNX286LIB;  --1460-- Path of XENIX/286-Library
+      Infix(ASCIIZ:72) XNX386LNK;  --1532-- Name of XENIX/386-Linker
+      Infix(ASCIIZ:72) XNX386LIB;  --1604-- Path of XENIX/386-Library
+      Infix(ASCIIZ:72) UNX386LNK;  --1676-- Name of UNIX/386-Linker
+      Infix(ASCIIZ:72) UNX386LIB;  --1748-- Path of UNIX/386-Library
+
+      Infix(ASCIIZ:4) SPORTREL;    --1820-- Sport Release id. E.g. 108
+   
+      Range(0:MaxWord) NINCL;          --1824-- No.of defined Include files
+      Range(0:MaxWord) NLIB;           --1826-- Number of defined Libraries
+      Range(0:LMAX) LPOS;              --1828-- Next free pos in buffer
+      Range(0:MaxWord) INCLID(MaxLib); --1830-- Include files
+      Range(0:MaxWord) LIBID(MaxLib);  --1850-- Libraries
+      Character LBUFF(LMAX);           --1870-- PATHID/INCLID/LIBID buffer area
+end;                               --2382--
+%page
+
+%-c -- The set mnemonics, first must be in UPPER CASE (see routine match)
+%-c const infix(string) SETM(P_max2) = (
+%-c "TARGET   <0..8>        Target Operating System",              -- P_TARGET
+%-c "SELECT   <selectors>   Source Code Selection String",         -- P_SELECT
+%-c "MAXERR   <number>      The max number of error messages",     -- P_MAXERR
+%-c "MINALLOC <number>      Min number of memory allocations",     -- P_MINALLOC
+%-c "MAXALLOC <number>      Max number of memory allocations",     -- P_MAXALLOC
+%-c "CHKSTK   <0..1>     1: Generate stack checks at block entry", -- P_CHKSTK
+%-c "MINFREE  <number>      The min free Worksize after GC",       -- P_MINFREE
+%-c "QBFLIM   <number>      Max Queue size for code optimiser",    -- P_QBFLIM
+%-c "MASSLV   <number>      Massage Depth Level",                  -- P_MASSLV
+%-c "LPPAGE   <number>      The default 'lines per page'",         -- P_LPPAGE
+%-c "OPTION   <option-list> Set compiler option",                  -- P_OPTION
+%-c "STANDARD <0..1>     1: Restrict to pure SIMULA Standard",     -- P_STANDARD
+%-c "DEBUG    <0..3>        SIMOB info generation level",          -- P_DEBMOD
+%-c "BNKLNK   <0..1>     1: Prepare Produced code for BANKING",    -- P_BNKLNK
+%-c "CBIND    <0..2>        Attach to C Development System",       -- P_CBIND
+%-c "SYSMODE                set maintenance mode (restricted)",    -- P_SYSMODE
+%-c "LINTAB   <0..1>     1: Produce line-number-table",            -- P_LINTAB
+%-c "RNGCHK   <0..3>        Integer arithmetic control",           -- P_RNGCHK
+%-c "IDXCHK   <0..1>     1: Case index checked against bounds",    -- P_IDXCHK
+%-c "TSTOFL   <0..1>     1: Trap overflow in integer operations",  -- P_TSTOFL
+%-c ---   *****   END  USER  MNEMONICS   ******
+%-c 
+%-c "SCRATCH  <file>      The file name of the scratch file",      -- P_SCRATCH
+%-c "SCODE    <file>      The file name of the S-Code file",       -- P_SCODE
+%-c "LANGUAGE <0..1>    0:Simula, 1:Simuletta",                    -- P_LANGUA
+%-c "VERSION  <0..2>    0:Production, 1:Trace, 2:Interim",         -- P_VERSION
+%-c "BECDEB   <value>   S-Compiler Debugging level",               -- P_BECDEB
+%-c "SYSGEN   <0..4>    1:RTS,2:S-Compiler,3:Environment,4:Library", -- P_SYSGEN
+%-c "SYSPFX   <string>  Sysinsert PREFIX String",                  -- P_SYSPFX
+%-c "SIMLIB   <string>  Simula Library Directory",                 -- P_SIMLIB
+%-c "SEGLIM   <value>",                                            -- P_SEGLIM
+%-c "STEPSIZE <number>  The memory extension size",                -- P_STEPSIZE
+%-c "PRFXID   <string>  External Symbol Prefix string",            -- P_PRFXID
+%-c "CSEGNAM  <string>  Code Segment Prefix String",               -- P_CSEGNAM
+%-c "DSEGNAM  <string>  Data Segment Prefix String",               -- P_DSEGNAM
+%-c "WRKTAIL  <value>   Size of extra memory allocation",          -- P_WRKTAIL
+%-c "SK1LIN   <value>   S-Compiler-Trace - Pass 1 starting line",  -- P_SK1LIN
+%-c "SK1TRC   <value>   Pass 1 Trace level=OMTI (one digit each)", -- P_SK1TRC
+%-c "SK2LIN   <value>   S-Compiler-Trace - Pass 2 starting line",  -- P_SK2LIN
+%-c "SK2TRC   <value>   Pass 2 Trace level=OMTI (one digit each)"  -- P_SK2TRC
+%-c %+Z ,"PREDEF   <string>  Simula PREDEF File"                   -- P_SIMPRE
+%-c   );
+%title ***   Command line system help functions   ***
+
+routine smallHelp;
+begin SYSPRT(
+"        a c d i l o p r v  B C H I L M O P Q R S V X Z");
+end;
+
+    Routine bigHelp;
+%-V begin
+%+V begin SYSPRI(
+%+V CR "-a[file]  override name of exefile   ³ "
+%+V    "-B*         (for overlay - do not use)"
+%+V CR "-c*       do not link                ³ "
+%+V    "-C*         incl. stack overflow probes"
+%+V CR "-d[0..3]  set debug level (def. 2)   ³ "
+%+V    "-H          print this help screen"
+%+V CR "-i[ofile] incl. obj. file in link    ³ "
+%+V    "-I*         incl. case checks (def. on)"
+%+V CR "-l[lib]   search library file        ³ "
+%+V    "-L*         incl. line table (def. on)"
+%+V CR "                                     ³ "
+%+V    "-M[0..255]  set massage level (def. 63)"
+%+V CR "-o[file]  override obj. name (=> -a) ³ "
+%+V    "-O[?][*]    (re)set option ? [A,K,L,N,R]" --- this is screen limit!
+%+V CR "-p[file]  list source to named file  ³ "
+%+V    "-P[0..2]    set C/Pascal binding"
+%+V CR "                                     ³ "
+%+V    "-Q[0...]    set peephole (def. 1500)"
+%+V CR "-r*       try recompilation          ³ "
+%+V    "-R[0..3]    arithmetic control (def. 1)"
+%+V CR "-v        verbose                    ³ "
+%+V    "-S[select]  set selectors"
+%+V CR "ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿   "
+%+V    "-T*         trap integer overflow"
+%+V CR "³* Compiler switch is set if value ³   "
+%+V    "-V*         print version"
+%+V CR "³  is absent, or diff. from zero.  ³   "
+%+V    "-X*         set standard mode"); SYSPRT(
+%+V    "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ   "
+%+V    "-Z[0..7]    set target"
+%+V %+X CR
+%+V );
+end;
+
+routine helpHead;
+begin SYSPRI(
+"Call:  sim { -w ³ [-?value]... } [sourcefile]...   -w: window mode, ? one of");
+end;
+
+%title ***   M   O   N   I   T   O   R   ***
+Visible routine MONITOR;
+import infix(string) IFile,SportRel; range(0:MaxByte) Version;
+begin infix(string) s,p; short integer i,j;
+      INITIA(nobody);
+      InitMonitor;
+      InitFile:=IFile; ininthlp:=0;
+      nxtchar:=ISO_LF qua character; EOF:=false;
+      case 0:4 (MonBlk.STATE)
+      when 0: -- initial state
+           DEFAULT(InitFile);
+           s.chradr:=@MonBlk.SPORTREL.chr; s.nchr:=4;
+           SMOVE(SportRel,s,0 qua character);
+           MonBlk.LANGUA:=0; MonBlk.SYSMODE:=P_max1;
+           MonBlk.TRCdisp:=Version*20; setPFX;
+      when 1: -- End FEC
+           if option('G')>0 then MonBlk.CCODE:=0 endif;
+           if (option('K')+MonBlk.CCODE) = 0
+           then MonBlk.STATE:=2; MonBlk.CCODE:=255;
+                TERMIN(20+Monblk.BECVER+MonBlk.TRCdisp,nostring);
+           endif;
+      when 2: -- End BEC
+           mayLink:=false;
+           if (MonBlk.TARGET<>oMSDOS) and (MonBlk.TARGET<>oMSDOS87)
+           then MakeAUTOLINK
+           elsif option('L') > 0 then NewAUTOLINK else MakeAUTOLINK endif;
+           if MonBlk.noLink = 1 then mayLink:=false endif;
+%-c        if monType=1 then
+              if maylink then DOLINK endif;
+%-c        endif;
+      when 3, -- end LINK (nothing)
+           4: -- End EDT  (nothing)
+      endcase;
+      REINIT;
+%-c   if monType=1 then
+           repeat s:=GARG(MonBlk.argdex); MonBlk.argdex:=MonBlk.argdex+1;
+           while s <> nostring
+           do if var(s.chradr) = '-'
+              then --- set parameter/option/filename[
+              H1:  i:=var(s.chradr)(1) qua integer - 65;
+                   argument.chradr:=name(var(s.chradr)(2));
+           ---     j:=s.nchr-2;
+                   argument.nchr:=s.nchr-2;
+                   if (i>=0) and (i<64)
+                   then case 0:63 (i)
+           --      when  0:                         -- A
+                   when  1: MonBlk.BNKLNK:=onoff;   -- B
+                   when  2: MonBlk.CHKSTK:=onoff;   -- C
+                   when  7: printID; H0: helpHead; bigHelp; goto E1; -- H
+                   when  8: MonBlk.IDXCHK:=onoff;   -- I
+                   when 11: MonBlk.LINTAB:=onoff;   -- L
+                   when 12: MonBlk.MASSLV:=inint(0,63);   -- M
+                   when 14: setoptn(argument);      -- O
+                   when 15: MonBlk.cBind :=inint(0,2);   -- P
+                   when 16: MonBlk.QBFLIM:=inint(0,32000);   -- Q
+                   when 17: MonBlk.RNGCHK:=inint(0,3);   -- R
+                   when 18: p.chradr:=@MonBlk.SELECT.chr; p.nchr:=72; -- S
+                            SMOVE(argument,p,0 qua character);
+                   when 19: MonBlk.TSTOFL:=onoff;   -- T
+                   when 21: printID;                -- V
+                   when 23: MonBlk.STANDARD:=onoff; -- X
+                   when 25: MonBlk.TARGET:=inint(0,7); setPFX;  -- Z
+                   when 32:                         -- a
+                        if argument.nchr > 0
+                        then p.chradr:=@MonBlk.EXEFILE.chr; p.nchr:=72;
+                             SMOVE(argument,p,0 qua character);
+                        endif;
+                   when 34: MonBlk.noLink:=onoff;   -- c
+                   when 35: MonBlk.DEBMOD:=inint(2,3); -- d
+                   when 40: include(argument);      -- i
+                   when 43: deflib(argument);      -- l
+                   when 46:                         -- o
+                        if argument.nchr > 0
+                        then p.chradr:=@MonBlk.RELCODE.chr; p.nchr:=72;
+                             SMOVE(argument,p,0 qua character);
+                        endif;
+                   when 47:                         -- p
+                        if argument.nchr > 0
+                        then p.chradr:=@MonBlk.LISTFIL.chr; p.nchr:=72;
+                             SMOVE(argument,p,0 qua character);
+                        endif;
+                   when 49: MonBlk.RECOMP:=onoff;   -- r
+                   when 53: setoptn("t");          -- v
+           --      when 57:                         -- z
+                   otherwise helpHead; smallHelp; goto E2; endcase endif;
+              elsif var(s.chradr) = '?' then goto H0
+              elsif var(s.chradr) = '+' then goto H1
+              else --- must be filename, compile the file
+                   compile(s);
+              endif;
+           endrepeat;
+%-c   else -- interactive monitor
+%-c        LF_flg:=false;
+%-c        repeat while true
+%-c        do
+%-c           if MonBlk.LANGUA = 0 then s:=prompt("SIM: ",H_CMND);
+%-c           elsif MonBlk.LANGUA = 1 then s:=prompt("SML: ",H_CMND)
+%-c           else s:=prompt("MTR: ",H_CMND) endif;
+%-c           case 0:C_max (command_no(s));
+%-c           when C_RCMP: MonBlk.RECOMP:=1; goto Co;
+%-c           when C_COMP: MonBlk.RECOMP:=0;
+%-c           Co:  compile(prompt("SOURCE-FILE: ",H_FILE));
+%-c           when C_CMNT: -- Comment i.e. no action
+%-c           when C_DBMD: ininthlp:=H_DEBM; MonBlk.DEBMOD:=inint(2,3)
+%-c           when C_EXIT: goto EX;
+%-c           when C_HELP: help(nostring,H_CMND)
+%-c           when C_INCL: include(prompt("INCLUDE FILE: ",H_FILE));
+%-c           when C_LIBR: deflib(prompt("LIBRARY FILE: ",H_FILE));
+%-c           when C_SAVE: dosave;
+%-c           when C_SET:  setparam;
+%-c           when C_STAT: DOSTAT;
+%-c           when C_LOAD: DOLINK;
+%-c           when C_CMND: CX: repeat while nxtchar qua integer <> ISO_LF
+%-c                        do EdcharEdt(inchar) endrepeat;
+%-c                        OSCMND(PickupEdtbuf);
+%-c           otherwise
+%-c               if s.nchr <> 0
+%-c               then if var(s.chradr)='@'
+%-c                    then s.chradr:=name(var(s.chradr)(1));
+%-c                         s.nchr:=s.nchr-1 endif;
+%-c                    EdEdtbuf(s); EdcharEdt(' '); goto CX;
+%-c               endif;
+%-c           endcase;
+%-c           repeat while nxtchar qua integer <> ISO_LF do inchar endrepeat;
+%-c        endrepeat;
+%-c        EX:  SYSPRI("EXIT  SIMULA");
+%-c   endif;
+
+E1:E2:if Option('X')=0
+      then --- Remove Scratch file ---
+           EdEdtbuf(get72(name2ref(@MonBlk.SCRATCH)));
+           EdcharEdt(0 qua character); s:=PickupEdtbuf;
+%+M        DOS_DELETE(s.chradr);
+%+O        OS2_DELETE(name2ref(s.chradr),0);
+%+X        XNX_UNLINK(name2ref(s.chradr));
+           OsStat:=0; --- ignore status
+      endif;
+      if Option('Y')=0
+      then --- Remove SCODE file ---
+           EdEdtbuf(get72(name2ref(@MonBlk.SCODE)));
+           EdcharEdt(0 qua character); s:=PickupEdtbuf;
+%+M        DOS_DELETE(s.chradr);
+%+O        OS2_DELETE(name2ref(s.chradr),0);
+%+X        XNX_UNLINK(name2ref(s.chradr));
+           OsStat:=0; --- ignore status
+      endif;
+      if Option('V')=0
+      then EdEdtbuf("inform.xcg");
+           EdcharEdt(0 qua character); s:=PickupEdtbuf;
+%+M        DOS_DELETE(s.chradr);
+%+O        OS2_DELETE(name2ref(s.chradr),0);
+%+X        XNX_UNLINK(name2ref(s.chradr));
+           OsStat:=0; --- ignore status
+      endif;
+      SIM_EXIT(0);
+end;
+
+routine onoff; export range(0:1) res;
+begin res:=if inint(1,0)<>0 then 1 else 0; end;
+
+%title ******    I N I T I A T E   M O N I T O R - B L O C K    ******
+Routine InitMonitor;
+begin
+%-E   infix(Any2Byte) b2; range(0:MaxWord) key,n;
+%+E   infix(Any4Byte) b2; integer          key,n;
+%+M   infix(AnyRef) img;
+      --- SET MONITOR TYPE (interactive if no parameters) ---
+%-c   montype:=if GARG(2)<>nostring then 1 else 0; -- GARG(1)=/Px
+      --- Set Option dependent default parameter values ---
+      MonBlk:=DEFBLK(size(MonitorBlock));
+      if MonBlk=none then TERMIN(3,"Can't get work space") endif;
+      b2.AsSize:=size(MonitorBlock);
+%-E   ParLng:=b2.AsWrd;
+%+E   ParLng:=b2.AsInt;
+--  %+X   NEWBUF; NEWBUF;    -----   T  E  M  P    !!!!!!!
+      if Poptn=1
+      then ZeroArea(MonBlk,MonBlk+size(MonitorBlock));
+           MonBlk.MAGIC:=5425; MonBlk.STATE:=0;
+           b2.AsSize:=size(ParamBlock);
+%-E        MonBlk.HEDLNG:=b2.AsWrd;
+%+E        MonBlk.HEDLNG:=b2.AsInt;
+           MonBlk.AUXLNG:=ParLng-MonBlk.HEDLNG;
+      else key:=OPFILE("inform.xcg",F_inbytefile,nostring,0);
+           if Status<>0 then TERMIN(3,"Can't open(read) inform.xcg") endif;
+%+M        img.rf:=MonBlk; img.ofst.AsWrd:=0;
+%+M        n:=DOS_READ(key-1,ParLng,img.nam);
+%+O        OS2_READ(key-1,MonBlk,ParLng,name2ref(@n));
+%+X        n:=XNX_READ(ParLng,MonBlk,key-1);
+           if OsStat<>0 then TERMIN(3,"Can't read inform.xcg") endif;
+           if n<>ParLng then TERMIN(3,"Can't Read inform.xcg'aux") endif;
+           CLFILE(key,nostring); Status:=0;
+           --- Move Some Parameters from MonBlk ---
+           inptlng:=MonBlk.INPLTH; ouptlng:=MonBlk.OUTLTH;
+           LPPAGE:=MonBlk.LPPAGE; BUFLNG:=MonBlk.BUFLNG;
+           MINALLOC:=MonBlk.MINALLOC; MAXALLOC:=MonBlk.MAXALLOC;
+           STEPSIZE:=MonBlk.STEPSIZE; MINFREE:=MonBlk.MINFREE;
+      endif;
+      ParBlk:=MonBlk;
+      SMBSW:=Option('T'); BNKSW:=Option('S');
+%+D   TRCSW:=Option('C'); ERRSW:=Option('E'); FILSW:=Option('F');
+end;
+
+routine setPFX;
+begin infix(string) p;
+      EdSYSPFX('s','s','z'); p.chradr:=@MonBlk.SYSPFX.chr; p.nchr:=6;
+      SMOVE(PickupEdtbuf,p,0 qua character);
+end;
+
+%title ******    P R O D U C E     A U T O L I N K . M A P    ******
+Routine DOLINK;
+begin range(0:MaxByte) LNKversion;
+%-c   if montype=1 then
+         if option('T')<>0 then SYSPRI(" - linking") endif;
+%-c   endif
+      case 0:oMaxOS (MonBlk.TARGET)
+      when oMSDOS,oMSDOS87:
+           if option('L') > 0
+           then LNKversion:=0; MonBlk.STATE:=3; -- LNK
+                TERMIN(24+LNKversion+MonBlk.TRCdisp,nostring) endif;
+           EdEdtbuf(get72(name2ref(@MonBlk.DOSLNK)));
+      L1:  EdEdtbuf(" @autolink.par >autolink.lst"); OSCMND(PickupEdtbuf);
+      when oMSOS2:
+           EdEdtbuf(get72(name2ref(@MonBlk.OS2LNK))); goto L1;
+      otherwise OSCMND("sh autolink.par") endcase;
+end;
+
+Routine NewAUTOLINK;
+--- only called for target MSDOS(87) ---
+begin range(0:MaxWord) oupt,inpt,k,lng; character c;
+      infix(string) s,exeid,simlib,relid;
+%-E   infix(Any2Byte) magic; magic.asWrd:=0;
+%+E   infix(Any4Byte) magic; magic.asWord:=0;
+
+---   if MonBlk.noLink <> 0 then goto E3 endif;
+      --- Open Scratch File and Check for magic number ---
+      EdEdtbuf(get72(name2ref(@MonBlk.SCRATCH)));
+      inpt:=OPFILE(PickupEdtbuf,F_inbytefile,nostring,0);
+      if Status=0 then magic:=IN2BYTE(inpt) endif;
+%-E   if magic.AsWrd  <> 4652 then Status:=0; goto E1 endif;
+%+E   if magic.AsWord <> 4652 then Status:=0; goto E1 endif;
+
+      exeid:=get72(name2ref(@MonBlk.EXEFILE));
+      simlib:=get72(name2ref(@MonBlk.SIMLIB));
+      relid:=get72(name2ref(@MonBlk.RELCODE));
+%+D   if TRCSW > 0
+%+D   then begtrace("AUTOLINK "); ed(trcbuf,exeid); outtrace endif;
+      oupt:=OPFILE("autolink.par",F_outfile,nostring,0);
+      if status <> 0 then Status:=0; goto E2 endif;
+      EdEdtbuf("EXE "); EdEdtbuf(exeid); EdcharEdt('=');
+---   case 0:oMaxOS (MonBlk.TARGET)
+---   when oMSDOS,oMSDOS87,oMSOS2:
+           EdEdtbuf(simlib); EdEdtbuf("dosseg+");
+---   endcase;
+      EdEdtbuf(relid);
+      repeat lng:=INBYTE(inpt); Status:=0 while lng > 0
+      do NewName(oupt,lng);
+         repeat while lng>0
+         do EdcharEdt(READCHAR(inpt)); lng:=lng-1 endrepeat;
+      endrepeat;
+
+      k:=0; repeat while k < MonBlk.NINCL
+      do s:=get72(name2ref(@MonBlk.LBUFF(MonBlk.INCLID(k))));
+         NewName(oupt,s.nchr); EdEdtbuf(s); k:=k+1;
+      endrepeat;
+      OUTIMA(oupt,PickupEdtbuf);
+
+      EdEdtbuf("LIB ");
+      if MonBlk.DEBMOD=0 then EdRtsLib(Oupt,"rx")
+      else EdRtsLib(Oupt,"rt") endif;
+      EdcharEdt('+'); EdEnvLib(Oupt,'s','t','z',"ei");
+      k:=0; repeat while k < MonBlk.NLIB
+      do s:=get72(name2ref(@MonBlk.LBUFF(MonBlk.LIBID(k))));
+         NewName(oupt,s.nchr); EdEdtbuf(s); k:=k+1;
+      endrepeat;
+---   case 0:oMaxOS (MonBlk.TARGET)
+---   when oUNIX386, oUNIX386W:
+---        s:=get72(name2ref(@MonBlk.UNX386LIB));
+---        NewName(oupt,s.nchr+4); EdEdtbuf(s); EdEdtbuf("libc");
+---   when oXENIX386,oXENIX386W:
+---        s:=get72(name2ref(@MonBlk.XNX386LIB));
+---        NewName(oupt,s.nchr+5); EdEdtbuf(s); EdEdtbuf("Slibx+");
+---        NewName(oupt,s.nchr+5); EdEdtbuf(s); EdEdtbuf("Slibc");
+---   when oXENIX286:
+---        s:=get72(name2ref(@MonBlk.XNX286LIB));
+---        NewName(oupt,s.nchr+5); EdEdtbuf(s); EdEdtbuf("Llibx+");
+---        NewName(oupt,s.nchr+5); EdEdtbuf(s); EdEdtbuf("Llibc");
+---   when oMSOS2:
+---        s:=get72(name2ref(@MonBlk.OS2LIB));
+---        NewName(oupt,s.nchr+8); EdEdtbuf(s); EdEdtbuf("doscalls");
+---   endcase;
+      OUTIMA(oupt,PickupEdtbuf);
+      OUTIMA(oupt,"END"); CLFILE(oupt,nostring); mayLink:=true;
+E1:E2:if inpt<>0 then CLFILE(inpt,nostring) endif;
+--- E3:
+end;
+
+Routine NewName; import range(0:MaxWord) oupt; range(0:MaxWord) Lng;
+begin EdcharEdt('+'); if (edtbuffer.pos+Lng) > 70
+      then OUTIMA(oupt,PickupEdtbuf) endif;
+end;
+
+Routine EdSYSPFX; import character v0,v1,v2;
+begin infix(String) t;
+      if MonBlk.TRCdisp=0     then EdcharEdt(v0)
+      elsif MonBlk.TRCdisp=20 then EdcharEdt(v1)
+      else  EdcharEdt(v2) endif;
+      case 0:oMaxOS (MonBlk.TARGET)
+      when oMSDOS:    if MonBlk.BNKLNK=0 then t:="d0" else t:="b0" endif
+      when oMSDOS87:  if MonBlk.BNKLNK=0 then t:="d7" else t:="b7" endif
+      when oMSOS2:    t:="o7"    when oXENIX286:  t:="x7";
+      when oXENIX386: t:="y7"    when oXENIX386W: t:="yw";
+      when oUNIX386:  t:="u7"    when oUNIX386W:  t:="uw";
+---   otherwise       t:="??"
+      endcase;    EdEdtbuf(t); 
+      EdEdtbuf(ASCIIZ2String(name2ref(@MonBlk.SPORTREL),4));
+end;
+
+Routine EdEnvLib;
+import range(0:MaxWord) Oupt; character v0,v1,v2; infix(String) s;
+begin infix(String) path,t;
+      path:=get72(name2ref(@MonBlk.SIMLIB));
+      if (edtbuffer.pos+path.nchr+8) > 70
+      then OUTIMA(oupt,PickupEdtbuf) endif;
+      EdEdtbuf(path); EdSYSPFX(v0,v1,v2); EdEdtbuf(s);
+end;
+
+Routine EdRtsLib;
+import range(0:MaxWord) Oupt; infix(String) s;
+begin
+--    infix(String) path,t;
+      EdEnvLib(Oupt,'s','s','s',s);
+--    path:=get72(name2ref(@MonBlk.SIMLIB));
+--    if (edtbuffer.pos+path.nchr+8) > 70
+--    then OUTIMA(oupt,PickupEdtbuf) endif;
+--    EdEdtbuf(path);
+--    EdEdtbuf(ASCIIZ2String(name2ref(@MonBlk.SYSPFX.chr),6));
+--    EdEdtbuf(s);
+end;
+
+%title ******    P R O D U C E     A U T O L I N K . M A P    ******
+Routine MakeAUTOLINK;
+begin range(0:MaxWord) key,scrkey,k,i,lng; character c; range(0:MaxByte) TARGET;
+      infix(string) s,prgid,exeid,simlib,relid,relxid,lnknam,libnam;
+%-E   infix(Any2Byte) magic;
+%+E   infix(Any4Byte) magic;
+
+---   if MonBlk.noLink <> 0 then goto E3 endif;
+      --- Open Scratch File and Check for magic number ---
+      EdEdtbuf(get72(name2ref(@MonBlk.SCRATCH)));
+      scrkey:=OPFILE(PickupEdtbuf,F_inbytefile,nostring,0);
+      if Status=0 then magic:=IN2BYTE(scrkey) else scrkey:=0 endif;
+%-E   if (Status <> 0) or (magic.AsWrd <> 4652)
+%+E   if (Status <> 0) or (magic.AsWord <> 4652)
+      then Status:=0; goto E1 endif;
+      exeid:=get72(name2ref(@MonBlk.EXEFILE));
+      simlib:=get72(name2ref(@MonBlk.SIMLIB));
+      relid:=get72(name2ref(@MonBlk.RELCODE));
+      TARGET:=MonBlk.TARGET;
+      case 0:oMaxOS (TARGET)
+      when oMSDOS,oMSDOS87:
+           lnknam:=get72(name2ref(@MonBlk.DOSLNK));
+           libnam:=get72(name2ref(@MonBlk.DOSLIB));
+      when oMSOS2:
+           lnknam:=get72(name2ref(@MonBlk.OS2LNK));
+           libnam:=get72(name2ref(@MonBlk.OS2LIB));
+      when oXENIX286:
+           lnknam:=get72(name2ref(@MonBlk.XNX286LNK));
+           libnam:=get72(name2ref(@MonBlk.XNX286LIB));
+      when oXENIX386,oXENIX386W:
+           lnknam:=get72(name2ref(@MonBlk.XNX386LNK));
+           libnam:=get72(name2ref(@MonBlk.XNX386LIB));
+      when oUNIX386,oUNIX386W:
+           lnknam:=get72(name2ref(@MonBlk.UNX386LNK));
+           libnam:=get72(name2ref(@MonBlk.UNX386LIB));
+---   otherwise
+---        lnknam:=get72(name2ref(@MonBlk.UNX386LNK));
+---        libnam:=get72(name2ref(@MonBlk.UNX386LIB));
+      endcase;
+
+      prgid:=exeid; i:=0; lng:=0;
+      repeat while i < exeid.nchr
+      do c := var(exeid.chradr)(i); i:=i+1;
+         if (c='/') or (c='\') or (c=':')
+         then lng:=0; prgid.chradr:=name(var(exeid.chradr)(i))
+         elsif c = '.' then goto L1 else lng:=lng+1 endif;
+      endrepeat;
+L1:   prgid.nchr:=lng;
+
+%+D   if TRCSW > 0
+%+D   then begtrace("AUTOLINK "); ed(trcbuf,prgid); outtrace endif;
+
+      key:=OPFILE("autolink.par",F_outfile,nostring,0);
+      if status = 0
+      then case 0:oMaxOS (TARGET)
+           when oUNIX386, oUNIX386W:
+                EdEdtbuf("echo "); EdEdtbuf(libnam);
+                EdEdtbuf("crt0.o >ld.par"); OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf("echo "); EdEdtbuf(relid);
+                EdEdtbuf(" >>ld.par"); OUTIMA(key,PickupEdtbuf);
+           when oXENIX386, oXENIX386W:
+                EdEdtbuf(lnknam); EdEdtbuf(" -Me -i -o ");
+                EdEdtbuf(exeid); EdEdtbuf(" \");
+                OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf(libnam); EdEdtbuf("Sseg.o ");
+                EdEdtbuf(libnam); EdEdtbuf("Scrt0.o \");
+                OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf(relid);
+                EdEdtbuf(" \"); OUTIMA(key,PickupEdtbuf);
+           when oXENIX286:
+                EdEdtbuf(lnknam); EdEdtbuf(" -Ml -F 864 -o ");
+                EdEdtbuf(exeid); EdEdtbuf(" \");
+                OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf(libnam); EdEdtbuf("Lseg.o ");
+                EdEdtbuf(libnam); EdEdtbuf("Lcrt0.o \");
+                OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf(relid);
+                EdEdtbuf(" \"); OUTIMA(key,PickupEdtbuf);
+           when oMSDOS, oMSDOS87, oMSOS2:
+                edPath(simlib); EdEdtbuf("dosseg+");
+                OUTIMA(key,PickupEdtbuf);
+           endcase;
+
+           repeat lng:=INBYTE(scrkey); Status:=0 while lng > 0
+           do if (TARGET=oUNIX386) or (TARGET=oUNIX386W)
+              then EdEdtbuf("echo ") endif;
+              repeat while lng>0
+              do c:=READCHAR(scrkey);
+                 if (c='/') or (c='\')
+                 then if TARGET <= oMSOS2
+                      then c:='\' else c:='/' endif;
+                 endif;
+                 EdcharEdt(c); lng:=lng-1;
+              endrepeat;
+              case 0:oMaxOS (TARGET)
+              when oUNIX386, oUNIX386W:      EdEdtbuf(" >>ld.par")
+              when oMSDOS, oMSDOS87, oMSOS2: EdEdtbuf("+")
+              otherwise                      EdEdtbuf(" \") endcase;
+              OUTIMA(key,PickupEdtbuf);
+           endrepeat;
+
+           k:=0; repeat while k < MonBlk.NINCL
+           do s:=get72(name2ref(@MonBlk.LBUFF(MonBlk.INCLID(k)))); k:=k+1;
+              case 0:oMaxOS (TARGET)
+              when oMSDOS, oMSDOS87, oMSOS2: edPath(s); EdEdtbuf("+")
+              when oUNIX386, oUNIX386W:
+                   EdEdtbuf("echo ");        edPath(s); EdEdtbuf(" >>ld.par")
+              otherwise                      edPath(s); EdEdtbuf(" \") endcase
+              OUTIMA(key,PickupEdtbuf);
+           endrepeat;
+
+           case 0:oMaxOS (TARGET)
+           when oMSDOS, oMSDOS87:
+                EdEdtbuf(relid); OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf(exeid); EdEdtbuf("/CP:1");
+           P1x: OUTIMA(key,PickupEdtbuf); OUTIMA(key," ");
+           when oMSOS2:
+                EdEdtbuf(relid); EdEdtbuf("/do");
+                OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf(exeid); EdEdtbuf("/se:512"); goto P1x;
+           when oUNIX386, oUNIX386W: EdEdtbuf("echo ");
+           endcase;
+
+           edPath(simlib);
+           EdEdtbuf(ASCIIZ2String(name2ref(@MonBlk.SYSPFX.chr),6));
+           if MonBlk.DEBMOD=0 then EdEdtbuf("rx") else EdEdtbuf("rt") endif;
+
+           case 0:oMaxOS (TARGET)
+           when oMSDOS, oMSDOS87, oMSOS2:
+                EdEdtbuf("+"); edPath(simlib);
+           otherwise EdEdtbuf(".a "); edPath(simlib);
+           endcase;
+           EdSYSPFX('s','t','z'); EdEdtbuf("ei");
+           if TARGET > oMSOS2 then EdEdtbuf(".a") endif;
+           
+           case 0:oMaxOS (TARGET)
+           when oMSDOS, oMSDOS87:
+                if MonBlk.NLIB > 0
+                then EdcharEdt('+') else EdcharEdt(';') endif
+           when oMSOS2: EdEdtbuf("+")
+           when oUNIX386, oUNIX386W: EdEdtbuf(" >>ld.par")
+           otherwise EdEdtbuf(" \") endcase;
+           OUTIMA(key,PickupEdtbuf);
+
+           k:=0; repeat while k < MonBlk.NLIB
+           do s:=get72(name2ref(@MonBlk.LBUFF(MonBlk.LIBID(k)))); k:=k+1;
+              case 0:oMaxOS (TARGET)
+              when oMSDOS, oMSDOS87:  edPath(s);
+                   if k = MonBlk.NLIB
+                   then EdCharEdt(';') else EdCharEdt('+') endif
+              when oMSOS2:            edPath(s); EdEdtbuf("+")
+              when oUNIX386, oUNIX386W:
+                   EdEdtbuf("echo "); edPath(s); EdEdtbuf(" >>ld.par")
+              otherwise               edPath(s); EdEdtbuf(" \");
+              endcase
+              OUTIMA(key,PickupEdtbuf);
+           endrepeat;
+
+           case 0:oMaxOS (TARGET)
+           when oUNIX386, oUNIX386W:
+                EdEdtbuf("echo "); EdEdtbuf(libnam);
+                EdEdtbuf("libc.a >>ld.par"); OUTIMA(key,PickupEdtbuf);
+                EdEdtbuf(lnknam); EdEdtbuf(" -lc -o "); EdEdtbuf(exeid);
+                EdEdtbuf(" ld.par"); OUTIMA(key,PickupEdtbuf);
+                OUTIMA(key,"rm ld.par");
+           EKK1:EKK2:if option('T')<>0
+                then EdEdtbuf("echo "); EdEdtbuf(prgid);
+                     EdEdtbuf(" loaded"); OUTIMA(key,PickupEdtbuf);
+                endif;
+           when oXENIX386, oXENIX386W:
+                EdEdtbuf(libnam);
+                EdEdtbuf("Slibx.a "); EdEdtbuf(libnam);
+                EdEdtbuf("Slibc.a "); OUTIMA(key,PickupEdtbuf);
+                goto EKK1;
+           when oXENIX286:
+                EdEdtbuf(libnam);
+                EdEdtbuf("Llibx.a "); EdEdtbuf(libnam);
+                EdEdtbuf("Llibc.a "); OUTIMA(key,PickupEdtbuf);
+                goto EKK2;
+           when oMSOS2:
+                EdEdtbuf(libnam);
+                EdEdtbuf("doscalls ;"); OUTIMA(key,PickupEdtbuf);
+           endcase;
+           CLFILE(key,nostring); mayLink:=true;
+      endif;
+E1:   if scrkey<>0 then CLFILE(scrkey,nostring) endif;
+--- E3:
+end;
+
+Routine EdPath; import infix(string) s;
+begin character c,from,to; range(0:MaxWord) n; n:=0;
+      if MonBlk.TARGET <= oMSOS2
+      then from:='/'; to:='\' else from:='\'; to:='/' endif
+      if from='/' then to:='\' else to:='/' endif
+      repeat while n < s.nchr
+      do c:=var(s.chradr)(n); n:=n+1;
+         if c=from then c:=to endif; EdCharEdt(c);
+      endrepeat;
+end;
+
+%title ******     D i r e c t i v e  -  C O M P I L E    ******
+Routine compile; import infix(string) s;
+begin infix(string) prgid,libnam,p; range(0:10) cpu;
+      if s.nchr=0 then goto E1 endif;
+      p.chradr:=@MonBlk.SOURCE.chr; p.nchr:=72;
+      SMOVE(s,p,0 qua character); p.nchr:=s.nchr; prgid:=GETPID(p);
+%-c   if montype=0
+%-c   then if not LF_flg
+%-c        then s:=prompt("LISTING-FILE: ",H_FILE);
+%-c             if s.nchr > 0
+%-c             then p.chradr:=@MonBlk.LISTFIL.chr; p.nchr:=72;
+%-c                  SMOVE(s,p,0 qua character);
+%-c             endif;
+%-c        endif
+%-c   else
+           if option('T')<>0 then SYSPRI(s) endif;
+%-c   endif;
+      s.nchr:=0;
+      p.chradr:=@MonBlk.RELCODE.chr; p.nchr:=72;
+%-c   if montype=1 then
+           s:=get72(name2ref(p.chradr));
+%-c   elsif not LF_flg
+%-c   then
+--- %-c  if Option('A') > 0 then s:=prompt("ASSEMBLY-FILE: ",H_FILE) else
+%-c         s:=prompt("RELOCATABLE-FILE: ",H_FILE)
+--- %-c  endif;
+%-c   endif;
+      if s.nchr=0
+      then EdEdtbuf(prgid);
+--- ???    if Option('A') > 0 then EdEdtbuf(".asm") else
+                case 0:oMaxOS (MonBlk.TARGET)
+                when oUNIX386,oUNIX386W: EdEdtbuf(".o");
+---             when oSINTRAN: EdEdtbuf(".nrf");
+                otherwise EdEdtbuf(".obj") endcase;
+--- ???    endif;
+           s:=PickupEdtbuf;
+      endif;
+      SMOVE(s,p,0 qua character); p.nchr:=s.nchr;
+      prgid:=GETPID(p);
+      p.chradr:=@MonBlk.EXEFILE.chr; p.nchr:=72;
+%-c   if montype=1 then
+           s:=get72(name2ref(p.chradr));
+%-c   else s.nchr:=0;
+%-c        if not LF_flg
+%-c        then s:=prompt("EXECUTABLE-FILE: ",H_FILE);
+%-c        endif;
+%-c   endif;
+      if s.nchr=0 then s:=prgid endif;
+      SMOVE(s,p,0 qua character);
+
+      if MonBlk.SCRATCH.chr qua integer = 0
+      then p.chradr:=@MonBlk.SCRATCH.chr; p.nchr:=72;
+           SMOVE(TempFile,p,0 qua character);
+      endif;
+      if MonBlk.SCODE.chr qua integer = 0
+      then p.chradr:=@MonBlk.SCODE.chr; p.nchr:=72;
+           SMOVE(TempFile,p,0 qua character);
+      endif;
+      ---  prepare for BEC now, so it MAY be called directly from FEC ---
+      case 0:oMaxOS (MonBlk.TARGET)
+      when oMSDOS:
+           MonBlk.NUMID:=NoNPX;   CPU:=iAPX86;  Monblk.BECVER:=0
+      when oMSDOS87:
+           MonBlk.NUMID:=iAPX87;  CPU:=iAPX86;  Monblk.BECVER:=0
+      when oMSOS2:
+           MonBlk.NUMID:=iAPX287; CPU:=iAPX286; Monblk.BECVER:=0
+      when oXENIX286:
+           MonBlk.NUMID:=iAPX287; CPU:=iAPX286; Monblk.BECVER:=0
+      when oUNIX386:
+           MonBlk.NUMID:=iAPX287; CPU:=iAPX386; Monblk.BECVER:=1
+      when oUNIX386W:
+           MonBlk.NUMID:=WTLx167; CPU:=iAPX386; Monblk.BECVER:=1
+      when oXENIX386:
+           MonBlk.NUMID:=iAPX287; CPU:=iAPX386; Monblk.BECVER:=1
+      when oXENIX386W:
+           MonBlk.NUMID:=WTLx167; CPU:=iAPX386; Monblk.BECVER:=1
+---   when oSINTRAN:
+---        MonBlk.NUMID:=0;       CPU:=0;       Monblk.BECVER:=2
+      endcase;
+      if MonBlk.CPUID=0 then MonBlk.CPUID:=CPU endif
+      MonBlk.STATE:=1; MonBlk.CCODE:=255;
+      TERMIN(11+MonBlk.LANGUA+MonBlk.TRCdisp,nostring);     
+E1:end;
+%page
+
+Routine GETPID; import infix(string) spec; export infix(string) prgid;
+begin range(0:MaxWord) i,j; character c; Boolean nodot;
+      prgid:=spec; i:=0; j:=0; nodot:=true;
+      repeat while i < spec.nchr
+      do c := var(spec.chradr)(i); i:=i+1;
+         if (c='/') or (c='\') or (c=':')
+         then j:=0; nodot:=true; prgid.chradr:=name(var(spec.chradr)(i))
+         elsif c='.' then nodot:=false elsif nodot then j:=j+1 endif;
+      endrepeat;
+      prgid.nchr:=j;
+end;
+
+%title ******     D i r e c t i v e  -  H E L P    ******
+
+%-c Routine help; import infix(string) id; range(0:MaxWord) n;
+%-c begin range(0:MaxWord) i; range(0:oMaxOS) j;
+%-c        i:=0; NLINE:=0;
+%-c        case 0:H_max (n)
+%-c        when H_CMND:
+%-c             if id.nchr = 0
+%-c %-V         then SYSPRI("******   T H E   F O L L O W I N G"
+%-c %-V                   "   C O M M A N D S   ******");
+%-c %-V            SYSPRI("******            A R E   A V A I L A B L E"
+%-c %-V                   "            ******");
+%-c %+V         then SYSPRI( CR "******   T H E   F O L L O W I N G"
+%-c %+V                   "   C O M M A N D S   ******" CR
+%-c %+V                   "******            A R E   A V A I L A B L E"
+%-c %+V                   "            ******" CR);
+%-c             endif;
+%-c             repeat if match(id,CMID(i)) then SYSPRI(CMID(i)) endif; i:=i+1;
+%-c             while i < C_max do endrepeat;
+%-c      when H_SETM:
+%-c             repeat if match(id,SETM(i))
+%-c                     then if NLINE > 20
+%-c                          then NEWLINE;
+%-c                               SYSPRI("Type 'carriage return' to continue");
+%-c                               repeat inchar
+%-c                               while nxtchar qua integer <> ISO_LF
+%-c                               do endrepeat; NLINE:=0;
+%-c                          endif;
+%-c                          SYSPRI(SETM(i)); NLINE:=NLINE+1;
+%-c                     endif;
+%-c                     i:=i+1;
+%-c             while i < MonBlk.SYSMODE do endrepeat;
+%-c      when H_INT:  SYSPRI("A positive number (in decimal) is expected");
+%-c      when H_FILE:
+%-c             SYSPRI("A File name have the normal form for the target,"
+%-c %-V                "i.e.");
+%-c %-V         SYSPRI("       <path>?  identifier  <.extension>?");
+%-c %+V                "i.e."
+%-c %+V            CR  "       <path>?  identifier  <.extension>?");
+%-c      when H_CBIND:
+%-c %-V         SYSPRI("Define C and Pascal calling conventions:");
+%-c %-V         SYSPRI("   0  No C-Development System Attached");
+%-c %-V         SYSPRI("   1  MicroSoft C-Development System or Xenix/Unix");
+%-c %-V         SYSPRI("   2  Borland TURBO C-Development System");
+%-c %+V         SYSPRI("Define C and Pascal calling conventions:"
+%-c %+V            CR  "   0  No C-Development System Attached"
+%-c %+V            CR  "   1  MicroSoft C-Development System or Xenix/Unix"
+%-c %+V            CR  "   2  Borland TURBO C-Development System");
+%-c      when H_RNGC:
+%-c %-V         SYSPRI("Control of integer arithmetic:");
+%-c %-V         SYSPRI("   0  8/16 bits wrap-around arithmetic used -");
+%-c %-V         SYSPRI("      THIS IS UNSAFE and NOT RECOMMENDED!!!");
+%-c %-V         SYSPRI("   1  No wrap-around integer arithmetic");
+%-c %-V         SYSPRI("   2  + CHAR(int) range checks");
+%-c %-V         SYSPRI("   3  + SHORT INTEGER assignment range checks");
+%-c %+V         SYSPRI("Control of integer arithmetic:"
+%-c %+V            CR  "   0  8/16 bits wrap-around arithmetic used -"
+%-c %+V            CR  "      THIS IS UNSAFE and NOT RECOMMENDED!!!"
+%-c %+V            CR  "   1  No wrap-around integer arithmetic"
+%-c %+V            CR  "   2  + CHAR(int) range checks"
+%-c %+V            CR  "   3  + SHORT INTEGER assignment range checks");
+%-c      when H_TARG: SYSPRI("Target for code generator:");
+%-c                   j:=0; repeat while j<=oMaxOS
+%-c                   do SYSPRI(targetText(j)); j:=j+1 endrepeat;
+%-c      when H_DEBM:
+%-c %-V         SYSPRI("SIMOB information included as follows:");
+%-c %-V         SYSPRI("   0  None");
+%-c %-V         SYSPRI("   1  Minimum for error reporting");
+%-c %-V         SYSPRI("   2  Normal, incl. attribute info");
+%-c %-V         SYSPRI("   3  Maximum, allows single statement execution")
+%-c %+V         SYSPRI("SIMOB information included as follows:"
+%-c %+V            CR  "   0  None"
+%-c %+V            CR  "   1  Minimum for error reporting"
+%-c %+V            CR  "   2  Normal, incl. attribute info"
+%-c %+V            CR  "   3  Maximum, allows single statement execution")
+%-c      when H_OPTN:
+%-c %-V         SYSPRI("OPTION-LIST takes the form: < <letter> < number >? >*");
+%-c %-V         SYSPRI("  where <letter> may be one of:");
+%-c %-V         SYSPRI("   G  Generate code in spite of errors");
+%-c %-V         SYSPRI("   K  Test compilation - no code generation");
+%-c %-V         SYSPRI("   L  Use Alternate Linker");
+%-c %-V         SYSPRI("   M  Batch mode, Simula monitor commands are echoed");
+%-c %-V         SYSPRI("   N  Do not print warning messages");
+%-c %-V         SYSPRI("   R  Reduce runtime checks (array indexing/NONE)");
+%-c %+M %-V     SYSPRI("   S  FEC: bank swap trace");
+%-c %+V         SYSPRI("OPTION-LIST takes the form: < <letter> < number >? >*"
+%-c %+V            CR  "  where <letter> may be one of:"
+%-c %+V            CR  "   G  Generate code in spite of errors"
+%-c %+V            CR  "   K  Test compilation - no code generation"
+%-c %+V            CR  "   L  Use Alternate Linker"
+%-c %+V            CR  "   M  Batch mode, Simula monitor commands are echoed"
+%-c %+V            CR  "   N  Do not print warning messages"
+%-c %+V            CR  "   R  Reduce runtime checks (array indexing/NONE)"
+%-c %+M %+V        CR  "   S  FEC: Bank swap trace"
+%-c %+V         );
+%-c             if MonBlk.SYSMODE=P_max2
+%-c             then
+%-c %-V             SYSPRI("   A  Assembly listing output (no object file)")
+%-c %-V             SYSPRI("   C  Environment call trace level");
+%-c %-V             SYSPRI("   D  S-Compiler Major Event Trace");
+%-c %-V             SYSPRI("   E  Environment error trace level");
+%-c %-V             SYSPRI("   F  Environment file trace level");
+%-c %-V             SYSPRI("   T  Runtime-Trace level:");
+%-c %-V             SYSPRI("   V  Don't delete INFORM.XCG");
+%-c %-V             SYSPRI("   X  Don't delete scratch");
+%-c %-V             SYSPRI("   Y  Don't delete scode");
+%-c %-V             SYSPRI("   Z  Let Simuletta handle parameters on its own");
+%-c %+V             SYSPRI("   A  Assembly listing output (no object file)"
+%-c %+V                CR  "   C  Environment call trace level"
+%-c %+V                CR  "   D  S-Compiler Major Event Trace"
+%-c %+V                CR  "   E  Environment error trace level"
+%-c %+V                CR  "   F  Environment file trace level"
+%-c %+V                CR  "   T  Runtime-Trace level:"
+%-c %+V                CR  "   V  Don't delete INFORM.XCG"
+%-c %+V                CR  "   X  Don't delete scratch"
+%-c %+V                CR  "   Y  Don't delete scode"
+%-c %+V                CR  "   Z  Let Simuletta handle parameters on its own");
+%-c             endif;
+%-c         otherwise SYSPRI("Sorry, no help information available") endcase;
+%-c end;
+%title ******     D i r e c t i v e  -  S T A T    ******
+%-c range(0:80) statpos;
+%-c routine column; import infix(string) mess;
+%-c begin if statpos>60 then printout(ref(edtbuffer)); statpos:=0;
+%-c       else setpos(ref(EdtBuffer),statpos); endif;
+%-c       statpos:=statpos+20;
+%-c       EdEdtbuf(mess);
+%-c end;
+
+%-c macro setColumn(1);
+%-c begin statpos:= 100 - (%1 * 20) endmacro;
+
+routine edwrdEdt; import range(0:MaxWord) val;
+begin edwrd(ref(EdtBuffer),val); end;
+
+%-c routine stroke;
+%-c begin setcolumn(1); column(
+%-c "-------------------------------------------------------------------------")
+%-c       setcolumn(1);
+%-c end;
+
+%-c Routine DOSTAT;
+%-c begin range(0:MaxWord) i,sw,p; boolean nothing; infix(string) s;
+%-c       statpos:=0; printID; stroke;
+%-c       column("Control of Code Generation:"); setColumn(3);
+%-c       column("Memory Usage:"); column("Misc.:");
+%-c 
+%-c       column("BNKLNK:   "); edwrdEdt(MonBlk.BNKLNK);
+%-c       column("LINTAB:   "); edwrdEdt(MonBlk.LINTAB);
+%-c       column("MAXALLOC: "); edwrdEdt(MonBlk.MAXALLOC);
+%-c       column("INPLTH:   "); edwrdEdt(MonBlk.INPLTH);
+%-c 
+%-c       column("cBIND:    "); edwrdEdt(MonBlk.CBIND);
+%-c       column("MASSLV:   "); edwrdEdt(MonBlk.MASSLV);
+%-c       column("MINALLOC: "); edwrdEdt(MonBlk.MINALLOC);
+%-c       column("LPPAGE:   "); edwrdEdt(MonBlk.LPPAGE);
+%-c 
+%-c       column("CHKSTK:   "); edwrdEdt(MonBlk.CHKSTK);
+%-c       column("QBFLIM:   "); edwrdEdt(MonBlk.QBFLIM);
+%-c       column("MINFREE:  "); edint(ref(EdtBuffer),MonBlk.MINFREE);
+%-c       column("MAXERR:   "); edwrdEdt(MonBlk.MAXERR);
+%-c 
+%-c       column("DEBUG:    "); edwrdEdt(MonBlk.DEBMOD);
+%-c       column("RNGCHK:   "); edwrdEdt(MonBlk.RNGCHK);
+%-c       column("STEPSIZE: "); edint(ref(EdtBuffer),MonBlk.STEPSIZE);
+%-c       column("OUTLTH:   "); edwrdEdt(MonBlk.OUTLTH);
+%-c 
+%-c       column("IDXCHK:   "); edwrdEdt(MonBlk.IDXCHK);
+%-c       column("TSTOFL:   "); edwrdEdt(MonBlk.TSTOFL);
+%-c       column("BUFLNG:   "); edwrdEdt(MonBlk.BUFLNG);
+%-c       column("STANDARD: "); edwrdEdt(MonBlk.STANDARD);
+%-c 
+%-c       stroke;
+%-c       s:=get72(name2ref(@MonBlk.SELECT.chr));
+%-c       if s.nchr <> 0
+%-c       then column("SELECT: "); EdEdtbuf(s); setcolumn(1); endif;
+%-c       nothing:=true; i:=0; repeat while i < 26
+%-c       do if MonBlk.OPTN(i) > 0
+%-c          then if nothing
+%-c               then column("OPTION:"); nothing:=false endif;
+%-c               EdcharEdt(' ');
+%-c               EdcharEdt((ISO_AA+i) qua character);
+%-c               edwrdEdt(MonBlk.OPTN(i));
+%-c          endif; i:=i+1;
+%-c       endrepeat; setcolumn(1);
+%-c       sw:=0; p:=12;
+%-c %+D       sw:=TRCSW; TRCSW:=0;
+%-c 
+%-c       if MonBlk.NINCL <> 0
+%-c       then column("INCLUDE: "); i:=0;
+%-c            repeat while i < MonBlk.NINCL
+%-c            do s:=get72(name2ref(@MonBlk.LBUFF(MonBlk.INCLID(i))));
+%-c               EdEdtbuf(s); i:=i+1; EdcharEdt(' ') endrepeat;
+%-c            printout(ref(edtbuffer)); setcolumn(1); 
+%-c       endif;
+%-c       if MonBlk.NLIB <> 0
+%-c       then column("LIB: "); i:=0; repeat while i < MonBlk.NLIB
+%-c            do s:=get72(name2ref(@MonBlk.LBUFF(MonBlk.LIBID(i))));
+%-c               EdEdtbuf(s); i:=i+1; EdcharEdt(' ') endrepeat;
+%-c       endif;
+%-c       printout(ref(edtbuffer));
+%-c 
+%-c       if MonBlk.SYSMODE=P_max1 then goto E1 endif;
+%-c 
+%-c       setcolumn(1);
+%-c       s:=get72(name2ref(@MonBlk.SCRATCH.chr));
+%-c       if s.nchr <> 0
+%-c       then column("Scratch: "); EdEdtbuf(s); setcolumn(3);
+%-c            s:=get72(name2ref(@MonBlk.SCODE.chr));
+%-c            column("S-code: "); EdEdtbuf(s); setcolumn(1);
+%-c       endif;
+%-c 
+%-c       column("BECDEB:   "); edwrdEdt(MonBlk.BECDEB);
+%-c       column("CCODE:    "); edwrdEdt(MonBlk.CCODE); 
+%-c       column("STATE:    "); edwrdEdt(MonBlk.STATE);
+%-c       column("SYSGEN:   "); edwrdEdt(MonBlk.SYSGEN);
+%-c 
+%-c       column("RECOMP:   "); edwrdEdt(MonBlk.RECOMP);
+%-c       column("nLINE:    "); edwrdEdt(MonBlk.nLINE);
+%-c       column("nERR:     "); edwrdEdt(MonBlk.nERR); 
+%-c       column("nWARN:    "); edwrdEdt(MonBlk.nWARN);
+%-c 
+%-c       s:=ASCIIZ2String(name2ref(@MonBlk.SYSPFX.chr),6);
+%-c       column("SYSPFX:   "); EdEdtbuf(s);
+%-c       column("TRCSW:    "); edwrdEdt(sw);      
+%-c       column("ERRSW:    "); edwrdEdt(ERRSW);   
+%-c       column("FILSW:    "); edwrdEdt(FILSW);   
+%-c 
+%-c       column("CPUID:    "); edwrdEdt(MonBlk.CPUID); 
+%-c       column("NUMID:    "); edwrdEdt(MonBlk.NUMID); setcolumn(1);
+%-c 
+%-c       column("SEGLIM:   "); edwrdEdt(MonBlk.SEGLIM);
+%-c       s:=ASCIIZ2String(name2ref(@MonBlk.CSEGNAM.chr),6);
+%-c       column("CSEGNAM:  "); EdEdtbuf(s);
+%-c       s:=ASCIIZ2String(name2ref(@MonBlk.DSEGNAM.chr),6);
+%-c       column("DSEGNAM:  "); EdEdtbuf(s);
+%-c       s:=ASCIIZ2String(name2ref(@MonBlk.PRFXID.chr),6);
+%-c       column("PRFXID:   "); EdEdtbuf(s);
+%-c 
+%-c       s:=get72(name2ref(@MonBlk.SOURCE.chr));
+%-c       column("SOURCE: "); EdEdtbuf(s); setcolumn(3);
+%-c       s:=get72(name2ref(@MonBlk.LISTFIL.chr));
+%-c       column("LSTFIL: "); EdEdtbuf(s); setcolumn(1);
+%-c       s:=get72(name2ref(@MonBlk.RELCODE.chr));
+%-c       column("RELFIL: "); EdEdtbuf(s); setcolumn(3);
+%-c       s:=get72(name2ref(@MonBlk.EXEFILE.chr));
+%-c       column("EXEFIL: "); EdEdtbuf(s); setcolumn(1);
+%-c 
+%-c       s:=get72(name2ref(@MonBlk.EDITOR.chr));
+%-c       column("EDITOR: "); EdEdtbuf(s); setcolumn(3);
+%-c       s:=get72(name2ref(@MonBlk.SIMLIB.chr));
+%-c       column("SIMLIB: "); EdEdtbuf(s); setcolumn(1);
+%-c       if MonBlk.Standard=0
+%-c       then s:=get72(name2ref(@MonBlk.SIMPRE.chr));
+%-c       else s:=get72(name2ref(@MonBlk.STAPRE.chr)); endif
+%-c       column("PREDEF: "); EdEdtbuf(s); setcolumn(3);
+%-c       s:=get72(name2ref(@MonBlk.ERRFIL.chr));
+%-c       column("ERRFIL: "); EdEdtbuf(s);
+%-c       stroke; printout(ref(edtbuffer));
+%-c     E1:
+%-c %+D       TRCSW:=sw;
+%-c end;
+%title ******     D i r e c t i v e  -  O P T I O N S    ******
+
+Routine setoptn; import infix(string) s;
+begin range(0:MaxWord) i,v; character c,d;
+
+      --- The character OPTN(26) is defined for  A-Z
+      --- It holds 0 if option off, 1 or more if option on.
+      --- Note that c sets option c to 1, and cnn sets option c to nn.
+
+      i:=0;
+      repeat while i < s.nchr
+      do c:=upcase(var(s.chradr)(i)); i:=i+1; v:=1;
+         if LETTER(c)
+         then if i<s.nchr
+              then d:=var(s.chradr)(i);
+                   if DIGIT(d)
+                   then i:=i+1; v:= d qua integer - 48
+                   L1:  if i<s.nchr
+                        then d:=var(s.chradr)(i);
+                             if DIGIT(d)
+                             then i:=i+1; v:= v*10 + d qua integer - 48;
+                                  goto L1
+                             endif;
+                        endif;
+                   endif;
+              endif;
+              MonBlk.OPTN(c qua integer - ISO_AA) := v;
+%+D      else ed(trcbuf,"Illegal option (not letter): ");
+%+D           edchar(trcbuf,c); printout(trcbuf);
+         endif;
+      endrepeat;
+end;
+%title ******     D i r e c t i v e  -  S E T    ******
+
+%-c routine checkRNG; export boolean notset;
+%-c begin if MonBlk.RNGCHK<>0
+%-c       then SYSPRI(" Maintenance mode, RNGCHK:=0");
+%-c            MonBlk.RNGCHK:=0; notset:=false;
+%-c       else notset:=true endif;
+%-c end;
+
+%-c Routine setparam;
+%-c begin range(0:Maxword) x; infix(string) p;
+%-c 
+%-c       x:=mnemonic_no(prompt("MNEMONIC: ",H_SETM));
+%-c       case 0:P_max2 (x)
+%-c       when P_TARGET:  ininthlp:=H_TARG; MonBlk.TARGET:=inint(0,7)
+%-c                       setPFX;
+%-c       when P_SELECT:  p.chradr:=@MonBlk.SELECT.chr; p.nchr:=72;
+%-c                       SMOVE(prompt("SELECTORS: ",H_SEL),
+%-c                             p,0 qua character);
+%-c       when P_MAXERR:  MonBlk.MAXERR:=inint(50,16000)
+%-c       when P_MINALLOC: MonBlk.MINALLOC:=inint(10,2000)
+%-c       when P_MAXALLOC: MonBlk.MAXALLOC:=inint(200,2000)
+%-c       when P_CHKSTK:  MonBlk.CHKSTK:=inint(0,255)
+%-c       when P_MINFREE:
+%-c %-E                   MonBlk.MINFREE:=inint(10000,32767)
+%-c %+E                   MonBlk.MINFREE:=inint(16000,0)
+%-c       when P_QBFLIM:  MonBlk.QBFLIM:=inint(0,32000)
+%-c       when P_MASSLV:  MonBlk.MASSLV:=inint(63,255)
+%-c       when P_LPPAGE:  MonBlk.LPPAGE:=inint(68,32000)
+%-c       when P_OPTION:  setoptn(prompt("OPTION-LIST: ",H_OPTN));
+%-c       when P_STANDARD: MonBlk.STANDARD:=inint(0,1)
+%-c             ---       if MonBlk.STANDARD=1
+%-c             ---       then IDXCHK:=1; RNGCHK:=1; TSTOFL:=1;
+%-c             ---            OPTION(rank('R')-ISO_AA):=0;
+%-c             ---       endif;
+%-c       when P_DEBMOD:  ininthlp:=H_DEBM; MonBlk.DEBMOD:=inint(0,3)
+%-c       when P_BNKLNK:  MonBlk.BNKLNK:=inint(0,1)
+%-c       when P_CBIND:   ininthlp:=H_CBIND; MonBlk.CBIND:=inint(0,2)
+%-c       when P_SYSMODE: p:=prompt("????? ",0);
+%-c                       if STEQ(p,"sport")
+%-c                       then MonBlk.SYSMODE:=P_max2;
+%-c                            if checkRNG
+%-c                            then SYSPRI(" enter Maintenance mode") endif;
+%-c                       else if MonBlk.SYSMODE=P_max2
+%-c                            then SYSPRI(" leave Maintenance mode") endif;
+%-c                            MonBlk.SYSMODE:=P_max1;
+%-c                       endif;
+%-c       when P_LINTAB:  MonBlk.LINTAB:=inint(1,255)
+%-c       when P_RNGCHK:  ininthlp:=H_RNGC; MonBlk.RNGCHK:=inint(0,3);
+%-c       when P_IDXCHK:  MonBlk.IDXCHK:=inint(1,1)
+%-c       when P_TSTOFL:  MonBlk.TSTOFL:=inint(0,1)
+%-c 
+%-c --    ******   END  USER  MNEMONICS   ******
+%-c 
+%-c       when P_SCRATCH: p.chradr:=@MonBlk.SCRATCH.chr; p.nchr:=72;
+%-c                       SMOVE(prompt("SCRATCH-FILE: ",H_FILE),
+%-c                             p,0 qua character);
+%-c                       MonBlk.OPTN('X' qua integer - ISO_AA):=1;
+%-c       when P_SCODE:   p.chradr:=@MonBlk.SCODE.chr; p.nchr:=72;
+%-c                       SMOVE(prompt("SCODE-FILE: ",H_FILE),
+%-c                             p,0 qua character);
+%-c                       MonBlk.OPTN('Y' qua integer - ISO_AA):=1;
+%-c       when P_LANGUA:  MonBlk.LANGUA:=inint(0,1)
+%-c                       if MonBlk.LANGUA=1 -- simuletta version 1 only
+%-c                       then checkRNG; MonBlk.TRCdisp:=20; setPFX endif;
+%-c       when P_VERSION: MonBlk.TRCdisp:=inint(0,2)*20; setPFX;
+%-c       when P_BECDEB:  MonBlk.BECDEB:=inint(0,255)
+%-c       when P_SYSGEN:  MonBlk.SYSGEN:=inint(0,10)
+%-c       when P_SYSPFX:  p.chradr:=@MonBlk.SYSPFX.chr; p.nchr:=6;
+%-c                       SMOVE(prompt("SYSPFX: ",0),p,0 qua character);
+%-c %+Z  when P_SIMPRE:  --- only accepted for interim compiler:
+%-c %+Z                   p.chradr:=@MonBlk.SIMPRE.chr; p.nchr:=72;
+%-c %+Z                   SMOVE(prompt("PREDEF-FILE: ",H_FILE),
+%-c %+Z                         p,0 qua character);
+%-c       when P_SIMLIB:  p.chradr:=@MonBlk.SIMLIB.chr; p.nchr:=72;
+%-c                       SMOVE(prompt("LIBRARY-FILE: ",H_FILE),
+%-c                             p,0 qua character);
+%-c       when P_SEGLIM:  MonBlk.SEGLIM:=inint(0,999999)
+%-c       when P_STEPSIZE:
+%-c %-E                   MonBlk.STEPSIZE:=inint(32767,65535)
+%-c %+E                   MonBlk.STEPSIZE:=inint(65535,0)
+%-c       when P_PRFXID:  p.chradr:=@MonBlk.PRFXID.chr; p.nchr:=6;
+%-c                       SMOVE(prompt("PRFXID: ",0),p,0 qua character);
+%-c       when P_CSEGNAM: p.chradr:=@MonBlk.CSEGNAM.chr; p.nchr:=6;
+%-c                       SMOVE(prompt("CSEGNAM: ",0),p,0 qua character);
+%-c       when P_DSEGNAM: p.chradr:=@MonBlk.DSEGNAM.chr; p.nchr:=6;
+%-c                       SMOVE(prompt("DSEGNAM: ",0),p,0 qua character);
+%-c       when P_WRKTAIL: MonBlk.WRKTAIL:=inint(0,0)
+%-c 
+%-c       when P_SK1LIN:  MonBlk.SK1LIN:=inint(0,64000)
+%-c       when P_SK1TRC:  MonBlk.SK1TRC:=inint(0,999999)
+%-c       when P_SK2LIN:  MonBlk.SK2LIN:=inint(0,64000)
+%-c       when P_SK2TRC:  MonBlk.SK2TRC:=inint(0,999999)
+%-c       otherwise PRTERR("No such SET-Mnemonic");
+%-c       endcase;
+%-c end;
+%title ******     D i r e c t i v e  -  S A V E    ******
+%-c Routine dosave;
+%-c begin range(0:MaxWord) i; infix(string) s;
+%-c       
+%-c       s:=InitFile;
+%-c       savekey:=OPFILE(s,F_outbytefile,nostring,0);
+%-c       if status <> 0 then status:=0; goto E1 endif;
+%-c 
+%-c       WSPAR("SIMPRE  ",name2ref(@MonBlk.SIMPRE.chr));
+%-c       WSPAR("STAPRE  ",name2ref(@MonBlk.STAPRE.chr));
+%-c       WSPAR("SIMLIB  ",name2ref(@MonBlk.SIMLIB.chr));
+%-c       WSPAR("EDITOR  ",name2ref(@MonBlk.EDITOR.chr));
+%-c       WSPAR("SCRATCH ",name2ref(@MonBlk.SCRATCH.chr));
+%-c       WSPAR("SCODE   ",name2ref(@MonBlk.SCODE.chr));
+%-c       WSPAR("ERRFIL  ",name2ref(@MonBlk.ERRFIL.chr));
+%-c ----  WSPAR("PRFXID  ",name2ref(@MonBlk.PRFXID.chr));
+%-c ----  WSPAR("CSEGNAM ",name2ref(@MonBlk.CSEGNAM.chr));
+%-c ----  WSPAR("DSEGNAM ",name2ref(@MonBlk.DSEGNAM.chr));
+%-c       case 0:oMaxOS (MonBlk.TARGET)
+%-c       when oMSDOS,oMSDOS87:
+%-c            WSPAR("DOSLNK  ",name2ref(@MonBlk.DOSLNK.chr));
+%-c            WSPAR("DOSLIB  ",name2ref(@MonBlk.DOSLIB.chr));
+%-c       when oMSOS2:
+%-c            WSPAR("OS2LNK  ",name2ref(@MonBlk.OS2LNK.chr));
+%-c            WSPAR("OS2LIB  ",name2ref(@MonBlk.OS2LIB.chr));
+%-c       when oXENIX286:
+%-c            WSPAR("XNX286LNK ",name2ref(@MonBlk.XNX286LNK.chr));
+%-c            WSPAR("XNX286LIB ",name2ref(@MonBlk.XNX286LIB.chr));
+%-c       when oXENIX386,oXENIX386W:
+%-c            WSPAR("XNX386LNK ",name2ref(@MonBlk.XNX386LNK.chr));
+%-c            WSPAR("XNX386LIB ",name2ref(@MonBlk.XNX386LIB.chr));
+%-c       when oUNIX386,oUNIX386W:
+%-c            WSPAR("UNX386LNK ",name2ref(@MonBlk.UNX386LNK.chr));
+%-c            WSPAR("UNX386LIB ",name2ref(@MonBlk.UNX386LIB.chr));
+%-c       endcase
+%-c 
+%-c       WINT("STANDARD ",MonBlk.STANDARD);
+%-c       WINT("INPLTH "  ,MonBlk.INPLTH);
+%-c       WINT("OUTLTH "  ,MonBlk.OUTLTH);
+%-c       WINT("LPPAGE "  ,MonBlk.LPPAGE);
+%-c       WINT("MINALLOC ",MonBlk.MINALLOC);
+%-c       WINT("MAXALLOC ",MonBlk.MAXALLOC);
+%-c       WINT("STEPSIZE ",MonBlk.STEPSIZE);
+%-c       WINT("MINFREE " ,MonBlk.MINFREE);
+%-c       WINT("BECDEB "  ,MonBlk.BECDEB);
+%-c       WINT("DEBUG  "  ,MonBlk.DEBMOD);
+%-c       WINT("MASSLV "  ,MonBlk.MASSLV);
+%-c       WINT("QBFLIM "  ,MonBlk.QBFLIM);
+%-c       WINT("RNGCHK "  ,MonBlk.RNGCHK);
+%-c       WINT("IDXCHK "  ,MonBlk.IDXCHK);
+%-c       WINT("TSTOFL "  ,MonBlk.TSTOFL);
+%-c       WINT("LINTAB "  ,MonBlk.LINTAB);
+%-c       WINT("BUFLNG "  ,MonBlk.BUFLNG);
+%-c       WINT("SEGLIM "  ,MonBlk.SEGLIM);
+%-c       WINT("TARGET "  ,MonBlk.TARGET);
+%-c       WINT("CHKSTK "  ,MonBlk.CHKSTK);
+%-c       WINT("MAXERR "  ,MonBlk.MAXERR);
+%-c       WINT("CBIND "   ,MonBlk.CBIND);
+%-c       i:=0;  repeat while i < MonBlk.NINCL
+%-c       do WSPAR("INCLUDE ",name2ref(@MonBlk.LBUFF(MonBlk.INCLID(i))));
+%-c          i:=i+1;
+%-c       endrepeat;
+%-c       i:=0;  repeat while i < MonBlk.NLIB
+%-c       do WSPAR("LIBRARY ",name2ref(@MonBlk.LBUFF(MonBlk.LIBID(i))));
+%-c          i:=i+1;
+%-c       endrepeat;
+%-c       WSTRG("END"); WNL;
+%-c       CLFILE(savekey,nostring); status:=0; --- ignore status
+%-c E1:end;
+
+%-c Routine WSTRG; import infix(string) s;
+%-c begin character c; range(0:MaxWord) i,n; i:=0; n:=s.nchr;
+%-c %+D     if option('M')>2 then begtrace("WSTRG: "); ed(trcbuf,s); outtrace endif;
+%-c         repeat while i < n
+%-c         do c:=var(s.chradr)(i); i:=i+1; OUTBYT(savekey,c qua integer) endrepeat
+%-c end;
+
+%-c Routine WINT; import infix(string) mess; range(0:MaxWord) v;
+%-c begin WSTRG(mess); edwrdEdt(v); WSTRG(PickupEdtbuf); WNL end;
+
+%-c Routine WSPAR; import infix(string) id; ref(ASCIIZ) par;
+%-c begin infix(string) s; s:=get72(par);
+%-c       if s.nchr > 0 then WSTRG(id); WSTRG(s); WNL endif;
+%-c end;
+
+%-c Routine WNL;
+%-c begin
+%-c %+M   OUTBYT(savekey,ISO_CR);
+%-c %+O   OUTBYT(savekey,ISO_CR);
+%-c       OUTBYT(savekey,ISO_LF);
+%-c end;
+
+%title ******     S e t    D e f a u l t    P a r a m e t e r s    ******
+
+Routine REINIT;
+begin MonBlk.nLINE:=0; MonBlk.nERR:=0; MonBlk.nWARN:=0; MonBlk.CCODE:=0;
+
+      MonBlk.SK1LIN:=0;    --  S-Compiler-Trace - Pass 1 starting line
+      MonBlk.SK1TRC:=0;    --  Pass 1 Trace level=RVFSEOMTI (one digit each)
+      MonBlk.SK2LIN:=0;    --  S-Compiler-Trace - Pass 2 starting line
+      MonBlk.SK2TRC:=0;    --  Pass 2 Trace level=RVFSEOMTI (one digit each)
+
+      MonBlk.SOURCE.chr  := 0 qua character;
+      MonBlk.LISTFIL.chr := 0 qua character;
+      MonBlk.RELCODE.chr := 0 qua character;
+      MonBlk.EXEFILE.chr := 0 qua character;
+end;
+
+
+Routine DEFAULT; import infix(string) InitFile;
+begin range(0:MaxWord) i; range(0:2) try; infix(string) id,s;
+
+%+M      MonBlk.TARGET:=oMSDOS;
+%+O      MonBlk.TARGET:=oMSOS2;
+%+X %-E  MonBlk.TARGET:=oXENIX286;
+%+X %+E  MonBlk.TARGET:=oUNIX386;
+      MonBlk.INPLTH:=120;  MonBlk.OUTLTH:=132;    MonBlk.LPPAGE:=68;
+%-E   MonBlk.MINALLOC:=10; MonBlk.MAXALLOC:=50;   MonBlk.STEPSIZE:=32000;
+%-E   MonBlk.MINFREE:=0;
+%+E   MonBlk.MINALLOC:=10; MonBlk.MAXALLOC:=50;   MonBlk.STEPSIZE:=65520;
+%+E   MonBlk.MINFREE:=10000;
+      MonBlk.MAXERR:=50;   MonBlk.LINTAB:=1;      MonBlk.DEBMOD:=2;
+      MonBlk.IDXCHK:=1;    MonBlk.RNGCHK:=1;      MonBlk.TSTOFL:=0;
+      MonBlk.MASSLV:=63;   MonBlk.QBFLIM:=1500;   MonBlk.SEGLIM:=20000; 
+      MonBlk.BNKLNK:=0;    MonBlk.BUFLNG:=1024;   MonBlk.argdex:=2;
+      MonBlk.CHKSTK:=0;
+
+      try:=1; repeat while try<3 do
+%+M      if try=2 then EdEdtBuf("$PATH\") endif;
+%+O      if try=2 then EdEdtBuf("$PATH\") endif;
+%+X      if try=2 then EdEdtBuf("$PATH/") endif;
+         EdEdtBuf(InitFile);
+         initkey:=OPFILE(PickupEdtbuf,F_inbytefile,nostring,0);
+         if status=0 then goto OK endif; status:=0; try:=try+1;
+      endrepeat;
+      EdEdtbuf(InitFile);
+      EdEdtbuf(" is not available"); TERMIN(3,PickupEdtbuf);
+  OK:
+      repeat
+         id:=READSTRING; if id.nchr<10 then
+         case 0:10 (id.nchr)
+         when 3: if STREQ(id,"END")       then goto C1
+%+D           else goto U0;
+              endif
+         when 5: if STREQ(id,"SCODE")     then READ72(@MonBlk.SCODE.chr);
+              elsif STREQ(id,"DEBUG")     then MonBlk.DEBMOD:=READINT
+              elsif STREQ(id,"CBIND")     then MonBlk.CBIND:=READINT
+              elsif STREQ(id,"CPUID")     then MonBlk.CPUID:=READINT
+%+D           else goto U1
+              endif
+         when 6: if STREQ(id,"SIMPRE")    then READ72(@MonBlk.SIMPRE.chr);
+              elsif STREQ(id,"STAPRE")    then READ72(@MonBlk.STAPRE.chr);
+              elsif STREQ(id,"SIMLIB")    then READ72(@MonBlk.SIMLIB.chr);
+              elsif STREQ(id,"OPTION")    then setoptn(READSTRING)
+              elsif STREQ(id,"DOSLNK")    then READ72(@MonBlk.DOSLNK.chr);
+              elsif STREQ(id,"DOSLIB")    then READ72(@MonBlk.DOSLIB.chr);
+              elsif STREQ(id,"OS2LNK")    then READ72(@MonBlk.OS2LNK.chr);
+              elsif STREQ(id,"OS2LIB")    then READ72(@MonBlk.OS2LIB.chr);
+              elsif STREQ(id,"EDITOR")    then READ72(@MonBlk.EDITOR.chr);
+              elsif STREQ(id,"ERRFIL")    then READ72(@MonBlk.ERRFIL.chr);
+              elsif STREQ(id,"INPLTH")    then MonBlk.INPLTH:=READINT
+              elsif STREQ(id,"OUTLTH")    then MonBlk.OUTLTH:=READINT
+              elsif STREQ(id,"LPPAGE")    then MonBlk.LPPAGE:=READINT
+              elsif STREQ(id,"BECDEB")    then MonBlk.BECDEB:=READINT
+              elsif STREQ(id,"MASSLV")    then MonBlk.MASSLV:=READINT
+              elsif STREQ(id,"QBFLIM")    then MonBlk.QBFLIM:=READINT
+              elsif STREQ(id,"RNGCHK")    then MonBlk.RNGCHK:=READINT
+              elsif STREQ(id,"IDXCHK")    then MonBlk.IDXCHK:=READINT
+              elsif STREQ(id,"TSTOFL")    then MonBlk.TSTOFL:=READINT
+              elsif STREQ(id,"LINTAB")    then MonBlk.LINTAB:=READINT
+              elsif STREQ(id,"BUFLNG")    then MonBlk.BUFLNG:=READINT
+              elsif STREQ(id,"SEGLIM")    then MonBlk.SEGLIM:=READINT
+              elsif STREQ(id,"TARGET")    then MonBlk.TARGET:=READINT
+              elsif STREQ(id,"CHKSTK")    then MonBlk.CHKSTK:=READINT
+----          elsif STREQ(id,"PRFXID")
+----          then  s.chradr:=@MonBlk.PRFXID.chr; s.nchr:=6;
+----                SMOVE(READSTRING,s,0 qua character);
+              elsif STREQ(id,"MAXERR")    then MonBlk.MAXERR:=READINT
+%+D           else goto U2
+              endif
+         when 7: if STREQ(id,"SCRATCH")   then READ72(@MonBlk.SCRATCH.chr);
+              elsif STREQ(id,"INCLUDE")   then include(READSTRING);
+              elsif STREQ(id,"LIBRARY")   then deflib(READSTRING);
+----          elsif STREQ(id,"CSEGNAM")
+----          then  s.chradr:=@MonBlk.CSEGNAM.chr; s.nchr:=6;
+----                SMOVE(READSTRING,s,0 qua character);
+----          elsif STREQ(id,"DSEGNAM")
+----          then  s.chradr:=@MonBlk.DSEGNAM.chr; s.nchr:=6;
+----                SMOVE(READSTRING,s,0 qua character);
+              elsif STREQ(id,"MINFREE")   then MonBlk.MINFREE:=READINT
+%+D           else goto U3
+              endif
+         when 8: if STREQ(id,"MINALLOC")  then MonBlk.MINALLOC:=READINT
+              elsif STREQ(id,"MAXALLOC")  then MonBlk.MAXALLOC:=READINT
+              elsif STREQ(id,"STANDARD")  then MonBlk.STANDARD:=READINT
+              elsif STREQ(id,"STEPSIZE")  then MonBlk.STEPSIZE:=READINT
+%+D           else goto U4
+              endif
+         when 9: if STREQ(id,"XNX286LNK") then READ72(@MonBlk.XNX286LNK.chr);
+              elsif STREQ(id,"XNX286LIB") then READ72(@MonBlk.XNX286LIB.chr);
+              elsif STREQ(id,"XNX386LNK") then READ72(@MonBlk.XNX386LNK.chr);
+              elsif STREQ(id,"XNX386LIB") then READ72(@MonBlk.XNX386LIB.chr);
+              elsif STREQ(id,"UNX386LNK") then READ72(@MonBlk.UNX386LNK.chr);
+              elsif STREQ(id,"UNX386LIB") then READ72(@MonBlk.UNX386LIB.chr);
+%+D           else goto U5
+              endif;
+%+D      otherwise U0:U1:U2:U3:U4:U5:
+%+D                PRTERR("unknown string in init file:"); SYSPRI(id);
+         endcase endif
+      while true do endrepeat;
+ C1:  CLFILE(initkey,nostring); status:=0; initkey:=0;
+end;
+%title ***  I N P U T / O U T P U T     H a n d l i n g  ***
+%-c Routine NEWLINE;
+%-c begin SYSPRI(nostring); NLINE:=NLINE+1 end;
+
+Routine READCHAR; import range(0:255) key; export character c;
+begin range(0:255) x; x:=INBYTE(key);
+      if x=ISO_CR then c:=' ' elsif x=ISO_LF then c:=' '
+      else c:=x qua character endif;
+end;
+
+Routine READSTRING; export infix(string) s;
+begin character c;
+      repeat c:=READCHAR(initkey) while c=' ' do endrepeat;
+      repeat while c <> ' ' do EdcharEdt(c); c:=READCHAR(initkey) endrepeat;
+      if status=0 then s:=PickupEdtbuf else s:="END" endif;
+end;
+
+Routine READINT; export integer v;
+begin character c; boolean eflag; eflag:=false;
+      repeat c:=READCHAR(initkey) while c=' ' do endrepeat;
+      if (c <= '9') and (c >= '0')
+      then v:=c qua integer - ISO_0;
+           repeat c:=READCHAR(initkey) while (c <= '9') and (c >= '0')
+           do v:=(v*10)+(c qua integer-ISO_0);
+              if v<0 then eflag:=true endif; -- overflow test!!!
+           endrepeat;
+      endif
+      if eflag
+      then PRTERR("Too large integer in init file (set to zero)"); v:=0 endif
+end;
+
+routine READ72; import name(character) dest;
+begin infix(string) s;
+      s.chradr:=dest; s.nchr:=72; SMOVE(READSTRING,s,0 qua character);
+end;
+%page
+
+%-c character smbuf(80);    -- Symbol string buffer
+%-c Routine prompt;
+%-c import infix(string) ms; range(0:MaxWord) hn; export infix(string) R;
+%-c begin range(0:MaxWord) lng; character c;
+%-c L1:   R:=nostring; lng:=0; LF_flg:=false;
+%-c       repeat while nxtchar=' ' do inchar endrepeat;
+%-c       if nxtchar qua integer = ISO_LF then SYSPRT(ms); inchar endif;
+%-c       repeat while nxtchar=' ' do inchar endrepeat;
+%-c L2:   c:=nxtchar;
+%-c       if EOF then -- Nothing
+%-c       elsif c='?'
+%-c       then if lng>0 then R.chradr:=@smbuf; R.nchr:=lng endif;
+%-c            repeat inchar while nxtchar qua integer <> ISO_LF do endrepeat;
+%-c            help(R,hn); goto L1;
+%-c       elsif (c=' ') or (c=',') then inchar
+%-c       elsif c qua integer = ISO_LF then LF_flg:=true
+%-c       else smbuf(lng):=inchar; lng:=lng+1; goto L2 endif;
+%-c       if lng>0 then R.chradr:=@smbuf;
+%-c       R.nchr:=if lng>71 then 71 else lng endif;
+
+%-c %+D   if option('M') > 3
+%-c %+D   then begtrace("NEXTITEM: ^"); ed(trcbuf,R); ed(trcbuf,"^ ");
+%-c %+D        outtrace;
+%-c %+D   endif;
+%-c end;
+
+
+%-c Routine command_no;
+%-c import infix(string) id; export range(0:MaxWord) res;
+%-c begin range(0:MaxWord) k,i,n; n:=i:=0; res:=0;
+%-c       if EOF then res:=C_EXIT; goto E2 endif;
+%-c       repeat if match(id,CMID(i))
+%-c              then k:=i; n:=n+1;
+%-c                   if STREQ(id,CMID(i)) then goto E1 endif;
+%-c              endif;
+%-c              i:=i+1;
+%-c       while i < C_max do endrepeat;
+%-c       if n=1 then E1: res:=k+1 endif;
+%-c E2:end;
+
+
+%-c Routine mnemonic_no;
+%-c import infix(string) id; export range(0:MaxWord) res;
+%-c begin range(0:MaxWord) k,i,n; n:=i:=0; res:=0;
+%-c       repeat if match(id,SETM(i))
+%-c          then k:=i; n:=n+1; if STREQ(id,SETM(i)) then goto E endif endif;
+%-c          i:=i+1;
+%-c       while i < MonBlk.SYSMODE do endrepeat;
+%-c       if n=1 then E: res:=k+1 endif;
+%-c end;
+%page
+
+%-c Routine inchar; export character c;
+%-c begin range(0:MaxWord) x,n; curchar:=nxtchar; c:=curchar;
+%-c       repeat
+%-c %+M          n:=DOS_READ(K_sysin,1,ximg.chradr);
+%-c %+O          OS2_READ(K_sysin,name2ref(ximg.chradr),1,name2ref(@n));
+%-c %+X          n:=XNX_READ(1,name2ref(ximg.chradr),K_sysin);
+%-c              if OsStat <> 0 then OS_STAT("INCHAR-1")
+%-c              elsif n=0 then STAT("INCHAR-2",xq_eof);
+%-c              elsif var(ximg.chradr) qua integer = 27 -- 27=ESC
+%-c              then  var(ximg.chradr):='@' endif;
+%-c              if status <> 0 then status:=0; x:=26 -- Ctrl-Z=EOF
+%-c              else x:=var(ximg.chradr) qua integer endif;
+%-c              if x=26 then EOF:=true endif;
+%-c              if option('M') > 0
+%-c              then if x=26
+%-c                   then SYSPRI(nostring); SYSPRI("End of file");
+%-c                   else
+%-c %+M                    DOS_WRITE(K_systrace,1,ximg.chradr);
+%-c %+O                    OS2_WRITE(K_systrace,name2ref(ximg.chradr),
+%-c %+O                                         1,name2ref(@n));
+%-c %+X                    XNX_WRITE(1,name2ref(ximg.chradr),K_systrace);
+%-c                        OsStat:=0;
+%-c                   endif;
+%-c              endif;
+%-c       while x=ISO_CR do endrepeat;
+%-c       nxtchar:=x qua character;
+%-c %+D       if option('M') > 4
+%-c %+D       then begtrace("INCHAR:  curchar="); x:=curchar qua integer;
+%-c %+D            if x > 31 then edchar(trcbuf,curchar)
+%-c %+D            else edchar(trcbuf,'^'); edwrd(trcbuf,x) endif;
+%-c %+D            ed(trcbuf,", nxtchar="); x:=nxtchar qua integer;
+%-c %+D            if x > 31 then edchar(trcbuf,nxtchar)
+%-c %+D            else edchar(trcbuf,'^'); edwrd(trcbuf,x) endif;
+%-c %+D            outtrace;
+%-c %+D       endif;
+%-c end;
+
+--- Routine number; export Boolean res;
+--- begin character x; x:=nxtchar;
+---       if DIGIT(x) then res:=true
+---       else res:= (x='+') or (x='-') endif;
+--- end;
+
+Routine inint;
+import integer default,maxval;
+export integer i;
+begin
+      infix(string) s;
+%-c   if montype=0
+%-c   then if maxval<>0
+%-c        then EdEdtBuf("Number in 0.."); edint(ref(EdtBuffer),maxval);
+%-c        else EdEdtbuf("Number") endif;
+%-c        EdEdtbuf(": ");
+%-c        if ininthlp = 0 then ininthlp:=H_INT endif;
+%-c        s:=prompt(PickupEdtbuf,ininthlp); ininthlp:=0;
+%-c   else
+           s:=argument
+%-c   endif;
+      if s.nchr=0 then i:=default
+      else
+           i:=GETINT(s);
+           if status <> 0
+           then status:=0; i:=default;
+%-c             if montype=0 then PRTERR("Illegal number") endif;
+---  ???   elsif itemsize <> s.nchr then PRTERR("Illegal number")
+%+D        elsif option('M')>1
+%+D        then begtrace("ININT: "); edint(trcbuf,i); outtrace;
+           endif;
+           if i > maxval
+           then if maxval <> 0
+                then
+%-c                  PRTERR("Too large number");
+                     i:=maxval endif;
+           endif;
+      endif;
+end;
+%title ***   U t i l i t y    R o u t i n e s   ***
+
+Routine get72; import ref(ASCIIZ) par; export infix(string) s;
+begin s:=ASCIIZ2string(par,72) end;
+
+routine printID;
+begin edEdtbuf("PC-Simula "); edEdtbuf(sportid); 
+      edEdtbuf(", TARGET"); edEdtbuf(targetText(MonBlk.TARGET));
+      printout(ref(edtbuffer));
+      edEdtbuf("Copyright (c) 1991,92 Simula a.s, PB 138 Voksenlia, 0325 Oslo, Norway");
+      printout(ref(edtbuffer));
+end;
+
+%-c Routine match; import infix(string) t1,t2; export Boolean res;
+%-c --- t2 assumed in upper case
+%-c begin character c1,c2; range(0:MaxWord) i,j;
+%-c       c1:=c2:='?'; i:=j:=0; res:=false;
+%-c       repeat while c1 = c2
+%-c       do if i < t1.nchr then c1:=upcase(var(t1.chradr)(i)); i:=i+1;
+%-c          else res:=true; goto E1 endif;
+%-c          if j < t2.nchr then c2:=       var(t2.chradr)(j) ; j:=j+1;
+%-c          else goto E2 endif;
+%-c          if c1='-'
+%-c          then repeat while c2 <> '-'
+%-c               do if j < t2.nchr then c2:=var(t2.chradr)(j); j:=j+1;
+%-c                  else goto E3 endif endrepeat;
+%-c          endif;
+%-c       endrepeat;
+%-c E1:E2:E3:end;
+
+Routine STREQ; import infix(string) t1,t2; export Boolean res;
+begin range(0:MaxWord) i; character c,d;
+      i:=t1.nchr; res:=false; if i <> t2.nchr then goto E1 endif;
+      repeat while i > 0 do i:=i-1;
+         if UpCase(var(t1.chradr)(i)) <> UpCase(var(t2.chradr)(i))
+         then goto E2 endif;
+      endrepeat;
+      res:=true;
+E1:E2:end;
+
+Routine DIGIT; import character c; export Boolean res;
+begin if c < '0' then res:=false
+      elsif c > '9' then res:=false else res:=true endif;
+end;
+
+Routine LETTER; import character c; export Boolean res;
+begin if c < 'A' then res:=false
+      elsif c > 'Z' then res:=false else res:=true endif;
+end;
+
+Routine UpCase; import character c; export character res;
+begin range(0:255) x; x:=c qua integer;
+      if x > 95 then x:=x-32 endif;
+      res:=x qua character;
+end;
+
+Routine PRTERR; import infix(string) msg;
+begin
+%-c   if montype=0 then NEWLINE; SYSPRT("*** ERROR: "); SYSPRI(msg);
+%-c   else
+           edEdtBuf("sim: error in call - "); edEdtBuf(msg);
+           SYSPRT(pickupEdtBuf);
+%-c   endif;
+end;
+%page
+
+Routine include; import infix(String) id;
+begin infix(string) p;
+%+D   if TRCSW > 0
+%+D   then BegTrace("INCLUDE("); Ed(TrcBuf,id);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if (MonBlk.NINCL+1)>=MaxLib then SYSPRI("SORRY. Too many include files")
+      elsif MonBlk.LPOS+id.nchr >= (LMAX-1)
+      then SYSPRI("SORRY. No more space for include files")
+      else MonBlk.INCLID(MonBlk.NINCL):=MonBlk.LPOS;
+           p.chradr:=@MonBlk.LBUFF(MonBlk.LPOS); p.nchr:=id.nchr+1;
+           MonBlk.LPOS:=MonBlk.LPOS+id.nchr+1;
+           SMOVE(id,p,0 qua character); MonBlk.NINCL:=MonBlk.NINCL+1;
+      endif;
+end;
+
+Routine deflib; import infix(String) id;
+begin infix(string) p;
+%+D   if TRCSW > 0
+%+D   then BegTrace("DEFLIB("); Ed(TrcBuf,id);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if (MonBlk.NLIB+1) >= MaxLib then
+      SYSPRI("SORRY. Too many library definitions")
+      elsif MonBlk.LPOS+id.nchr >= (LMAX-1)
+      then SYSPRI("SORRY. No more space for library definition")
+      else MonBlk.LIBID(MonBlk.NLIB):=MonBlk.LPOS;
+           p.chradr:=@MonBlk.LBUFF(MonBlk.LPOS); p.nchr:=id.nchr+1;
+           MonBlk.LPOS:=MonBlk.LPOS+id.nchr+1;
+           SMOVE(id,p,0 qua character); MonBlk.NLIB:=MonBlk.NLIB+1;
+      endif;
+end;
+
+
+end;

@@ -1,0 +1,1041 @@
+simset
+class Common;
+
+%      ----------------------------------------------------------------
+%      ---  COPYRIGHT 1989 by                                       ---
+%      ---  Simula a.s.                                             ---
+%      ---  Oslo, Norway                                            ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                 P O R T A B L E     S I M U L A          ---
+%      ---              S I M U L E T T A    C O M P I L E R        ---
+%      ---                                                          ---
+%      ---                   C l a s s    C o m m o n               ---
+%      ---                                                          ---
+%      --- Selection switches:                                      ---
+%      ---                                                          ---
+%      ---    'D' Included when dump is wanted                      ---
+%      ---    'I' Included to make compiler use inserted mnemonics  ---
+%      ---    'N' Included to produce ND-500 version                ---
+%      ---    'P' Included to use PRIOR procedures                  ---
+%      ---    'U' Included to produce UNIVAC version                ---
+%      ---    'X' Included to produce XENIX version                 ---
+%      ---                                                          ---
+%      ----------------------------------------------------------------
+
+%-D %BOUNDCHECK OFF
+%-D %QUACHECK OFF
+%-D %NONECHECK OFF
+%+
+
+%INSERT $SIMSRC/fec/symtable.def
+
+%INSERT sportid.def
+
+Boolean SportOk;       ! true: allow special S-code extensions  ;
+Boolean recomp;        ! true: compatible recompilation         ;
+Boolean GiveNotes;     ! Should warnings be printed ?           ;
+Boolean listingon;     ! Is listing currently being produced ?  ;
+Boolean global_module; ! Set in pass 1 if compiling a           ;
+		       ! global module                          ;
+boolean simob_descr, simob_entity, simob_const; ! NOT USED      ;
+boolean GenerateScode; !not used currently;
+character ntaghi,ntaglo;   ! Next available tag number          ;
+character mxtaghi,mxtaglo; ! max tag number used                ;
+character termstatus;  ! Status of compilation                  ;
+character currentpass; ! Indicates number of current FEC pass   ;
+character stringhi, stringlo; ! index of STRING                 ;
+short integer simob_level; ! NOT USED                           ;
+short integer curline; ! Current input line number              ;
+short integer nerr;    ! No of error messages given so far      ;
+short integer maxerrno;! No of error messages permitted         ;
+short integer rutlev;  !                                        ;
+short integer listlength;  ! image length for list file         ;
+short integer module_trace;  !                                  ;
+ref(identSymbol) chradrBox, nchrBox; ! attr of STRING           ;
+ref(printfile) ListFile; ! Listing file - none if no listing    ;
+ref(head) modset;      ! The set of all inserted modules        ;
+ref(head) qntset;      ! The set of all global declarations     ;
+                       ! (not including any inserted decl)      ;
+ref(head) vislist;     ! Visible declar, moved from qntset      ;
+ref(head) constlist;   ! Constspec'ed, moved from qntset        ;
+ref(head) localdecl;   ! The local decls in routines in pass 1  ;
+                       ! The local decls in modules  in pass 2  ;
+ref(head) redeclset;   ! Redeclaration set in pass2             ;
+ref(head) structset;   ! The ordered set of all struct constants;
+ref(head) caseset;     ! The ordered set of case statement descr;
+ref(caseDescr) curcase;! Current case statement descriptor      ;
+ref(head) TRC_info;    ! The set of trace and info items to be  ;
+	               ! outputed before the next instruction   ;
+ref(head) TRC_init;    ! The initial set of trace and info items;
+text module_ident;     ! Current module's identifier            ;
+		       ! (notext for main)                      ;
+text module_code;      ! Current module's check-code            ;
+		       ! (notext for main)                      ;
+text L2name;           ! Scratch file identification            ;
+text nscodename;       ! S-code  file identification            ;
+text predefname;       ! Predef file identification             ;
+text timestamp;        ! - of this compilation                  ;
+text leftintbuf;       ! - for editing of integer  (NOT USED)   ;
+text leftsintbuf;      ! - for editing of sint     (NOT USED)   ;
+text tempt;            ! local use only ;
+
+%-P Boolean array Selector(0:127);  ! Selection switches ;
+%+P %RECORD ON
+%+P Boolean       Selector(  127);  ! Selection switches ;
+%+P %RECORD OFF
+
+%+P prior
+procedure SetSelectors(t,val); text t; short integer val;
+begin short integer i; boolean b;
+      if val=0 then
+      for i:= 47 step 1 until 127 do selector(i):=false;
+      b := val <> 2; t.setpos(1);
+      while t.more do begin
+            i:=rank(t.getchar); if i>127 then i:=i-128;
+            if i>47 then selector(i):=b;
+      end;
+end;
+
+%REUSE OFF
+text procedure TagName(hi,lo); character hi,lo;
+begin text t1,t2;
+      t1 :- leftint(rank(hi)*256+rank(lo));
+      t2 :- tagtab(rank(hi)).val(rank(lo)).symbol;
+      TagName:-"T" & t1 & ":" & t2;
+end;
+%REUSE ON
+
+%-P ref(tagbox) array tagtab(0:127);
+%+P %RECORD ON
+%+P ref(tagbox)       tagtab(  127);
+%+P %RECORD OFF
+
+class tagbox;
+begin
+%-P   ref(symbolbox) array val(0:255);
+%+P %RECORD ON
+%+P   ref(symbolbox)       val(  255);
+%+P %RECORD OFF
+end;
+
+% ref(linkage) array display(0:maxsymb);
+
+character TYP_INFIX='!1!', TYP_INT='!2!', TYP_STRUCT='!3!',
+      TYP_FIELD='!4!', TYP_REF='!5!', TYP_NAME  ='!6!',
+      TYP_ENT  ='!7!',
+      TYP_UNDEF=NUL, TYP_MXMX='!7!';
+
+character TAG_BOOL=  '!1!', TAG_CHAR=  '!2!', TAG_INT=   '!3!',
+      TAG_SINT=  '!4!', TAG_REAL=  '!5!', TAG_LREAL= '!6!',
+      TAG_AADDR= '!7!', TAG_OADDR= '!8!', TAG_GADDR= '!9!',
+      TAG_PADDR='!10!', TAG_RADDR='!11!', TAG_SIZE= '!12!';
+
+character T_NULL = NUL,
+      T_UNDEF= NUL,T_INT=  '!1!',T_SINT='!2!',T_REAL='!3!',
+      T_LREAL= '!4!',T_SIZE= '!5!',T_CHAR='!6!',T_BOOL='!7!',
+      T_LABEL= '!8!',T_ENT=  '!9!',T_REF='!10!',T_NAME='!11!',
+      T_FIELD='!12!',T_DEST='!13!';
+
+!******    S - I N S T R U C T I O N S    ******;
+
+character S_NULL = NUL,S_RECORD='!1!',
+S_LSHIFTL='!2!', -- extension to Scode, left shift logical
+S_PREFIX='!3!',S_ATTR='!4!',
+S_LSHIFTA='!5!', -- extension to Scode, left shift arithmetical
+S_REP='!6!',
+S_ALT='!7!',S_FIXREP='!8!',S_ENDRECORD='!9!',S_C_RECORD='!10!',
+S_TEXT='!11!',S_C_CHAR='!12!',S_C_INT='!13!',S_C_SIZE='!14!',
+S_C_REAL='!15!',S_C_LREAL='!16!',S_C_AADDR='!17!',S_C_OADDR='!18!',
+S_C_GADDR='!19!',S_C_PADDR='!20!',S_C_DOT='!21!',S_C_RADDR='!22!',
+S_NOBODY='!23!',S_ANONE='!24!',S_ONONE='!25!',S_GNONE='!26!',
+S_NOWHERE='!27!',S_TRUE='!28!',S_FALSE='!29!',S_PROFILE='!30!',
+S_KNOWN='!31!',S_SYSTEM='!32!',S_EXTERNAL='!33!',S_IMPORT='!34!',
+S_EXPORT='!35!',S_EXIT='!36!',S_ENDPROFILE='!37!',S_ROUTINESPEC='!38!',
+S_ROUTINE='!39!',S_LOCAL='!40!',S_ENDROUTINE='!41!',S_MODULE='!42!',
+S_EXISTING='!43!',S_TAG='!44!',S_BODY='!45!',S_ENDMODULE='!46!',
+S_LABELSPEC='!47!',S_LABEL='!48!',S_RANGE='!49!',S_GLOBAL='!50!',
+S_INIT='!51!',S_CONSTSPEC='!52!',S_CONST='!53!',S_DELETE='!54!',
+S_FDEST='!55!',S_BDEST='!56!',S_SAVE='!57!',S_RESTORE='!58!',
+S_BSEG='!59!',S_ESEG='!60!',S_SKIPIF='!61!',S_ENDSKIP='!62!',
+S_IF='!63!',S_ELSE='!64!',S_ENDIF='!65!',
+S_RSHIFTL='!66!', -- extension to Scode, right shift logical
+S_PRECALL='!67!',S_ASSPAR='!68!',S_ASSREP='!69!',S_CALL='!70!',
+S_FETCH='!71!',S_REFER='!72!',S_DEREF='!73!',S_SELECT='!74!',
+S_REMOTE='!75!',S_LOCATE='!76!',S_INDEX='!77!',S_INCO='!78!',
+S_DECO='!79!',S_PUSH='!80!',S_PUSHC='!81!',S_PUSHLEN='!82!',
+S_DUP='!83!',S_POP='!84!',S_EMPTY='!85!',S_SETOBJ='!86!',
+S_GETOBJ='!87!',S_ACCESS='!88!',S_FJUMP='!89!',S_BJUMP='!90!',
+S_FJUMPIF='!91!',S_BJUMPIF='!92!',S_SWITCH='!93!',S_GOTO='!94!',
+S_T_INITO='!95!',S_T_GETO='!96!',S_T_SETO='!97!',S_ADD='!98!',
+S_SUB='!99!',S_MULT='!100!',S_DIV='!101!',S_REM='!102!',
+S_NEG='!103!',S_AND='!104!',S_OR='!105!',S_XOR='!106!',
+S_IMP='!107!',S_EQV='!108!',S_NOT='!109!',S_DIST='!110!',
+S_ASSIGN='!111!',S_UPDATE='!112!',S_CONVERT='!113!',S_SYSINSERT='!114!',
+S_INSERT='!115!',S_ZEROAREA='!116!',S_INITAREA='!117!',S_COMPARE='!118!',
+S_LT='!119!',S_LE='!120!',S_EQ='!121!',S_GE='!122!',
+S_GT='!123!',S_NE='!124!',S_EVAL='!125!',S_INFO='!126!',
+S_LINE='!127!',S_SETSWITCH='!128!',
+S_RSHIFTA='!129!', -- extension to Scode, right shift arithmetical
+S_PROGRAM='!130!',S_MAIN='!131!',
+S_ENDPROGRAM='!132!',S_DSIZE='!133!',S_SDEST='!134!',S_RUPDATE='!135!',
+S_ASSCALL='!136!',S_CALL_TOS='!137!',S_DINITAREA='!138!',S_NOSIZE='!139!',
+S_POPALL='!140!',S_REPCALL='!141!',S_INTERFACE='!142!',S_MACRO='!143!',
+S_MARK='!144!',S_MPAR='!145!',S_ENDMACRO='!146!',S_MCALL='!147!',
+S_PUSHV='!148!',S_SELECTV='!149!',S_REMOTEV='!150!',S_INDEXV='!151!',
+S_ACCESSV='!152!',S_DECL='!153!',S_STMT='!154!',
+N_INSTR='!154!',
+
+!******    A d d i t i o n a l    K E Y W O R D S    ******;
+
+S_BEGIN='!155!',S_END='!156!',S_VARIANT='!157!',S_SHORT='!158!',
+S_LONG='!159!',S_INTEGER='!160!',S_SIZE='!161!',S_REAL='!162!',
+S_CHAR='!163!',S_BOOLEAN='!164!',S_REF='!165!',S_NAME='!166!',
+S_FIELD='!167!',S_INFIX='!168!',S_ENTRY='!169!',S_NONE='!170!',
+S_NONAME='!171!',S_NOFIELD='!172!',S_THEN='!173!',S_ELSIF='!174!',
+S_QUA='!175!',S_VAR='!176!',S_REPEAT='!177!',S_WHILE='!178!',
+S_DO='!179!',S_ENDREPEAT='!180!',S_SYSRUT='!181!',S_DEFINE='!182!',
+S_CASE='!183!',S_WHEN='!184!',S_OTHERWISE='!185!',S_ENDCASE='!186!',
+S_VISIBLE='!187!',S_ASSERT='!188!',S_SKIP='!189!',
+N_KEYW='!189!',
+
+!******    A d d i t i o n a l    B A S I C    S Y M B O L S    ******;
+
+S_INTVAL='!190!',S_REALVAL='!191!',S_LREALVAL='!192!',S_STRING='!193!',
+S_COLON='!194!',S_LPAR='!195!',S_RPAR='!196!',S_COMMA='!197!',
+S_DOT='!198!',S_ADDRESS='!199!',S_CHARS='!200!',S_PERCENT='!201!',
+
+!******    A d d i t i o n a l   I N T E R N A L   S Y M B O L S    ******;
+
+S_TRACE='!202!',S_NOEXPR='!203!',S_VARID='!204!',S_VAREXPR='!205!',
+S_VARCALL='!206!',S_ARGLIST='!207!',S_ENDVAR='!208!',S_IFEXPR='!209!',
+S_REPEXPR='!210!',S_DEFLAB='!211!',S_STRUCT='!212!',S_ENDWHEN='!213!',
+S_SIMPLE='!214!',S_DOTVAR='!215!',
+S_IDENT='!216!', !*** TEMP ***;
+N_SYMB='!216!',
+S_MXMX='!216!';
+
+!******    A t t r i b u t e    F i l e    S Y M B O L S    ******;
+
+character M_NULL = NUL,
+M_MODULE='!1!',M_MACRO='!2!',M_MARK='!3!',M_MPAR='!4!',
+M_ENDMACRO='!5!',M_DEFINE='!6!',M_INTEGER='!7!',M_SHORT='!8!',
+M_RANGE='!9!',M_STRUCT='!10!',M_REAL='!11!',M_LONG='!12!',
+M_SIZE='!13!',M_CHAR='!14!',M_BOOL='!15!',M_LABEL='!16!',
+M_REF='!17!',M_ENTRY='!18!',M_FIELD='!19!',M_NAME='!20!',
+M_VAR='!21!',M_LABSPEC='!22!',M_RECORD='!23!',M_ALT='!24!',
+M_ENDRECORD='!25!',M_GLOBAL='!26!',M_PROFILE='!27!',M_IMPORT='!28!',
+M_EXPORT='!29!',M_EXIT='!30!',M_BODY='!31!',M_SYSRUT='!32!',
+M_KNOWN='!33!',M_EXTERNAL='!34!',M_ROUTINE='!35!',M_END='!36!',
+M_MXMX = '!36!';
+%title  *********    U t i l i t y   R o u t i n e s    *********
+link class trace_item(s,v); short integer s,v;;
+link class info_item(v); text v;;
+
+procedure deftag(d); ref(descr) d;
+   if d.xtaglo = NUL and then d.xtaghi = NUL then begin
+      newtag(d.symb); d.taghi:=ntaghi; d.taglo:=ntaglo end
+   else begin
+      d.taghi:=d.xtaghi; d.taglo:=d.xtaglo; ! d.xtaghi:=d.xtaglo:=NUL;
+   end;
+
+procedure defpeculiar(d); ref(peculiar) d;
+begin ref(symbolbox) symb;
+   if d.xtaglo = NUL and then d.xtaghi = NUL then begin
+      if d.libProc then begin
+         simsymbol:-d.info; DEFCONST; symb:-boxof(hashhi,hashlo) end
+      else symb:-d.symb;
+      newtag(symb); d.taglo :=ntaglo; d.taghi :=ntaghi;
+      newtag(symb); d.bodylo:=ntaglo; d.bodyhi:=ntaghi;
+   end
+   else begin
+      d.taghi:=d.xtaghi; d.taglo:=d.xtaglo;
+      if d.xtaglo='!255!' then begin
+         d.bodyhi:=char(rank(d.xtaghi)+1); d.bodylo:=NUL end
+      else begin
+         d.bodylo:=char(rank(d.xtaglo)+1); d.bodyhi:=d.xtaghi end
+   end;
+end;
+
+%+P   prior
+procedure newtag(box); ref(symbolbox) box;
+begin if ntaglo='!255!' then begin
+       ntaglo:=NUL; ntaghi:=char(rank(ntaghi)+1);
+       tagtab(rank(ntaghi)):-new tagbox; end
+    else ntaglo:=char(rank(ntaglo)+1);
+--    tagno:=tagno+1;
+    tagtab(rank(ntaghi)).val(rank(ntaglo)):-box;
+end;
+
+procedure openerror(t); text t;
+     FATAL_ERROR(" can't open " & t);
+
+procedure error1(n,t); short integer n; text t; !TEMP subst;
+     WARNING("Can't open " & t & " - no listing");
+
+procedure FATAL_ERROR(msg); text msg;
+begin
+    if curline>0 then outtext("LINE " & leftint(curline) & "  ");
+    outtext("*** FATAL ERROR *** "); outtext(msg); outimage;
+    nerr:=nerr+1; RTS_Utility(1,0); terminate_program;
+end;
+
+procedure ERROR(msg); text msg;
+begin
+    outimage;
+    if curline>0 then outtext("LINE " & leftint(curline) & "  ");
+    outtext("ERROR: " & msg); nerr:=nerr+1; outimage;
+    RTS_Utility(1,0);
+end;
+
+procedure WARNING(msg); text msg;
+begin if curline>0 then outtext("LINE " & leftint(curline) & "  ");
+    outtext(" NOTE: " & msg); outimage;
+end;
+
+procedure IERR;
+begin
+    outimage;
+    if curline>0 then outtext("LINE " & leftint(curline) & "  ");
+    ERROR("***Internal error***"); RTS_Utility(1,0);terminate_program;
+end;
+
+ref(bytefile) procedure openAttrFile(fnam,out); text fnam; boolean out;
+begin ref(bytefile) f;
+      if out then inspect new outbytefile(getTextInfo(11)) do begin
+         f:-this bytefile;
+         if not open then FATAL_ERROR("Cannot open attr.file "
+                                      & fnam & " for output");
+      end
+      else begin
+         giveTextInfo(2,fnam);
+         inspect new inbytefile(getTextInfo(12)) do begin
+            f:-this bytefile;
+            if not open then FATAL_ERROR("Cannot open attr.file "
+                                          & fnam & " for input");
+         end;
+      end;
+      openAttrFile:-f;
+end;
+
+text procedure eddouble(hi,lo); character hi,lo;
+begin text t; short integer i;
+    i:=rank(hi)*256+rank(lo);
+    eddouble:-t:-
+    blanks(if i>99 then (if i<1000 then 3 else
+	  (if i>9999 then 5 else 4)) else if i>9 then 2 else 1);
+    t.putint(i);
+end;
+
+text procedure leftint(i); integer i;
+begin leftintbuf.putint(i); i:=11;
+      while loadchar(leftintbuf,i)<>' ' do i:=i-1;
+      leftint:-leftintbuf.sub(i+2,11-i);
+end;
+
+    short integer procedure size;
+          size:=rank(identhi)*256 + rank(identlo);
+
+%+D %BOUNDCHECK ON
+%+D %QUACHECK ON
+%+D %NONECHECK ON
+
+%title ******   T y p e    D i c t i o n a r y   ******
+
+%-P ref(type_notice) array type_table(0:255);
+%+P %RECORD ON
+%+P ref(type_notice)       type_table(  255);
+%+P %RECORD OFF
+
+character ntype;
+ref(type_set) infix_types,integer_types,struct_types;
+ref(type_set) ent_types,ref_types,field_types,name_types;
+
+head class type_set(type); character type; ;
+
+character procedure def_type(set,qhi,qlo,inf1,inf2);
+ref(type_set) set; character qhi,qlo; integer inf1,inf2;
+begin ref(type_notice) x;
+    x:-set.first;
+    while x=/=none do begin
+       if x.quallo=qlo then begin if x.qualhi=qhi then begin
+       if x.info1=inf1 then begin if x.info2=inf2
+       then begin def_type:=x.code; goto E end;   end end end;
+       x:-x.suc;
+    end;
+%   while true do inspect x do begin x:-suc;
+%      if qualhi=qhi and then quallo=qlo and then
+%         info1=inf1 and then info2=inf2
+%      then begin def_type:=code; goto E end;
+%   end otherwise goto XIT;   XIT:
+    def_type:=new type_notice(set,qhi,qlo,inf1,inf2).code;
+E:end;
+
+link class type_notice(set,qualhi,quallo,info1,info2);
+ref(type_set) set; character qualhi,quallo; integer info1,info2;
+begin character code;
+    if ntype='!255!'
+    then FATAL_ERROR("Too many different types");
+    code:=ntype:=char(rank(ntype)+1);
+    type_table(rank(code)) :- this type_notice;
+    this type_notice.into(set);
+end *** type_notice ***;
+
+!*** recursive ***;
+text procedure edtype(t); character t;
+inspect type_table(rank(t)) do begin
+ edtype:-
+      if set==infix_types and then qualhi=NUL
+      then copy( if quallo=S_REAL    then "real"
+	    else if quallo=S_LONG    then "long real"
+	    else if quallo=S_SIZE    then "size"
+	    else if quallo=S_CHAR    then "character"
+	    else if quallo=S_BOOLEAN then "Boolean"
+	    else if quallo=S_LABEL   then "label"
+				   else "**Undefined**" )
+ else if set==integer_types
+      then  ( if quallo=S_SHORT   then copy("short integer")
+	 else if quallo=S_INTEGER then copy("integer")
+	 else("range(" & copy(leftint(info1))&":"&leftint(info2) & ")"))
+ else if set==struct_types
+      then  ( if info1=0 then("infix(" &
+                    symtab(rank(qualhi)).val(rank(quallo)).symbol &")")
+	 else("infix(" & symtab(rank(qualhi)).val(rank(quallo)).symbol &
+		    ":" & leftint(info1-1) & ")" ))
+ else if set==ent_types then("entry(" &
+                    symtab(rank(qualhi)).val(rank(quallo)).symbol & ")")
+ else if set==ref_types then("ref("   &
+                    symtab(rank(qualhi)).val(rank(quallo)).symbol & ")")
+ else if set==field_types then("field(" & edtype(quallo) & ")")
+ else if set==name_types then( "name("  & edtype(quallo) & ")")
+ else copy("**Undefined**")
+end otherwise edtype:-copy("**ILLEGAL**");
+%title *********     M   o   d   u   l   e     *********
+link class module(modid); value modid; text modid;
+begin short integer bias,ntag; text modcode;
+    Boolean system; ref(head) dclset;
+
+    dclset:-new head; this module.into(modset);
+end *** module ***;
+
+
+% *********   D i s p l a y    N o t i c e   *********
+
+link class displnotice(d,old); ref(descr) d,old;
+begin end;
+
+
+% *********   M a c r o    D a t a   *********
+
+head class mnemonic(visible); Boolean visible;;
+
+mnemonic class macro(npar); short integer npar;
+begin ref(file) msc; !ref to it's macro scanner;
+%+D        procedure dump(bx); ref(symbolbox) bx;
+%+D        begin ref(link) ms;
+%+D              outtext(" Macro " & bx.symbol & ":"); outimage;
+%+D              ms:-first;
+%+D              while ms=/=none do begin inspect ms
+%+D                  when macro_symbol do dump when macro_param do dump;
+%+D                ms:-ms.suc; end;
+%+D        end;
+end;
+
+link class macro_symbol(s,box,v); value v;
+     character s; ref(symbolbox) box; text v;
+begin
+%+D        procedure dump;
+%+D        begin outtext(" MacroSymbol: " & 
+%+D                        symtab(0).val(rank(s)).symbol & "/" &
+%+D                        box.symbol & "/" & v ); outimage; end;
+end;
+
+link class macro_param(n); short integer n;
+begin
+%+D        procedure dump;
+%+D        begin outtext(" MacroParam#"); outint(n,0);
+%+D              outchar(' '); outimage; end;
+end;
+
+% *********   C a s e   S t a t e m e n t  D e s c r i p t o r   *********
+
+link class caseDescr(lb,ub);
+    integer lb,ub;            ! lower and upper bound;
+begin short integer branches;   ! counts the actual number of branches;
+    character type;           ! S_INT or S_CHAR;
+    boolean noIndex;          ! true if branch should term. with GOTO;
+end;
+%title ******   D e s c r i p t o r s   ******
+
+%   info from %tag-directive:
+
+ref(seqtag) taglist;
+class seqtag(box); ref(symbolbox) box;
+begin ref(seqtag) next; ref(descr) d; end;
+
+%   A descriptor is marked 'global' if it is declared on the
+%   outermost level or is declared through insert module.
+
+link class descr;
+begin ref(symbolbox) symb; !  character idhi,idlo;
+    character taghi,taglo;   ! tag of descr - must be zero until Pass2;
+    character xtaghi,xtaglo; ! <>0 for descr tagged thru %tag ;
+    Boolean global,visible;
+
+    global:=rutlev=0;
+end;
+
+descr class system_descr;
+begin character instr; end;
+
+descr class label_descr;
+begin end;
+
+descr class dest_descr;
+begin character dx; end;
+
+descr class record;
+begin Boolean used_as_type,dynamic,indefinite,packed;
+    ref(symbolbox) prefbox;
+%   character prefhi,preflo;
+    ref(head) atrset; ref(head) variantset;
+end;
+
+link class variant;
+begin ref(head) atrset; end;
+
+class parspec;
+begin ref(head) import; ref(quant) export,exit; end;
+
+descr class profile;
+begin ref(parspec) spec; Boolean interface,libProc; end;
+
+descr class routine;
+begin
+%     character profhi,proflo;
+      ref(head) local;
+      ref(symbolbox) profbox;
+end;
+
+profile class peculiar(kind); character kind;
+begin ref(head) local;
+      character bodyhi,bodylo; !tag;
+      text info;
+end;
+
+descr class quant(type); character type;
+begin Boolean preped,read_only;
+    short integer count;
+    ref(head) initval;
+    text sysid;
+end;
+%title *****   Access record attribute   *****
+%BOUNDCHECK OFF
+%QUACHECK OFF
+%NONECHECK OFF
+
+      ref(quant) procedure rec_atr(r,hi,lo);
+      ref(record) r; character hi,lo;
+      begin ref(quant) q,a; ref(record) rr; ref(variant) v;
+            rr:-r;
+         L: inspect r do begin
+               a:-atrset.first;
+               while a=/=none do begin
+                     if a.symb.idlo=lo and then a.symb.idhi=hi
+                     then begin
+                        rec_atr:-a; goto EXT end;
+                     a:-a.suc;
+               end;
+               v:-variantset.first;
+               while true do inspect v do begin v:-suc;
+                     a:-atrset.first;
+                     while a=/=none do begin
+                        if a.symb.idlo=lo and then a.symb.idhi=hi
+                        then begin
+                              rec_atr:-a; goto EXT end;
+                        a:-a.suc;
+                     end;
+               end
+               otherwise begin
+                  if prefbox=/=none then begin
+                     if prefbox.curmeaning is record then r:-prefbox.curmeaning
+                     else begin
+                        ERROR("Unknown prefix: " & prefbox.symbol);
+                        inspect new record do begin
+                           atrset:-new head; variantset:-new head;
+                           symb:-prefbox; r:-this record;
+                        end;
+                     end;
+                     goto L;
+                  end; goto SCANX;
+               end;         SCANX:
+            end inspect r;
+
+            rec_atr:-q:-new quant(T_UNDEF);
+            q.symb:-symtab(rank(hi)).val(rank(lo));
+            ERROR(q.symb.symbol &
+                  " is not an attribute of " & rr.symb.symbol );
+      EXT:end *** rec_atr ***;
+
+%+D %BOUNDCHECK ON
+%+D %QUACHECK ON
+%+D %NONECHECK ON
+
+%title *********   E x p r e s s i o n   *********
+
+link class expr;;
+expr class quaopr(x,type);   ref(expr) x; character type;;
+expr class dsize(rhi,rlo,x); character rhi,rlo; ref(expr) x;;
+expr class binopr(opr,x,y);  character opr; ref(expr) x,y;;
+expr class unopr(opr,x);     character opr; ref(expr) x;;
+expr class repexpr(exprset); ref(head) exprset;;
+expr class ifexpr;     begin ref(expr) cond,x,y; end;
+
+expr class designator(varset); ref(head) varset;;
+
+link class variable;
+begin
+      ref(symbolbox) varbox;
+      ref(head) argset;
+end;
+
+link class varexpr(vx,argset); ref(expr) vx; ref(head) argset;;
+
+link class varcall(vx,argset,prfhi,prflo);
+ref(expr) vx; ref(head) argset; character prfhi,prflo;;
+
+link class qualification(type); character type;;
+
+% link class elt_notice(id,elt); short integer id; ref(const) elt;;
+link class elt_notice(ebox,elt); ref(symbolbox) ebox; ref(const) elt;;
+
+link class quant_notice(q); ref(quant) q;;
+
+expr class const(instr); character instr;;
+
+const class val_const(v); text v;;
+
+% const class idn_const(id); short integer id;;
+const class idn_const(ibox); ref(symbolbox) ibox;;
+
+% const class offset_const;
+% begin short integer rid,ndot; short integer array qid(1:5); end;
+const class offset_const;
+begin character ofhi,oflo; short integer ndot;
+%-P   character array qhi(1:5);
+%-P   character array qlo(1:5);
+%+P %RECORD ON
+%+P   character       qhi(  5);
+%+P   character       qlo(  5);
+%+P %RECORD OFF
+end;
+
+const class structured_const;
+begin character strhi,strlo; ref(head) elt_set; end;
+
+const class repeated_const; begin ref(head) elt_set; end;
+%title *********  Display maintainence  *********
+%BOUNDCHECK OFF
+%QUACHECK OFF
+%NONECHECK OFF
+
+procedure displ(d); ref(descr) d;
+begin ref(linkage) old;
+%+D   if module_trace>1 then outtext(" >>> Into display: ");
+      inspect d do begin
+%+D      if module_trace>1 then prt(this descr,20);
+         inspect symb do begin
+            old:-curmeaning; curmeaning:-this descr;
+         end;
+         if not global
+         then new displnotice(this descr,old).into(redeclset);
+         inspect old
+            when descr do
+	         if global and then d.global then
+	         ERROR("Illegal re-declaration of " & symb.symbol)
+            when mnemonic do
+	         ERROR("Mnemonic re-declaration: " & symb.symbol)
+         ;
+      end d=/=none;
+%+D   if module_trace>1 then outimage;
+end *** displ ***;
+
+procedure update_display(s); ref(head) s;
+begin ref(descr) d; ref(linkage) old;
+%+D      if module_trace>1 then begin
+%+D         outtext(" >>>>>>> Update display start"); outimage end;
+ inspect s do begin
+    d:-first;
+    while true do inspect d do begin
+%+D             if module_trace>1 then prt(this descr,20);
+         inspect symb do begin
+            old:-curmeaning; curmeaning:-this descr;
+         end;
+	if not global
+	then new displnotice(this descr,old).into(redeclset);
+	inspect old
+	   when descr do
+	         if global and then d.global then
+	         ERROR("Illegal re-declaration of " & symb.symbol)
+            when mnemonic do
+	         ERROR("Mnemonic re-declaration: " & symb.symbol)
+	;
+       d:-suc;
+    end otherwise goto XXX; XXX:
+ end s=/=none;
+%+D      if module_trace>1 then begin
+%+D         outtext(" <<<<<<> Update display end"); outimage end;
+end *** update_display ***;
+
+%+D %BOUNDCHECK ON
+%+D %QUACHECK ON
+%+D %NONECHECK ON
+
+%title ******   P r i n t    D a t a    E l e m e n t   ******
+
+%+D  procedure prt(d,pos); ref(linkage) d; short integer pos;
+%+D  begin
+%+D        procedure prt_parspec(p,pos); ref(parspec) p; short integer pos;
+%+D        inspect p do
+%+D        begin ref(quant) q;
+%+D              if import =/= none then
+%+D              begin setpos(pos); outtext("import");
+%+D                    for q:-import.first,q.suc while q =/= none do
+%+D                    begin prt(q,pos+8); outimage end;
+%+D              end;
+%+D              if export =/= none then
+%+D              begin setpos(pos); outtext("export");
+%+D                    prt(export,pos+8); outimage;
+%+D              end
+%+D         else if exit =/= none then
+%+D              begin setpos(pos); outtext("exit");
+%+D                    prt(exit,pos+8); outimage;
+%+D              end;
+%+D        end *** prt - parspec ***;
+%+D
+%+D        procedure outName(t); text t;
+%+D        inspect d qua descr do begin outtext(t);
+%+D              if xtaglo<>NUL or else xtaghi<>NUL then
+%+D                 outtext("X" & leftint(rank(xtaghi)*256 +
+%+D                                     rank(xtaglo)) );
+%+D              outtext("T" & leftint(rank(taghi)*256
+%+D                                 +rank(taglo))   & ":" & symb.symbol);
+%+D        end;
+%+D
+%+D        if pos > 0 then setpos(pos);
+%+D        inspect d
+%+D   when system_descr do
+%+D        begin outname("system-function "); outchar(';'); outimage end
+%+D   when label_descr do
+%+D        begin outname("label-const "); outchar(';'); outimage; end
+%+D   when dest_descr do
+%+D        begin outname("destination-const "); outimage; end
+%+D   when record do
+%+D        begin ref(descr) d; ref(variant) v;
+%+D              outname("Record ");
+%+D              if prefbox =/= none then
+%+D              outtext(":" & prefbox.symbol); outchar(';');
+%+D              if used_as_type then outtext("   info ""TYPE"";");
+%+D              if dynamic then outtext("   info ""DYNAMIC"";");
+%+D              outimage; setpos(pos); outtext("begin");
+%+D              if atrset.empty then outimage else
+%+D              for d:-atrset.first,d.suc while d =/= none do prt(d,pos+6);
+%+D              if not variantset.empty then
+%+D              begin for v:-variantset.first,v.suc while v =/= none do
+%+D                    begin setpos(pos+6); outtext("Variant"); outimage;
+%+D                          if not v.atrset.empty then
+%+D                          begin for d:-v.atrset.first,d.suc
+%+D                                while d=/=none do prt(d,pos+6);
+%+D                          end;
+%+D                    end;
+%+D              end;
+%+D              setpos(pos); outtext("end;"); outimage;
+%+D        end
+%+D   when peculiar do
+%+D        begin ref(quant) q;
+%+D              if kind=S_ROUTINE  then outtext("routine """)
+%+D         else if kind=S_SYSRUT   then outtext("system(""")
+%+D         else if kind=S_KNOWN    then outtext("known(""")
+%+D         else if kind=S_EXTERNAL then outtext("external(""")
+%+D         else IERR; outtext(info); outname(""") ");
+%+D              outchar(';'); outimage;
+%+D              prt_parspec(spec,pos);
+%+D              if local =/= none then begin prt(local,pos); outimage end;
+%+D        end
+%+D   when profile do
+%+D        begin if interface then outtext("global ");
+%+D              outname("profile "); outchar(';'); outimage;
+%+D              prt_parspec(spec,pos);
+%+D        end
+%+D   when routine do
+%+D        begin outtext("Routine("); outtext(profbox.symbol);
+%+D              outname(") "); outchar(';'); outimage;
+%+D              if local =/= none then begin prt(local,pos); outimage end;
+%+D        end
+%+D   when quant do
+%+D        begin if read_only then outtext("constant ");
+%+D              outname(edtype(type) & " " );
+%+D              if count ne 1 then outtext("(" & leftint(count) & ")");
+%+D              if initval =/= none then
+%+D              begin Boolean b;
+%+D                    ref(const) c;
+%+D                    b:=initval.cardinal>1; c:-initval.first;
+%+D                    outchar('='); if b then outchar('('); prt(c,0);
+%+D                    for c:-c.suc while c=/=none do
+%+D                    begin outchar(','); prt(c,0) end;
+%+D                    if b then outchar(')');
+%+D              end;
+%+D              outchar(';'); outimage;
+%+D        end
+%+D   when designator do
+%+D        begin ref(link) v; ref(expr) x; Boolean flg1,flg2;
+%+D              if not varset.empty then
+%+D              begin for v:-varset.first,v.suc while v =/= none do
+%+D                    inspect v when variable do
+%+D                    begin if flg1 then outchar('.');
+%+D                          flg1:=true; outtext(varbox.symbol);
+%+D                          if argset =/= none then
+%+D                          begin outchar('('); flg2:=false;
+%+D                                for x:-argset.first,x.suc
+%+D                                while x =/= none do
+%+D                                begin if flg2 then outchar(',');
+%+D                                      flg2:=true; prt(x,0);
+%+D                                end;
+%+D                                outchar(')');
+%+D                          end;
+%+D                    end
+%+D               when varexpr do
+%+D                    begin if flg1 then outchar('.'); flg1:=true;
+%+D                          outchar('('); prt(vx,0); outchar(')');
+%+D                          if argset =/= none then
+%+D                          begin outchar('('); flg2:=false;
+%+D                                for x:-argset.first,x.suc
+%+D                                while x =/= none do
+%+D                                begin if flg2 then outchar(',');
+%+D                                      flg2:=true; prt(x,0);
+%+D                                end;
+%+D                                outchar(')');
+%+D                          end;
+%+D                    end
+%+D               when varcall do
+%+D                    begin if flg1 then outchar('.'); flg1:=true;
+%+D                          outtext("call " &
+%+D                      symtab(rank(prfhi)).val(rank(prflo)).symbol & "(");
+%+D                          prt(vx,0); outchar(')');
+%+D                          if argset =/= none then
+%+D                          begin outchar('('); flg2:=false;
+%+D                                for x:-argset.first,x.suc
+%+D                                while x =/= none do
+%+D                                begin if flg2 then outchar(',');
+%+D                                      flg2:=true; prt(x,0);
+%+D                                end;
+%+D                                outchar(')');
+%+D                          end;
+%+D                    end
+%+D               when qualification do
+%+D                    begin outtext(" qua " & edtype(type) );
+%+D                          flg1:=true;
+%+D                    end
+%+D          otherwise IERR;
+%+D              end;
+%+D        end
+%+D
+%+D   when repexpr do
+%+D        begin ref(expr) x; x:-exprset.first; outchar('('); prt(x,0);
+%+D              for x:-x.suc while x =/= none do
+%+D              begin outchar(','); prt(x,0) end;
+%+D              outchar(')');
+%+D        end
+%+D   when quaopr do
+%+D        begin outchar('('); prt(x,0); outchar(')');
+%+D              outtext(" qua "); outtext(edtype(type));
+%+D        end
+%+D   when dsize do
+%+D        begin outtext("size(" &
+%+D                      symtab(rank(rhi)).val(rank(rlo)).symbol & ":");
+%+D              prt(x,0); outchar(')');
+%+D        end
+%+D   when binopr do
+%+D        begin outchar('('); prt(x,0); outchar(')');
+%+D              if opr=S_ADD then outtext(" + ")
+%+D         else if opr=S_SUB then outtext(" - ")
+%+D         else if opr=S_MULT then outtext(" * ")
+%+D         else if opr=S_DIV then outtext(" / ")
+%+D         else if opr=S_REM then outtext(" rem ")
+%+D         else if opr=S_LT then outtext(" < ")
+%+D         else if opr=S_LE then outtext(" <= ")
+%+D         else if opr=S_EQ then outtext(" = ")
+%+D         else if opr=S_GT then outtext(" > ")
+%+D         else if opr=S_GE then outtext(" >= ")
+%+D         else if opr=S_NE then outtext(" <> ")
+%+D         else if opr=S_AND then outtext(" and ")
+%+D         else if opr=S_OR then outtext(" or ")
+%+D         else if opr=S_XOR then outtext(" xor ")
+%+D         else IERR;
+%+D              outchar('('); prt(y,0); outchar(')');
+%+D        end
+%+D   when unopr do
+%+D        begin
+%+D              if opr=S_NEG  then outtext(" - ")
+%+D         else if opr=S_NOT  then outtext(" not ")
+%+D         else if opr=S_NAME then outtext(" name")
+%+D         else IERR;
+%+D              outchar('('); prt(x,0); outchar(')');
+%+D        end
+%+D   when ifexpr do
+%+D        begin outtext("if "); prt(cond,0); outtext(" then ");
+%+D              prt(x,0); outtext(" else "); prt(y,0);
+%+D        end
+%+D   when module do
+%+D        begin if system then outtext("sys");
+%+D              outtext("insert "); outtext(modid);
+%+D              outchar(';'); outimage; prt(dclset,pos);
+%+D        end
+%+D   when val_const do
+%+D        begin outchar('''); outtext(v); outchar(''') end
+%+D   when offset_const do
+%+D        begin short integer i;
+%+D              outtext("field(" & symtab(rank(ofhi)).val(rank(oflo)).symbol);
+%+D              for i:=1 step 1 until ndot
+%+D              do outtext("." &
+%+D                         symtab(rank(qhi(i))).val(rank(qlo(i))).symbol);
+%+D              outchar(')');
+%+D        end
+%+D   when idn_const do
+%+D        begin if instr=S_C_OADDR then outtext("ref(")
+%+D         else if instr=S_C_GADDR then outtext("name(")
+%+D         else if instr=S_C_SIZE  then outtext("size(")
+%+D         else if instr=S_C_PADDR then outtext("label(")
+%+D         else if instr=S_C_RADDR then outtext("entry(")
+%+D         else                         outtext("**Unknown(");
+%+D              outtext(ibox.symbol); outchar(')');
+%+D        end
+%+D   when structured_const do
+%+D        begin ref(elt_notice) e;
+%+D              outtext("record:" & 
+%+D                      symtab(rank(strhi)).val(rank(strlo)).symbol & "(");
+%+D              e:-elt_set.first;
+%+D              if e =/= none then
+%+D              begin outtext(e.ebox.symbol & "="); prt(e.elt,0);
+%+D              L:    e:-e.suc;
+%+D                    if e =/= none then
+%+D                    begin outtext("," & e.ebox.symbol & "=");
+%+D                          prt(e.elt,0); goto L;
+%+D                    end;
+%+D              end;
+%+D              outchar(')');
+%+D        end
+%+D   when repeated_const do
+%+D        begin ref(const) e; e:-elt_set.first; outchar('(');
+%+D              if e =/= none then
+%+D              begin prt(e,0);  L:   e:-e.suc;
+%+D                    if e =/= none then
+%+D                    begin outchar(','); prt(e,0); goto L end;
+%+D              end;
+%+D              outchar(')');
+%+D        end
+%+D   when const do
+%+D        begin if instr=S_TRUE     then outtext("true")
+%+D         else if instr=S_FALSE    then outtext("false")
+%+D         else if instr=S_ONONE    then outtext("none")
+%+D         else if instr=S_ANONE    then outtext("nofield")
+%+D         else if instr=S_GNONE    then outtext("noname")
+%+D         else if instr=S_NOSIZE   then outtext("nosize")
+%+D         else if instr=S_NOWHERE  then outtext("nowhere")
+%+D         else if instr=S_NOBODY   then outtext("nobody")
+%+D         else                          outtext("**Unknown");
+%+D        end
+%+D   when macro do
+%+D        begin
+%+D        end
+%+D   when mnemonic do
+%+D        begin
+%+D        end
+%+D   when head do
+%+D        begin ref(descr) d; outtext("begin");
+%+D              if empty then outimage else
+%+D              for d:-first,d.suc while d =/= none do prt(d,pos+6);
+%+D              setpos(pos); outtext("end;"); outimage;
+%+D        end
+%+D        otherwise outtext("**Unknown data element**");
+%+D  end *** prt ***;
+
+%title ******   I n i t i a l i z a t i o n   ******
+%  procedure InitCommon;
+   begin character firstch; short integer sym,i;
+
+      procedure def_sysfnc(istr); character istr;
+      inspect new system_descr do begin
+            instr:=istr;
+            DEFIDENT; symb:-boxof(hashhi,hashlo);
+            symb.curmeaning:-this system_descr;
+      end *** def_sysfnc ***;
+
+%INSERT $SIMSRC/fec/pas1init.def
+
+%title ******   SYMBOL  TABLE  INITIALISATION   ******
+
+%INSERT $SIMSRC/fec/common.ini
+
+      !******  Initiate type dictionary  ******;
+
+      infix_types   :- new type_set(TYP_INFIX);
+      integer_types :- new type_set(TYP_INT);
+      struct_types  :- new type_set(TYP_STRUCT);
+      ref_types     :- new type_set(TYP_REF);
+      field_types   :- new type_set(TYP_FIELD);
+      name_types    :- new type_set(TYP_NAME);
+      ent_types     :- new type_set(TYP_ENT);
+
+      inspect new type_notice(none,NUL,NUL,0,0) do begin
+         code:=ntype:=NUL; type_table(0):- this type_notice;
+      end;
+
+      def_type(integer_types, NUL, S_INTEGER, 0, 0);
+      def_type(integer_types, NUL, S_SHORT,   0, 0);
+      def_type(infix_types,   NUL, S_REAL,    0, 0);
+      def_type(infix_types,   NUL, S_LONG,    0, 0);
+      def_type(infix_types,   NUL, S_SIZE,    0, 0);
+      def_type(infix_types,   NUL, S_CHAR,    0, 0);
+      def_type(infix_types,   NUL, S_BOOLEAN, 0, 0);
+      def_type(infix_types,   NUL, S_LABEL,   0, 0);
+      def_type(ent_types,     NUL, NUL,       0, 0);
+      def_type(ref_types,     NUL, NUL,       0, 0);
+      def_type(name_types,    NUL, NUL,       0, 0);
+      def_type(field_types,   NUL, NUL,       0, 0);
+
+      simsymbol:-"set_display";   def_sysfnc(S_SETOBJ);
+      simsymbol:-"display";       def_sysfnc(S_GETOBJ);
+      simsymbol:-"rec_size";      def_sysfnc(S_DSIZE);
+      simsymbol:-"length_temps";  def_sysfnc(S_PUSHLEN);
+      simsymbol:-"init_pointer";  def_sysfnc(S_T_INITO);
+      simsymbol:-"get_pointer";   def_sysfnc(S_T_GETO);
+      simsymbol:-"set_pointer";   def_sysfnc(S_T_SETO);
+      simsymbol:-"zeroarea";      def_sysfnc(S_ZEROAREA);
+      simsymbol:-"initarea";      def_sysfnc(S_INITAREA);
+      simsymbol:-"conv_ref";      def_sysfnc(S_REF);
+      simsymbol:-"conv_field";    def_sysfnc(S_FIELD);
+
+      tagtab(0):-new tagbox;
+
+      for simsymbol:-
+          "bool",  "char",  "int",   "sint",  "real",  "lreal",
+          "aaddr", "oaddr", "gaddr", "paddr", "raddr", "size"
+      do begin DEFIDENT;  newtag(boxof(hashhi,hashlo)); end;
+
+      ntaglo:='!31!'; !*** ntaghi:=NUL ***;
+
+      TRC_info  :- new head; TRC_init:-new head;
+      structset :- new head;
+      qntset    :- new head;
+      modset    :- new head;
+
+      ! *****  init STRING identifiers  **** ;
+      simsymbol:-"string"; DEFIDENT; stringhi:=hashhi; stringlo:=hashlo;
+      simsymbol:-"chradr"; DEFIDENT; chradrBox:-boxof(hashhi,hashlo);
+      simsymbol:-"nchr";   DEFIDENT; nchrBox:-  boxof(hashhi,hashlo);
+
+   end *** Initialization ***;
+
+end *** Common ***;

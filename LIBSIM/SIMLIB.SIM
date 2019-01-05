@@ -1,0 +1,246 @@
+% -----------------------------------------------------------------
+% 
+%                      C L A S S   S I M L I B
+%                                
+%         Selected procedure from the DEC-10 LIBSIM library
+% 
+%                     Simula a.s., Oslo, Norway
+%
+% Usage: compile class SIMLIB. When used from a program, include
+%        the library file L1 (located in sim\lib) by using e.g.
+%            sim -lL1.a myprog.sim
+%        The procedure declarations are also separately available
+%        in sim/simlib as e.g. abort.sim
+% -----------------------------------------------------------------
+
+class SIMLIB;
+begin
+
+% ABORT:
+%     --- Print mess and then execute enterdebug(false), see below
+      external library procedure abort is
+      procedure abort(mess); text mess; ;
+
+% CHANGE: 
+%     --- search master from pos for subtext oldt; if found, then
+%     --- replace it by newt, otherwise return FALSE and do
+%     --- master.setpos(0). After the call, master is either a
+%     --- subtext (newt.length<=oldt.length), or a new text object.
+      boolean procedure change(master,old,nw);
+      name master; text master,old,nw; ;
+
+% CHECKEXTENSION:
+%      --- check whether t has a suffix (by scanning for a dot).
+%      --- If no suffix, the result is    t & "." & ext
+%      --- if t is notext, the result is notext.
+      external library procedure checkextension is
+      text procedure checkextension(t,ext); value t; text t,ext; ;
+
+% CHECKFRAC:
+%      ---  see if getfrac is legal on t.
+%      ---  return: +1: getfrac is legal, POS after item
+%      ---           0: rem of t is blank, POS=t.length+1
+%      ---          -1: getfrac results in RTS-error, POS=first illegal
+      external library procedure checkfrac is
+      short integer procedure checkfrac(t); name t; text t; ;
+
+% CHECKINT:
+%     --- equivalent to checkfrac, using getint
+      external library procedure checkint is
+      short integer procedure checkint(t); name t; text t; ;
+
+% CHECKREAL:
+%     --- equivalent to checkfrac, using getreal
+      external library procedure checkreal is
+      short integer procedure checkreal(t); name t; text t; ;
+
+% COMPRESS:
+%      --- delete all occurrences of c in t, by moving the
+%      --- following characters "up". NOTE: the contents of t changed!
+%      --- result is the compressed text, as a subtext of t
+      external library procedure compress is
+      text procedure compress(t,c); text t; character c; ;
+
+% CONC2:
+%     --- perform    t1 & t2
+      external library procedure conc2 is
+      text procedure conc2(t1,t2); text t1,t2; ;
+
+% CPTIME:
+%     --- equivalent to cputime
+      external library procedure cptime is
+      long real procedure cptime; ;
+
+% DAYNO:
+%     --- return number of today in the year (e.g. feb. 3 return 34)
+      external library procedure dayno is
+      short integer procedure dayno; ;
+
+% DAYTIME:
+%     --- return time of day in format "hh:mm:ss"
+      external library procedure daytime is
+      text procedure daytime; ;
+
+% DEPCHAR:
+%     --- store c at pos p of t, if possible
+      external library procedure depchar is
+      procedure depchar(t,p,c);
+      text t; short integer p; character c; ;
+
+% ENTERDEBUG:
+%     --- activate SIMOB. If mayctn is false, execution is terminated
+%     --- after SIMOB command "resume" as if "exit" had been given.
+      external library procedure enterdebug is
+      procedure enterdebug(mayctn); boolean mayctn; ;
+
+% EXIT:
+%     --- terminate program, depending upon ccode:
+%     --- ccode <= 0: terminate immediately with exit code -ccode
+%     --- ccode  = 1: call terminate_program
+%     --- ccode  = 2: call enterdebug(true), see above
+%     --- ccode  > 2: terminate_program with "out-of-range" message
+      external library procedure exit is
+      procedure exit(ccode); short integer ccode; ;
+
+% FETCHAR:
+%     --- return i'th character of t (or '!0!' if not possible)
+      external library procedure fetchar is
+      character procedure fetchar(t,i); text t; short integer i; ;
+
+% FINDTRIGGER:
+%      ---  set m.pos after first occurrence of any char in t
+%      ---  return the found character
+      external library procedure findtrigger is
+      character procedure findtrigger(m,t); name m; text m,t; ;
+
+% FROM:
+%      ---  return "t.sub(i .. last)", if possible
+      external library procedure from is
+      text procedure from(t,i); text t; short integer i; ;
+
+% FRONT:
+%      ---  return "t.sub(1 .. t.pos-1)"
+      external library procedure front is
+      text procedure front(t); text t; ;
+
+% FRONTCOMPARE:
+%      ---  return "t1.sub(pos,t2.length)=t2"
+      external library procedure frontcompare is
+      boolean procedure frontcompare(t1,t2); text t1,t2; ;
+
+% FRONTSTRIP:
+%     --- return a subtext of t with leading blanks skipped
+      external library procedure frontstrip is
+      text procedure frontstrip(t); text t; ;
+
+% GETITEM:
+%     ---  returns next item (ident, number, any other char)
+%     ---  as a subtext, and updates t.pos 
+%     ---  skips leading FORMAT characters
+      external library procedure getitem is
+      text procedure getitem(t); name t; text t; ;
+
+% HASH:
+%     ---  return a hash code, computed from txt
+      external library procedure hash is
+      integer procedure hash(t,n); text t; integer n; ;
+
+% INITEM:
+%     ---  perform getitem on f.image if possible
+      external library procedure initem is
+      text procedure initem(f); ref(file) f; ;
+
+% LINECOUNT:
+%     --- return current linesperpage setting
+      external library procedure linecount is
+      integer procedure linecount(pfil); ref(printfile) pfil; ;
+
+% LOWC:
+%     --- return lower case of c, if c in 'A'..'Z'
+      external library procedure lowc is
+      character procedure lowc(c); character c; ;
+
+% MAKETEXT:
+%     --- return text of length i, c-filled
+      external library procedure maketext is
+      text procedure maketext(c,i); character c; short integer i; ;
+
+% PUTTEXT:
+%     ---  perform "ot.sub(pos,nt.length):=nt", if possible
+%     ---  return true if possible, otherwise false
+      external library procedure puttext is
+      boolean procedure puttext(ot,nt); name ot; text ot,nt; ;
+
+% REST:
+%     ---  return "t.sub(pos .. last)", if possible
+      external library procedure rest is
+      text procedure rest(t); text t; ;
+
+% SCANCHAR:
+%     --- safe version of getchar (return NUL if not possible)
+      external library procedure scanchar is
+      character procedure scanchar(t); name t; text t; ;
+
+% SCANFRAC:
+%     --- safe version of getfrac (return -maxint if not possible)
+      external library procedure scanfrac is
+      integer procedure scanfrac(t); name t; text t; ;
+
+% SCANINT:
+%     --- safe version of getint (return -maxint if not possible)
+      external library procedure scanint is
+      integer procedure scanint(t); name t; text t; ;
+
+% SCANREAL:
+%     --- safe version of getreal (return -maxreal if not possible)
+      external library procedure scanreal is
+      long real procedure scanreal(t); name t; text t; ;
+
+% SCANTO:
+%     ---  scan t from pos to first occurrence of c (if any)
+%     ---  return the scanned substring (excluding c)
+      external library procedure scanto is
+      text procedure scanto(t,c); name t; text t; character c; ;
+
+% SEARCH:
+%     ---  return startpos of first m.sub, where m.sub=c, or m.length+1
+      external library procedure search is
+      short integer procedure search(t1,t2); text t1,t2; ;
+
+% SKIP:
+%     ---  set t.pos at first character <> c, or t.length+1
+%     ---  return "t.sub(newpos .. last)"
+      external library procedure skip is
+      text procedure skip(t,c); name t; text t; character c; ;
+
+% STARTPOS:
+%     ---  return start pos. of t within t.main, or zero
+      external library procedure startpos is
+      short integer procedure startpos(t); text t; ;
+
+% TODAY:
+%     ---  return date in format yyyy-mm-dd
+      external library procedure today is
+      text procedure today; ;
+
+% TSUB:
+%     ---  return t.sub(p,l), or notext if not possible
+      external library procedure tsub is
+      text procedure tsub(t,p,l); text t; short integer p,l; ;
+
+% UPC:
+%     --- return upper case of c, if c in 'A'..'Z'
+      external library procedure upc is
+      character procedure upc(c); character c; ;
+
+% UPCOMPARE:
+%     ---  as frontcompare, except that the case of letters is ignored
+      external library procedure upcompare is
+      boolean procedure upcompare(s,c); text s,c; ;
+
+% UPTO:
+%     ---  return "t.sub(1,pos-1)", if possible
+      external library procedure upto is
+      text procedure upto(t,p); text t; short integer p; ;
+
+end LIBSIM1;

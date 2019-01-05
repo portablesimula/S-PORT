@@ -1,0 +1,1111 @@
+%SPORT ON
+External class tWindows;        
+
+tWindows Class Menues;
+
+% **************************************************************
+% Draft (documentation currently not available)
+% (c) Simula a.s, Norway
+% 23.08.1991
+% 
+%                     S I M U L A    4 G L    L I K E
+%                         I N T E R F A C E    T O
+%                  R E L A T I O N A L    D A T A B A S E S
+%                  W I T H    S C R E E N    F U N T I O N S
+% 
+%  Selection switches:           
+%  1. Operating system selectors (one and only one must be set)
+%     M - DOS version
+%     O - OS-2 version
+%     X - XENIX/UNIX version
+%     - check consistent selection of operating system
+%+MO %EOF
+%+MX %EOF
+%+XO %EOF
+%-MOX %EOF
+% 
+%  2. Exclusion of different classes, may or may not be set
+%     e - EXclude enumeration, enumType, enumField
+%     f - EXclude fileSelectForm, getdir
+%     g - EXclude fileForm
+%     i - EXclude interval
+%     o - EXclude optnList
+%     s - EXclude subRange
+%     t - EXclude inTextField
+%
+% **************************************************************
+
+begin
+      short integer ScreenMode, Height, Width;
+      ref(Window) EXPL;
+      ref(Form) EXITWIN,SYSWIN,NOTIMPL;
+
+%title ***    D A T A    T Y P E S    ***
+
+      Link Class DataType(Ident,Picture); text Ident,Picture;
+      Virtual: Procedure PutText is Boolean Procedure PutText(t);
+                         text t; ;
+               Procedure Edit is Boolean Procedure Edit(Frm,Lin,Pos);
+                         ref(Form) Frm; Short integer Lin,Pos; ;
+      begin ref(Head) RepaintSet;
+
+            Boolean Procedure PutText(t); text t;      !** Default Match **;
+            begin if t.Length <= Picture.Length then
+                  begin Picture:=t; PutText:=true; RepaintForms end;
+            end;
+
+            Procedure Justify(j); short integer j;
+            !** j<0:LeftJustify, j=0:Center, j>0:RigthJustify **;
+            begin short integer p; text t,u; t:-Picture.Strip;
+                  while t.more do begin
+                     if t.getchar <> ' ' then begin
+                        u:-t.sub(t.pos-1,t.Length-t.pos+2);
+            !left;      if j<0 then t:=u
+                        else begin
+                           p:=0;
+            !right;        if j>0 then begin
+                              p:=Picture.Length-u.Length;
+                              t.sub(p+1,t.Length-p-1):=u;
+                           end
+                           else begin
+            !center;          t:-Picture; p:=(t.Length-u.Length)//2;
+                              t.sub(p+1,t.Length-p-1):=u;
+                           end;
+                           if p <> 0 then Picture.sub(1,p):=notext;
+                        end;
+                        goto E;
+                     end;
+                  end;
+            E:end;
+
+            Boolean Procedure Edit(Frm,Lin,Pos);   !** Default Match **;
+            ref(Form) Frm; Short integer Lin,Pos;  !** Default Match **;
+            begin text t;
+               inspect Frm do begin
+                  ExplEdit; SetPos(Lin,Pos);
+                  t:-Intext(min(Width-Pos,Picture.Length));
+                  if LastKey.map <> EscKey and then t <> Picture
+                  then Edit:=PutText(t)
+                  else begin
+                     SetPos(Lin,Pos); OutText(Picture.sub
+                                     (1,min(Width-Pos,Picture.Length)));
+                  end;
+                  if LastKey.map=CrKey  then LastKey.map:=DownKey;
+                  if LastKey.map=EscKey then LastKey.map:=DownKey;
+               end;
+            end;
+
+            Procedure RepaintForms;
+            begin ref(Link) x; x:-RepaintSet.First;
+                  while x =/= none do begin Call(x); x:-x.suc end;
+            end;
+
+            RepaintSet:-New Head;
+%           Into(CurrentDataSet);
+
+      end;
+
+      DataType Class TextType; ;
+%title ***    DATA  TYPE:  SubRange   ***
+%     ******   included if selector s (small letter S) set   ******
+
+%-s   DataType Class SubRange(Lb,Ub); integer Lb,Ub;
+%-s   Hidden Protected val;
+%-s   begin integer val;
+
+%-s         Integer Procedure GetInt; GetInt:=val;
+
+%-s         Boolean Procedure PutInt(i); integer i;
+%-s         begin if i >= Lb and then i <= Ub then
+%-s               begin val:=i; Picture.Putint(i); Justify(-1); 
+%-s                     PutInt:=true; RepaintForms;
+%-s               end;
+%-s         end;
+
+%-s         Boolean Procedure Edit(Frm,Lin,Pos);     !** Local Match **;
+%-s         ref(Form) Frm; Short integer Lin,Pos;
+%-s         begin integer v;
+%-s            inspect Frm do begin
+%-s               ExplEdit;
+%-s               SetPos(Lin,Pos); v:=Inint(Picture.Length);
+%-s               if LastKey.map <> EscKey and then v <> val
+%-s               then Edit:=PutInt(v)
+%-s               else begin
+%-s                  SetPos(Lin,Pos); OutText(Picture.sub
+%-s                                  (1,min(Width-Pos,Picture.Length)));
+%-s               end;
+%-s               if LastKey.map=CrKey  then LastKey.map:=DownKey;
+%-s               if LastKey.map=EscKey then LastKey.map:=DownKey;
+%-s            end;
+%-s         end;
+%-s   end;
+%title ***    DATA  TYPE:  Interval   ***
+%     ******   included if selector i (small letter I) set   ******
+
+%-i   DataType Class Interval(Ub); integer Ub;
+%-i   Hidden Protected val;
+%-i   begin integer val;
+
+%-i         Integer Procedure GetInt; GetInt:=val;
+
+%-i         Boolean Procedure PutInt(i); integer i;
+%-i         begin if i >= 0 and then i <= Ub then
+%-i               begin val:=i; Picture.Putint(i); Justify(-1); 
+%-i                     PutInt:=true; RepaintForms;
+%-i               end;
+%-i         end;
+
+%-i         Boolean Procedure Edit(Frm,Lin,Pos);     !** Local Match **;
+%-i         ref(Form) Frm; Short integer Lin,Pos;
+%-i         begin integer v;
+%-i            inspect Frm do begin
+%-i               ExplEdit;
+%-i               SetPos(Lin,Pos); v:=Inint(Picture.Length);
+%-i               if LastKey.map <> EscKey and then v <> val
+%-i               then Edit:=PutInt(v)
+%-i               else begin
+%-i                  SetPos(Lin,Pos); OutText(Picture.sub
+%-i                                  (1,min(Width-Pos,Picture.Length)));
+%-i               end;
+%-i               if LastKey.map=CrKey  then LastKey.map:=DownKey;
+%-i               if LastKey.map=EscKey then LastKey.map:=DownKey;
+%-i            end;
+%-i         end;
+
+%-i         Picture:-blanks(6);
+%-i   end;
+%title ***    DATA  TYPE:  EnumerationType   ***
+%     ******   included if selector e (small letter E) set   ******
+
+%-e   Class Enumeration(MaxVal); short integer MaxVal;
+%-e   begin text array Expl,Optn(0:MaxVal);
+
+%-e         Short integer Procedure Lookup(id); text id;
+%-e         begin short integer i;
+%-e               for i:=0 step 1 until MaxVal do
+%-e               if id=Optn(i) then goto E; i:=MaxVal+1;
+%-e            E: Lookup:=i;
+%-e         end;
+%-e   end;
+
+%-e   DataType Class EnumType(eNum); ref(Enumeration) eNum;
+%-e   Hidden Protected val;
+%-e   begin short integer val;
+
+%-e         Short integer Procedure GetInt; GetInt:=val;
+
+%-e         Boolean Procedure PutText(id); text id;
+%-e         PutText:=PutInt(eNum.Lookup(id));
+
+%-e         Boolean Procedure Increment; Increment:=PutInt(Val+1);
+%-e         Boolean Procedure Decrement; Decrement:=PutInt(Val-1);
+
+%-e         Boolean Procedure PutInt(i); integer i;
+%-e         begin if i >= 0 and then i <= eNum.MaxVal then
+%-e               begin val:=i; Picture:=eNum.Optn(i);
+%-e                     PutInt:=true; RepaintForms;
+%-e               end;
+%-e         end;
+
+%-e         Boolean Procedure Edit(Frm,Lin,Pos);     !** Local Match **;
+%-e         ref(Form) Frm; Short integer Lin,Pos;
+%-e         begin integer v;
+%-e            inspect Frm do begin
+%-e               v:=Val; Show;
+%-e               while true do
+%-e               begin Explain(eNum.Expl(v)); setpos(Lin,Pos);
+%-e                     HighLight(eNum.Optn(v)); Inchar;
+%-e                     if LastKey.map = CrKey
+%-e                     then v:=if v >= eNum.MaxVal then 0 else v+1
+% --                    if LastKey.map = UpKey
+% --                    then v:=if v <= 0 then eNum.MaxVal else v-1
+% --               else if LastKey.map = DownKey
+% --                    then v:=if v >= eNum.MaxVal then 0 else v+1
+%-e                else goto Ex;
+%-e               end;
+%-e           Ex: if LastKey.map <> EscKey and then v <> val
+%-e               then Edit:=PutInt(v) else
+%-e               begin Setpos(Lin,pos); OutText(eNum.Optn(Val)) end;
+%-e               if LastKey.map=CrKey  then LastKey.map:=DownKey;
+%-e               if LastKey.map=EscKey then LastKey.map:=DownKey;
+%-e            end;
+%-e         end;
+%-e   end;
+%title ***    DATA  TYPE:  OptnList   ***
+%     ******   included if selector o (small letter O) set   ******
+
+%-o   DataType Class OptnList;
+%-o   Hidden Protected Optn,EnCode,DeCode;
+%-o   begin Character array Optn(0:27);
+
+%-o         Procedure DeCode(t); text t; !** t ==> Optn(..) **;
+%-o         begin integer i,k; character c;
+%-o               short integer tpos,lim;
+
+%-o               boolean procedure nextchar;
+%-o               if tpos < lim then begin
+%-o                  c:=loadchar(t,tpos); tpos:=tpos+1; nextchar:=true;
+%-o               end else c:='!0!';
+
+%-o               for i:=0 step 1 until 27 do Optn(i):='!0!';
+%-o               tpos:=0; lim:=t.length;
+%-o               while nextchar do begin
+%-o             L1:  if letter(c) then begin
+%-o                     i:=rank(c)-rank('A'); k:=1;
+%-o                     if nextchar then begin
+%-o                        if digit(c) then begin
+%-o                           k:=rank(c)-rank('0');
+%-o                           while nextchar and then digit(c)
+%-o                              do k:=k*10+(rank(c)-rank('0'));
+%-o                           ! *** k:=rem(k,256);
+%-o                        end;
+%-o                     end;
+%-o                     Optn(i):=char(k); goto L1;
+%-o                  end;
+%-o               end;
+%-o         end;
+
+%-o         Procedure EnCode(t); text t; !** Optn(..) ==> t **;
+%-o         begin short integer i,k,w;
+%-o               t:=notext; t.setpos(1);
+%-o               for i:=0 step 1 until 27 do
+%-o               begin k:=rank(Optn(i));
+%-o                     if k <> 0 then
+%-o                     begin t.putchar(char(rank('A')+i));
+%-o                           if k=1 then ! OK ;
+%-o                      else begin w:=if k<10 then 1
+%-o                                    else if k<100 then 2 else 3;
+%-o                                 t.sub(t.pos,w).putint(k); t.setpos(t.pos+w)  
+%-o                           end;
+%-o                     end;
+%-o               end;
+%-o         end;
+
+%-o         character Procedure GetOpt(c); Character c;
+%-o         begin
+%-o               if c >= 'A' and then c<='Z'
+%-o               then GetOpt:=Optn(rank(c)-rank('A'));
+%-o         end;
+
+%-o         Boolean Procedure PutOpt(c,v); character c,v;
+%-o         begin
+%-o               if c >= 'A' and then c<='Z' then begin
+%-o                  Optn(rank(c)-rank('A')):=v; EnCode(Picture);
+%-o                  PutOpt:=true; RepaintForms;
+%-o               end;
+%-o         end;
+
+%-o         Boolean Procedure Edit(Frm,Lin,Pos);    !** Local Match **;
+%-o         ref(Form) Frm; Short integer Lin,Pos;
+%-o         begin text t;
+%-o            inspect Frm do begin
+%-o               ExplEdit; SetPos(Lin,Pos);
+%-o               t:-Intext(min(Width-Pos,Picture.Length));
+%-o               UpCase(t);
+%-o               if LastKey.map <> EscKey and then t <> Picture then
+%-o               begin Picture:=t; DeCode(Picture);
+%-o                     EnCode(Picture); Edit:=True;
+%-o               end;
+%-o               if LastKey.map=CrKey  then LastKey.map:=DownKey;
+%-o               if LastKey.map=EscKey then LastKey.map:=DownKey;
+%-o            end;
+%-o         end;
+
+%-o         DeCode(Picture);
+
+%-o   end;
+%title ***    DATA  TYPE:  DataSet   ***
+
+      DataType Class DataSet(Width); Short integer Width;
+%     Hidden Protected Set;
+      begin ref(Head) Set;
+
+            Boolean Procedure PutText(t); text t;
+            begin text u; u:-Blanks(Width);
+                  u:=t.sub(1,min(Width,t.Length));
+                  New TextType(notext,u).Into(Set);
+            end;
+
+%           ref(Link) Procedure First; First:-Set.First;
+%           ref(Link) Procedure Last;  Last:-Set.Last;
+%           ....    ?????
+
+            Set :- New Head;
+
+      end;
+%title ***    C L A S S    R E G I S T E R    ***
+%     ******   NB NB   -   not ready   ******
+
+%     Class DataBase(Ident,dir);
+%     text Ident; !** DataBase Identification Label               **;
+%     text Dir;   !** DataBase Home Directory. E.g. C:\usr\dbm1   **;
+%     begin ref(Head) Dictionary;
+%           ref(DirectFile) Df;
+
+%           Link Class Entry(Ident,Type);
+%           text Ident;   !** Identification Label                **;
+%           integer Type; !** Entry Type: Table/Form/ etc.        **;
+%           begin integer Location; !** File Location in Df       **;
+%                 ref(Descriptor) Info;
+
+%           end;
+
+%           Procedure READ;  !**  ...  **;;
+%           Procedure WRITE; !**  ...  **;;
+%           Procedure Open;  !**  ...  **;;
+%           Procedure Close; !**  ...  **;;
+%     end;
+
+%     Class Descriptor; ;
+
+%     Descriptor Class Register;
+%     Virtual: Procedure Initiate is Procedure Initiate; ;
+%     begin text Title;
+%           text FileName;
+%           integer RecordSize;
+%           ref(Head) FieldSet;
+%           Procedure Initiate; ;  !** Dummy Match **;
+
+%           Link Class Field;
+%           begin integer FieldSize;
+
+%                 Into(FieldSet); !** Initial Action **;
+%           end;
+%     
+%           Field Class TextField(val); text val;
+%           begin
+%           end;
+%     
+%           Field Class Numeric(val,width); integer val,width;
+%           begin
+%           end;
+%     
+%           FieldSet:-new Head; Initiate;
+%      L:   Detach; Inner; goto L;
+
+%     end;
+
+%title ***    C L A S S    F O R M    ***
+character eNone='!0!', eChanged='!1!',ePressed='!2!',eKeyin='!4!';
+          !** Events - Note: Power of 2 **;
+
+Window Class Form;
+Virtual: Procedure Initiate is Procedure Initiate; ;
+         Procedure EventHandler
+         is Procedure EventHandler(Event); character Event; ;
+begin ref(Head) FieldSet;
+      ref(Field) Current;    !** Field Cursor **;
+      Procedure Initiate; ;  !** Dummy Match **;
+      Procedure EventHandler(Event); character Event; ; !** Dummy **;
+
+      Procedure Paint;
+      begin ref(Field) f; f:-FieldSet.first;
+            while f =/= none do begin f.Paint; f:-f.suc end;
+      end;
+
+      Procedure Process;
+      begin character Event; Short integer p,w,rep; ref(Field) Fld;
+            if Current == none then Current:-FieldSet.first;
+            while true do
+            begin if Current == none then Inchar else
+                  begin Event:=Current.Process;
+                        if Event <> eNone then EventHandler(Event);
+                  end;
+                  rep:=0;
+                  while Digit(LastKey.map) do begin
+                     rep:=10*rep+(Rank(LastKey.map)-Rank('0')); Inchar;
+                  end;
+                  rep:=max(1,rep);
+                  while rep > 0 do begin
+                        rep:=rep-1;
+                        if LastKey.map='!0!' then !** Nothing **;
+                   else if Current == none then begin
+                           EventHandler(eKeyin); goto Ex end
+                   else if LastKey.map = LeftKey then begin
+                        L: Current:-Current.pred;
+                           if Current==none then Current:-FieldSet.last;
+                           if Current in DescrField then goto L;
+                        end
+                   else if LastKey.map = RightKey then begin
+                           Current:-Current.suc;
+                           if Current==none then Current:-FieldSet.first;
+                        end
+                   else if LastKey.map = UpKey then begin
+                           Fld:-Current; p:=Current.Pos; w:=0;
+                           for w:=w+2 while Fld==Current and w<Width do
+                           for Fld:-Fld.pred while Fld=/=none,
+                                    FieldSet.Last,
+                                    Fld.pred while Fld=/=Current
+                           do if abs(Fld.pos-p) < w then goto U2;
+                     U2:   Current:-Fld;
+                        end
+                   else if LastKey.map = DownKey then begin
+                           Fld:-Current; p:=Current.Pos; w:=0;
+                           for w:=w+2 while Fld==Current and w<Width do
+                           for Fld:-Fld.suc while Fld=/=none,
+                                    FieldSet.First,
+                                    Fld.suc while Fld=/=Current
+                           do if abs(Fld.pos-p) < w then goto D2;
+                     D2:   Current:-Fld;
+                        end
+                   else if Letter(LastKey.map) then begin
+                           Fld:-Current;
+                       L1: Fld:-Fld.suc;
+                           if Fld==none then Fld:-FieldSet.First;
+                           if Fld =/= Current then begin
+                              inspect Fld when TextField do
+                                 if LastKey.map=Val.sub(1,1).getchar
+                                 then begin Current:-Fld; goto L2 end;
+                                 goto L1;
+                           end;
+                     L2:end
+                   else begin EventHandler(eKeyin); goto Ex end;
+                  end;
+            end;
+      Ex:
+      end;
+%title ***    F O R M  --  F I E L D S    ***
+
+      Link Class Field(Lin,Pos); short integer Lin,Pos;
+      Virtual: Procedure Paint   is Procedure Paint; ;
+               Procedure Process is character Procedure Process; ;
+      begin Short integer EventMask;
+            Procedure Paint; ;           !** Dummy Match **;
+            character Procedure Process; ; !** Dummy Match **;
+
+            Into(FieldSet); !** Initial Action **;
+      end;
+
+      Field Class DescrField(val); text val;
+      begin
+            Procedure Paint; 
+            begin setpos(Lin,Pos); outtext(val) end;
+
+            character Procedure Process;
+            begin Current:-suc; LastKey.map:='!0!' end;
+      end;
+      
+      Field Class DataField(val,AutoEdit);
+      Ref(DataType) val; Boolean AutoEdit;
+      Hidden Protected Painter,FieldPainter;
+      begin ref(FieldPainter) Painter;
+
+            Link Class FieldPainter;
+            begin Into(val.RepaintSet);
+               L: Detach; inspect val do
+                  begin 
+                        Setpos(Lin,Pos);
+                        if Picture.Length > Width-Pos
+                        then Outtext(Picture.sub(1,Width-Pos))
+                        else Outtext(Picture);
+                        goto L;
+                  end;
+                  Out; !** Remove Painter from RepaintSet **;
+            end;
+
+            Procedure Paint; Call(Painter);
+      
+            character Procedure Process;
+            begin if AutoEdit then
+                  begin SetPos(Lin,Pos);
+                        if val.Edit(This Form,Lin,Pos)
+                        then Process:=eChanged;
+                        if LastKey.map=CrKey then LastKey.map:=DownKey;
+                  end else
+                  begin Explain("Enter: edit this field"); Show;
+                        Setpos(Lin,Pos);
+                        if Val.Picture.Length > Width-Pos
+                        then HighLight(Val.Picture.sub(1,Width-Pos))
+                        else HighLight(Val.Picture);
+                        Inchar; Paint;
+                        if LastKey.map=CrKey then
+                        begin if val.Edit(This Form,Lin,Pos)
+                              then Process:=eChanged; LastKey.map:='!0!';
+                        end;
+                  end;
+            end;
+
+            Painter:-New FieldPainter;
+      end;
+
+
+%-t   Field Class IntextField(val); text val;
+%-t   begin
+%-t         Procedure Paint;
+%-t         begin setpos(Lin,Pos); outtext(val) end;
+
+%-t         character Procedure Process;
+%-t         begin text t; Explain(notext); Show;
+%-t               setpos(Lin,Pos); t:-intext(val.length);
+%-t               if t <> val then Process:=eChanged; val:=t;
+%-t         end;
+%-t   end;
+
+      Procedure ExplEdit;
+      begin Explain("Enter: confirm field, Esc: regret, Home: close window");
+            Show;
+      end;
+
+      Field Class TextField(val); text val;
+      begin
+            Procedure Paint;
+            begin setpos(Lin,Pos); outtext(val) end;
+
+            character Procedure Process;
+            begin text t; Explain("Enter: edit this field"); Show;
+                  Setpos(Lin,Pos); HighLight(val); Inchar; Paint;
+                  if LastKey.map=CrKey then
+                  begin ExplEdit; setpos(Lin,Pos); t:-intext(val.length);
+                        if LastKey.map=EscKey then
+                        begin Setpos(Lin,Pos); Outtext(val) end
+                   else if t <> val then
+                        begin Process:=eChanged; val:=t end;
+                        LastKey.map:='!0!';
+                  end;
+            end;
+      end;
+      
+%     Field Class Numeric(val,width); integer val,width;
+%     begin
+%           Procedure Paint;
+%           begin setpos(Lin,Pos); outint(val,0) end;
+%
+%           character Procedure Process;
+%           begin integer v; text t;
+%                 Explain("Press ENTER to Edit field"); Show;
+%                 Setpos(Lin,Pos); t:-gettext(width);
+%                 Setpos(Lin,Pos); HighLight(t); Inchar;
+%                 Setpos(Lin,Pos); Outtext(t);
+%                 if LastKey.map=CrKey then
+%                 begin ExplEdit; setpos(Lin,Pos); v:=inint(width);
+%                       if LastKey.map=EscKey then
+%                       begin Setpos(Lin,Pos); Outtext(t) end
+%                  else if v <> val then
+%                       begin Process:=eChanged; val:=v end;
+%                       LastKey.map:=0;
+%                 end;
+%           end;
+%     end;
+
+%-e   Field Class EnumField(val,eNum);
+%-e   Short integer val; ref(Enumeration) eNum;
+%-e   begin
+%-e         Procedure Paint;
+%-e         begin setpos(Lin,Pos); Outtext(eNum.Optn(Val)) end;
+
+%-e         character Procedure Process;
+%-e         begin show;
+%-e               while true do
+%-e               begin Explain(eNum.Expl(Val)); setpos(Lin,Pos);
+%-e                     HighLight(eNum.Optn(Val)); Inchar;
+%-e                     if LastKey.map = CrKey
+%-e                     then Val:=if Val >= eNum.MaxVal then 0 else Val+1
+% --                    if LastKey.map = UpKey
+% --                    then Val:=if Val <= 0 then eNum.MaxVal else Val-1
+% --               else if LastKey.map = DownKey
+% --                    then Val:=if Val >= eNum.MaxVal then 0 else Val+1
+%-e                else goto Ex;
+%-e               end;
+%-e         Ex:   Paint;
+%-e         end;
+%-e   end;
+
+
+      TextField Class Button(Expl); text Expl;
+      begin
+            Procedure Paint;
+            begin setpos(Lin,Pos); outtext(val) end;
+
+            character Procedure Process;
+            begin Explain(Expl); Show; Setpos(Lin,Pos);
+                  HighLight(val); Inchar; Paint;
+                  if LastKey.map=CrKey then Process:=ePressed;
+            end;
+      end;
+
+      Button Class TagField(Fld); ref(Field) Fld;
+      begin
+            Procedure Paint;
+            begin setpos(Lin,Pos); Outtext(Val); Fld.Paint end;
+
+            character Procedure Process;
+            begin character Event;
+               L: Explain(Expl); Show;
+                  setpos(Lin,Pos); HighLight(Val); Inchar;
+                  if LastKey.map = CrKey then
+                  begin Event:=Fld.Process; if Event=eNone then goto L;
+                        Process:=Event; LastKey.map:=DownKey;
+                  end;
+                  Paint;
+            end;
+            Fld.Out;  !** **;
+      end;
+
+      Button Class MenuEntry(SubWin); ref(Form) SubWin;
+      begin
+            character Procedure Process;
+            begin L: Explain(Expl); Show;
+                  setpos(Lin,Pos); HighLight(Val); Inchar;
+                  if LastKey.map = CrKey then
+                  begin if This MenuEntry in SubMenu
+                        then SubWin.ShowAt(Lin+1,Pos+1);
+                        Call(SubWin); SubWin.Hide; goto L;
+                  end;
+                  Paint;
+            end;
+      end;
+
+      MenuEntry Class SubMenu;;
+
+      FieldSet:-new Head; Initiate;
+ L:   Detach; Inner; goto L;
+
+end form;
+
+%title ***    S T A N D A R D    F O R M S    ***
+
+      Form Class NotImplemented;
+      begin
+            ShowAT(5,5);
+            setpos(4,4);  outtext(" NOT IMPLEMENTED ");
+            Wait;
+      end;
+
+      Form Class SystemForm;
+      begin Show; Setpos(1,1);
+%+X         SetFont(0); System("sh");      SetFont(1);
+%+M         SetFont(0); System("command"); SetFont(1);
+%+O         SetFont(0); System("cmd");     SetFont(1);
+            Hide; EraseWindow;
+      end;
+
+      Form Class ExitForm;
+      begin ref(Button) Exit;
+
+            Procedure Initiate;
+            begin Border1;
+                  setpos(4,4);  outtext("DO YOU REALLY WANT TO");
+                  setpos(6,4);  outtext(" LEAVE THE SYSTEM?");
+                  CurAttr:-YellowOnBlue;
+                  Exit:-new Button(8,5," EXIT ","Leaving the window system");
+                  new Button(8,13," CONTINUE ","Continue menu operations");
+            end;
+
+            Procedure EventHandler(Event); character Event;
+            if Event=ePressed then
+            begin if Current==Exit then exitSystem; goto Cont end;
+
+            Paint; ShowAT(7,27); Process; Cont:
+      end;
+
+%-g   Form Class FileForm(FileName,inputlng);
+%-g         text FileName; short integer inputlng;
+%-g   hidden protected filpos,wSize,toprec,pctpos,input,expltext;
+%-g   !*** display contents of indicated file one page at a time ***;
+%-g   begin short integer filpos, ! nb. of last RECORD read from input;
+%-g                       toprec, ! nb. of top line on window;
+%-g                       wSize,  !number of lines displayed (constant);
+%-g                       pctPos, !- see proc. Expl;
+%-g                       fileSize; !number of records in file (constant);
+%-g         ref(infile) input; text explText;
+
+%-g         procedure copyFile; !find size of file;
+%-g         begin text t;
+%-g               inspect input when infile do begin
+%-g                  openInput; fileSize:=-1;
+%-g                  while not endfile do begin
+%-g                        inrecord; fileSize:=fileSize+1 end;
+%-g                  if fileSize<=0 then begin
+%-g                     message(" the file is empty! "); goto Term end;
+%-g                  showHome;
+%-g               end
+%-g               otherwise begin
+%-g                  message(" input is not an infile "); goto Term end;
+%-g         end;
+
+%-g         procedure initiate;
+%-g         begin if FileName==notext then begin
+%-g                  message(" no filename? "); goto Term end;
+%-g               explText:-"Esc: close window, "
+%-g                        "PgUp/PgDn/Home/End: scan file           ";
+%-g               pctPos:=explText.length-3;
+%-g               explText:-explText & "%"; !NOTE implicit copy;
+%-g               input:-new infile(FileName);
+%-g               !*** DO NOT OPEN (input may not exist!) ***;
+%-g               wSize:=height;
+%-g         end;
+
+%-g         procedure display;
+%-g         begin short integer i,len;
+%-g            inspect input do if not endfile then begin
+%-g               !hide; erasewindow;
+%-g               i:=wSize; toprec:=filpos;
+%-g               while i>0 and not EndFile do begin i:=i-1;
+%-g                  inrecord; filpos:=filpos+1;
+%-g                  if endfile then print(" ---  EOF  ---")
+%-g                  else begin
+%-g                     len:=image.pos-1; if len>=Width then len:=Width-1;
+%-g                     print(Image.sub(1,len));
+%-g                  end;
+%-g               end;
+%-g               !show; Expl;
+%-g            end;
+%-g         end;
+
+%-g         procedure Expl;
+%-g         begin if input.endfile then filpos:=filpos-1;
+%-g               explText.sub(pctPos,3).putint((100*(filpos-1))//fileSize);
+%-g               Explain(explText);
+%-g         end;
+
+%-g         Procedure EventHandler(Event); character Event;
+%-g         begin
+%-g               if lastkey.map < ' ' then
+%-g               switch('!0!':'!31!') lastkey.map begin
+%-g                 when EscKey  do goto ClEx;
+%-g                 when PgUpKey do showPage(topRec-wSize);
+%-g                 when PgDnKey do display;
+%-g                 when CrKey   do scrollPage;
+%-g                 when HomeKey do showHome;
+%-g                 when EndKey  do showPage(fileSize-wSize+2);
+% g                 when UpKey   
+% g                 when DownKey
+%-g                 when FuncKey do begin
+%-g                    if lastkey.fkey < 13 
+%-g                    then switch(0:12) lastkey.fkey begin
+%-g                      when F11 do showPage(toprec-filesize//10);
+%-g                      when F12 do showPage(toprec+filesize//10);
+%-g                    end;
+%-g                 end;
+%-g               end;
+%-g               lastKey.map:='!0!';
+%-g         end;
+
+%-g         procedure openInput;
+%-g         begin text t;
+%-g               inspect input do begin
+%-g                  t:-image; if t==notext then t:-blanks(inputlng);
+%-g                  close; !does no harm if not open;
+%-g                  if not open(t) then begin
+%-g                     message(" can't open " & filename); goto Term;
+%-g                  end;
+%-g               end
+%-g               otherwise begin
+%-g                     message(" input is not an infile "); goto Term;
+%-g               end;
+%-g               toprec:=0; filpos:=1;
+%-g         end;
+
+%-g         procedure showHome;  if toprec <> 1 then
+%-g         begin openInput; display; end;
+
+%-g         procedure scrollPage;  !(short integer N);
+%-g         begin short integer len;
+%-g               !***** autowrap CANNOT be used here.
+%-g                ***** it destroys last line on screen;
+%-g               external library procedure SCROLL="E@SCROLL" is
+%-g               procedure SCROLL(i,ch); short integer i; character ch; ;
+%-g            inspect input do if not endfile then begin
+%                 while N>0 and not endfile do begin N:=N-1;
+%-g                  inrecord; filpos:=filpos+1; toprec:=toprec+1;
+%-g                  SCROLL(1,curAttr.encoding);
+%-g                  if endfile then print(" ---  EOF  ---")
+%-g                  else begin
+%-g                     len:=image.pos-1; if len>=Width then len:=Width-1;
+%-g                     print(Image.sub(1,len));
+%-g                  end;
+%                 end;
+%-g               Expl;
+%-g            end;
+%-g         end;
+
+%-g         procedure showPage(recN); short integer recN;
+%-g         ! recN is the record number wanted on top line.
+%-g           recN = topRec: do nothing (except show the window)
+%-g           recN < topRec: rewind file (i.e.close - open), and
+%-g                          force input as under 'otherwise' below
+%-g           recN < topRec+wSize: read and scroll
+%-g           otherwise: file is now positioned at topRec+wSize.
+%-g                      First scan until file is at recN.
+%-g                      Then showpage ;
+%-g           
+%-g         begin
+%-g            if recN<>topRec then inspect input do begin
+%-g               !*** avoid an empty screen ***;
+%-g         REP:  if not isOpen or else recN<=1 then showHome
+%-g          else if recN<topRec then begin
+%-g                  openInput; !*** locate(1);
+%-g                  while recN > 1 and not endfile do begin
+%-g                        inrecord; filpos:=filpos+1; recN:=recN-1 end;
+%-g                  display;
+%-g               end
+%            else if recN < topRec+wSize//2 then scrollPage(topRec-recN)
+%-g               else begin !*** recN is above current page ***;
+%-g                  if recN+wSize > fileSize+2 then begin
+%-g                     recN:=fileSize-wSize//2-1;
+%-g                     if recN<topRec then goto REP;
+%-g                  end;
+%-g                  while recN>filpos and not endfile do begin
+%-g                     !*** skip ***;
+%-g                     inrecord; filpos:=filpos+1; end;
+%-g                  ! now file is positioned ;
+%-g                  display;
+%-g               end;
+%-g           Ex: !Expl;
+%-g            end inpect input;
+%-g         end showPage;
+
+%-g         showAt(3,3); copyFile;
+%-g         while true do Process;
+%-g   ClEx: input.Close;
+%-g   Term: hide;
+%-g   end fileform;
+
+      Form Class HelpForm(FileName); text FileName;
+      begin !*** assume filename=/=notext ***;
+            ShowAT(3,3); AutoWrap(true);
+            inspect new InFile(FileName) do
+            if Open(Blanks(80)) then begin
+               InImage;
+               while not EndFile do begin
+                  print(Image.sub(1,Width-1)); InImage; end;
+               Close;
+            end;
+            Wait; EraseWindow;
+      end;
+
+%title ***    S T A N D A R D   --   D A T A   S E T   F O R M    ***
+      Form Class DataSetForm(S,Title);
+      ref(DataSet) S; text Title;
+      begin
+
+            Procedure Initiate; Display;
+
+            Procedure EventHandler(Event); character Event;
+            begin ref(DataType) CurVal; text t;
+                  if Event=eKeyin then
+                  begin if LastKey.map=DelKey then
+                        begin inspect Current when DataField do
+                              begin Current:-suc; Val.Out; Val:-none; Out end;
+                              Display; Paint;
+                        end
+                   else if LastKey.map=InsKey then
+                        begin t:-Blanks(S.Width);
+                                 LastKey.map:=InsKey;
+                              inspect Current when DataField do
+                              begin New DataType(Val.Ident,t).Follow(Val);
+                                    Current:-Current.suc
+                              end otherwise New DataType(notext,t).Into(S.Set);
+                              Display; Paint;
+                        end
+                   else if LastKey.map=PgUpKey then
+                        begin 
+                              Current:-none;
+                              Display; Paint;
+                        end
+                   else if LastKey.map=PgDnKey then
+                        begin
+                              Current:-none;
+                              Display; Paint;
+                        end;
+                  end;
+            end;
+
+            Procedure Display;
+            begin ref(DataField) df; ref(DataType) dt; Short integer L;
+                  Border1;
+                  SetPos(1,3); OutText(Title);
+                  inspect Current when DataField do
+                  begin L:=Lin+1; dt:-Val.suc;
+                        for df:-Current.suc while df =/= none do
+                        begin df.Val:-none; df.Out end;
+                  end otherwise begin L:=2; dt:-S.Set.First end;
+                  while dt =/= none and L < Height-2 do
+                  begin New DataField(L,3,dt,True); dt:-dt.suc; L:=L+1 end;
+            end;
+
+      REP:  Display; Paint; if not Showed then ShowAt(4,5);
+      PRO:  Process;
+
+      end;
+%title ***    S T A N D A R D   --   S E L E C T   F I L E   F O R M    ***
+%     ******   included if selector f (small letter F) set   ******
+
+      text FileSelected; !*** return from fileSelectForm ***;
+      short integer nFiles; ! extra result from getdir ;
+
+%-f   text procedure getdir(template,resName); text template,resName;
+%-f   !*** performs 'dir/ls template' and returns the name of a
+%-f        file containing the resulting list (sorted), stripped of
+%-f        blank lines etc. (DOS), and with concatenated
+%-f        file names (XENIX/UNIX eg: ls */*.sim);
+%-f   begin text fname,t,v; ref(infile) tmp; ref(outfile) res;
+%-f         character ch; text prefix;
+
+%-f         if resName==notext then resName:-TempFile;
+%-f         res:-new outfile(resName);
+%-f         if not res.open(blanks(72)) then goto ERR;
+%-f         nFiles:=0; fname:-TempFile;
+%+M %-f     System ("dir " & Template & " | sort >" & fname);
+%+O %-f     System ("dir " & Template & " >" & fname);
+%+X %-f     System ("ls >" & fname & " 2>/dev/null " & Template);
+%-f         tmp:-new infile(fname);
+%-f         if not tmp.open(blanks(72)) then goto ERR1;
+%-f         getdir:-resName; goto LOOP;
+
+%-f            while not tmp.endfile do begin
+%-f               t:-tmp.image;
+%-f               ch:=loadchar(t,0); if ch = ' ' then goto LOOP;
+%-X %-f           if ch='.' or else digit(ch) then goto LOOP;
+%-X %-f           lowcase(t);
+%-X %-f           v:-t.sub(10,3).strip;
+%-X %-f           res.outtext(t.sub(1,8).strip);
+%-X %-f           if v=/=notext then res.outtext("." & v);
+%+X %-f           t:-t.Strip;
+%+X %-f           if loadchar(t,t.length-2)=':'
+%+X %-f           then begin prefix:-t.sub(1,t.length-1) & "/"; goto LOOP end;
+%+X %-f           res.outtext(prefix); res.outtext(t);
+%-f               res.outimage; !outtext("!13!!10!");
+%-f               nFiles:=nFiles+1;
+%-f      LOOP:    tmp.inimage;
+%-f            end;
+
+%-f   ERR1: tmp.close; DeleteFile(fname);
+%-f   ERR:  res.close;
+%-f   end getdir;
+%page
+%-f   Form Class fileSelectForm(Template);
+%-f   text Template;
+%-f   hidden protected tmp;
+%-f   begin ref(Infile) tmp;
+%-f         ref(TagField) Sel;
+%-f         short integer First;
+%-f         text oldTemplate,directory;
+%-f         text Title :- "Select File:";
+
+%-f         Procedure Initiate;
+%-f         begin text t; Border1;
+%-f               t:-Blanks(Width-(Title.length+6));
+%-f               t:=Template; Template:-t;
+%-f         end;
+
+%-f         Procedure EventHandler(Event); character Event;
+%-f         begin short integer offset;
+%-f               if Event=eChanged then
+%-f               begin if Current==Sel then
+%-f                     begin First:=0; goto REP end;
+%-f               end else
+%-f               if Event=ePressed then
+%-f               begin FileSelected:-Copy(Sel.Fld qua TextField.val);
+%-f                     FileSelected:=Current qua Button.val.main;
+%-f                     Sel.Fld qua TextField.val:-FileSelected;
+%-f                     Sel.Fld.Paint; Current:-Sel; !LastKey.map:='!0!';
+%-f               end else
+%-f               if Event=eKeyin then begin
+%-f                  offset:=6*(Width//14);
+%-f                  if LastKey.map=PgUpKey then begin
+%-f                     if First>0 then begin
+%-f                        First:=First-offset;
+%-f                        if First<0 then First:=0; goto REP end;
+%-f                     LastKey.map:='!0!'; goto PRO;
+%-f                  end
+%-f             else if LastKey.map=PgDnKey then begin
+%-f                     if First+offset<nFiles then begin
+%-f                        First:=First+offset; goto REP end;
+%-f                     LastKey.map:='!0!'; goto PRO;
+%-f                  end
+%-f               end;
+%-f         end;
+
+%-f         Procedure Display;
+%-f         begin short integer Lin,Pos; integer i; text t,Scratch;
+%-f               EraseWindow; Border1; FieldSet.Clear; SetPos(3,3);
+%-f               Sel:-new TagField(2,3,Title
+%-f                  ,"Enter: edit file selection template, Arrows: navigate"
+%-f                  ,New TextField(2,Title.length+5,Template));
+%-f               Paint; if not Showed then ShowAt(4,3);
+%+M %-f           setpos(2,17+Template.strip.length); !*** 'file not found' ;
+%-f               if oldTemplate<>Template.strip or else directory==notext
+%-f               then begin
+%-f                  if tmp=/=none then DeleteFile(tmp.filename);
+%-f                  oldTemplate:-copy(Template.strip);
+%-f                  directory:-getdir(oldTemplate,directory);
+%-f                  tmp:-new infile(directory);
+%-f               end;
+%-f               if tmp.open(Blanks(80)) then
+%-f               begin for i:=1 step 1 until First
+%-f                      do if not tmp.EndFile then tmp.inimage;
+%-f                     Lin:=3; Pos:=Width;
+%-f                     if not tmp.endfile then goto LOOP;
+%-f                     while not tmp.endfile do begin
+%-f                           t:-tmp.image.strip;
+%-f                           Pos:=Pos+14;
+%-f                           if Pos+14 > Width then
+%-f                           begin Lin:=Lin+1; Pos:=3;
+%-f                                 if Lin+1 > Height then goto L;
+%-f                           end;
+%-f                           New Button(Lin,Pos,copy(t),
+%-f                              "Enter: select file, Arrows: navigate"
+%-f                              ", Home: close this window");
+%-f                     LOOP: tmp.inimage;     
+%-f                     end;
+%-f               L:    tmp.Close;
+%-f                     Current:-FieldSet.First.suc;
+%-f               end else Message("No files found");
+%-f         end;
+
+%-f   REP:  Display; Paint; ! if not Showed then ShowAt(4,3);
+%-f   PRO:  if nFiles=1 then EventHandler(ePressed) else Process;
+%           if Current is Button then
+%           begin FileSelected:-Copy(Sel.Fld qua Button.val);
+%                 FileSelected:=Current qua Button.val.main;
+%                 Sel.Fld qua TextField.val:-FileSelected;
+%                 Sel.Fld.Paint; Current:-Sel; goto PRO;
+%           end else
+%-f         FileSelected:-Sel.Fld qua TextField.val;
+
+%-f         DeleteFile(directory); tmp:-none; Hide;
+
+%-f   end fileselectform;
+%title ***  U T I L I T Y    R O U T I N E S  ***
+
+      Text procedure TempFile;
+      begin External Library Procedure UUTMPF="E@UUTMPF" is
+            text procedure UUTMPF(t); text t; ;
+%+M         TempFile:-UUTMPF(blanks(12)); ! sim000xx.tmp ;
+%+O         TempFile:-UUTMPF(blanks(12)); ! sim000xx.tmp ;
+%+X         TempFile:-UUTMPF(blanks(17)); ! /tmp/sim000xx.tmp ;
+      end;
+
+      Procedure Explain(t); text t;
+      begin inspect EXPL do
+            begin EraseWindow; setpos(1,2); Outtext(t) end;
+      end;
+
+      External Library Procedure DeleteFile="E@UUDELF" is
+      procedure DeleteFile(t); text t; ;
+      !*** delete the file, no message if no file (OsStat set) ***;
+%title ***  I N I T I A L    A C T I O N S  ***
+      procedure InitScreen(waitMess); text waitMess;
+      begin SetScreenMode(ScreenMode);
+            if not OpenScreen(Height,Width,Concealed) then exitSystem;
+%           Screen.Border(Colours(Black,Brown)); Screen.setpos(1,1);
+            inspect screen do begin
+               Border(Colours(Black,Blue )); setpos(1,1);
+               CurAttr:-YellowOnBlue;
+               EditAttr:-Colours(Red,White);
+               MsgAttr:-YellowOnRed;
+%              EXPL:- New Window(1,Width-4,Monochrome.Invers);
+               EXPL:- New Window(1,Width-4,colours(black,cyan));
+               EXPL.ShowAT(Height-1,3);
+            end;
+            Explain(waitMess);
+            EXITWIN:-New ExitForm(12,26,YellowOnRed);
+            SYSWIN:-New SystemForm(0,0,Monochrome);
+            NOTIMPL:-New NotImplemented(8,24,YellowOnRed);
+      end initscreen;
+
+      ScreenMode:=22; Height:=24; Width:=80; ! Default  24 x 80  EGA ;
+
+end of program
+

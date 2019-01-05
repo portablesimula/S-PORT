@@ -1,0 +1,88 @@
+ Module EUTIM("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT;
+%-D begin insert ECOMN,EBASE,      ECENT;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+%title ******   OUTIMA   ******
+Visible Routine OUTIMA;  --- outimage;
+import range(1:255) key; infix(String) image;
+begin Boolean dirfil; ref(FileBufr) buf;
+%-E   range(0:MaxWord) n,h,cnt,rst;
+%+E   integer          n,h,cnt,rst;
+      h:=key-1;
+      buf:=Name2Ref(FTAB(key).buf);
+%+D   if TRCSW > 2
+%+D   then BegTrace("OUTIMA("); EdWrd(TrcBuf,key);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if FTAB(key).type = F_directfile
+      then dirfil:=true;
+           if FTAB(key).DifLoc <> 0
+           then CHGLOC(h,false); if Status<>0 then goto E1 endif endif;
+      else dirfil:=false;
+           image.nchr:=APX_STRIP(' ',image.nchr,
+                           name(var(image.chradr)(image.nchr-1)));
+%-V        CLD108;
+      endif;
+      if buf <> none
+      then
+----       cnt:=image.nchr; if cnt=0 then goto E0 endif;
+----       L: rst:=buf.cnt-buf.nxt;
+----       if cnt <= rst --- Complete write into buffer ---
+----       then APX_SMOVEI(cnt,@buf.byt(buf.nxt),image.chradr);
+----            buf.nxt:=buf.nxt+cnt; buf.mode:=2; goto E2;
+----       elsif rst > 0  --- Partial write into buffer ---
+----       then APX_SMOVEI(rst,@buf.byt(buf.nxt),image.chradr);
+----            cnt:=cnt-rst; buf.nxt:=buf.cnt; buf.mode:=2;
+----            image.chradr:=name(var(image.chradr)(rst));
+----       endif;
+----       TRMBUF(h,buf); if Status <> 0 then goto E3 endif;
+----       INIBUF(h,buf);
+----       if Status=xq_eof   then Status:=0 endif;
+----       if Status=xq_nread then Status:=0 endif;
+----       if Status=0 then goto L endif;
+      else --- Direct write into file ---
+           if image.nchr > 0      --- Write buffer to file
+           then
+%+M        L: n:=DOS_WRITE(h,image.nchr,image.chradr);
+%+O           OS2_WRITE(h,name2ref(image.chradr),image.nchr,name2ref(@n));
+%+X           n:=XNX_WRITE(image.nchr,name2ref(image.chradr),h);
+              if OsStat<>0 then OS_STAT("OUTIMA-2"); goto E2 endif;
+              if n <> image.nchr
+              then
+%+M                if var(image.chradr)(n) qua integer = 26
+%+M                then var(image.chradr)(n):='Z'
+%+M                     image.chradr:=name(var(image.chradr)(n));
+%+M                     image.nchr:=image.nchr-n; goto L;
+%+M                endif;
+                   STAT("OUTIMA-3",xq_ffull); goto E3
+              endif;
+           endif;
+%+M        n:=DOS_WRITE(h,2,@CRLFs);
+%+O        OS2_WRITE(h,name2ref(@CRLFs),2,name2ref(@n));
+%+X        if dirfil then n:=XNX_WRITE(2,name2ref(@CRLFs),h); n:=n-1;
+%+X        else n:=XNX_WRITE(1,name2ref(@CRLFs(1)),h) endif;
+           if OsStat <> 0 then OS_STAT("OUTIMA-4"); goto E4 endif;
+%+M        if n <> 2 then STAT("OUTIMA-5",xq_ffull) endif;
+%+O        if n <> 2 then STAT("OUTIMA-5",xq_ffull) endif;
+%+X        if n <> 1 then STAT("OUTIMA-5",xq_ffull) endif;
+      endif;
+E1:E2:E3:E4:end;
+
+
+end;

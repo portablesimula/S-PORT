@@ -1,0 +1,74 @@
+Module change_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent,edit;
+       insert search_,front_,from_;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("change")change;
+       --- search master from pos for subtext oldt; if found, then
+       --- replace it by newt, otherwise return FALSE and do
+       --- master.setpos(0). After the call, master is either a
+       --- subtext (newt.length<=oldt.length), or a new text object.
+       import name(infix(txtqnt)) master;
+       infix(txtqnt) oldt,newt;
+       export boolean res;
+       begin infix(txtqnt) txt,conc0,conc1,conc2;
+             short integer txtlen,oldlen,newlen,p;
+             infix(string) src,dst; range(0:MAX_DIM) npar;
+             txt:=var(master);
+             assert txt.ent.misc=0 skip goto E1 endskip;
+             p:=SEARCH(txt,oldt)+txt.sp;
+             if p < txt.lp -- otherwise not found
+             then res:=true;
+                  oldlen:=oldt.lp-oldt.sp; newlen:=newt.lp-newt.sp;
+                  if newlen <= oldlen
+                  then --- overwrite master with newt at pos p
+                       src.nchr:=dst.nchr:=newlen;
+                       src.chradr:=name(newt.ent.cha(newt.sp));
+                       dst.chradr:=name(txt.ent.cha(p));
+                       C_MOVE(src,dst);
+                       if newlen < oldlen
+                       then --- move rest of master to new place
+                            src.nchr:=dst.nchr:=txt.lp-p-oldlen+newlen;
+                            src.chradr:=name(txt.ent.cha(p+oldlen));
+                            dst.chradr:=name(txt.ent.cha(p+newlen));
+                            C_MOVE(src,dst);
+                            txt.lp:=txt.lp-oldlen+newlen;
+                       endif;
+                  else txt.cp:=p-txt.sp-1;
+                       conc0:=FRONT(txt);
+                       -- conc1:=newt;
+                       conc2:=FROM(txt,p-txt.sp+oldlen);
+                       txt:=CONCAT(3,(conc0,newt,conc2));
+                  endif;
+                  txt.cp:=p+newlen;
+             else E1: res:=false; txt.cp:=txt.lp endif;
+             var(master):=txt;
+       end;
+end;
+
+--  BOOLEAN PROCEDURE change(master,oldt,newt);   NAME master;
+--  TEXT master,oldt,newt;
+--  BEGIN
+--    EXTERNAL TEXT PROCEDURE conc3,from,frt;
+--    EXTERNAL INTEGER PROCEDURE search;
+--    TEXT local;  INTEGER p;
+--    local:-master;
+--    p:=search(local,oldt);
+--    IF p<=local.Length THEN BEGIN
+--      change:=TRUE;
+--      IF oldt.Length>=newt.Length THEN BEGIN
+--        local.Sub(p,newt.Length):=newt;
+--        IF oldt.Length>newt.Length THEN BEGIN
+--          from(local,p+newt.Length):=from(local,p+oldt.Length);
+--          local:-local.Sub(1,local.Length-oldt.Length+newt.Length)
+--        END
+--      END ELSE local:-conc3(frt(local),newt,from(local,p+oldt.Length));
+--      local.Setpos(p+newt.Length);
+--      master:-local
+--    END ELSE master.Setpos(0)
+--  END;

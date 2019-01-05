@@ -1,0 +1,2 @@
+    external library procedure scanint is
+    integer procedure scanint(t); name t; text t; ;

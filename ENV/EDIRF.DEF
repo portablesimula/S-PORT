@@ -1,0 +1,202 @@
+ Module EDIRF("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT;
+%-D begin insert ECOMN,EBASE,      ECENT;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+%title ******   LOCATE - LSTLOC   ******
+Visible Routine LOCATE;  --- locate;
+import range(1:255) key; integer loc;
+begin integer newlc,curlc; ref(FileBufr) buf;
+%-E   range(0:MaxWord) h;
+%+E   integer          h;
+%+D   if TRCSW > 1
+%+D   then BegTrace("LOCATE("); EdWrd(TrcBuf,key); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,loc); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if loc < 1 then STAT("LOCATE-1",xq_locrange); goto E1 endif;
+      h:=key-1; newlc:= (loc - 1) * FTAB(key).fac;
+      buf:=Name2Ref(FTAB(key).buf);
+      if buf <> none
+      then if buf.mode <> 0
+           then curlc:=buf.FileLoc+buf.nxt; goto L endif;
+      endif;
+%+M   curlc:=DOS_FPTR(h,1,0);
+%+O   OS2_FPTR(h,0,1,name2ref(@curlc));
+%+X   curlc:=XNX_LSEEK(1,0,h);
+      if OsStat <> 0 then OS_STAT("LOCATE-2"); goto E2 endif;
+L:    FTAB(key).DifLoc:=newlc - curlc;
+%+D   if TRCSW > 2
+%+D   then BegTrace("LOCATE:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:E2:end;
+
+Visible Routine LSTLOC;  --- lastloc;
+import range(1:255) key; export integer loc;
+begin integer curlc,lstlc; ref(FileBufr) buf;
+%-E   range(0:MaxWord) h;
+%+E   integer          h;
+      h:=key-1;
+      buf:=Name2Ref(FTAB(key).buf);
+%+D   if TRCSW > 1
+%+D   then BegTrace("LSTLOC("); EdWrd(TrcBuf,key);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+M   curlc:=DOS_FPTR(h,1,0);
+%+O   OS2_FPTR(h,0,1,name2ref(@curlc));
+%+X   curlc:=XNX_LSEEK(1,0,h);
+      if OsStat <> 0 then OS_STAT("LSTLOC-1"); goto E1 endif;
+%+M   lstlc:=DOS_FPTR(h,2,0);
+%+O   OS2_FPTR(h,0,2,name2ref(@lstlc));
+%+X   lstlc:=XNX_LSEEK(2,0,h);
+      if OsStat <> 0 then OS_STAT("LSTLOC-2"); goto E2 endif;
+%+M   curlc:=DOS_FPTR(h,0,curlc);
+%+O   OS2_FPTR(h,curlc,0,name2ref(@curlc));
+%+X   curlc:=XNX_LSEEK(0,curlc,h);
+      if OsStat <> 0 then OS_STAT("LSTLOC-3"); goto E3 endif;
+      if buf <> none
+      then if buf.mode <> 0
+           then if buf.lim < buf.nxt then buf.lim:=buf.nxt endif;
+                curlc:=buf.FileLoc+buf.lim;
+                if curlc > lstlc then lstlc:=curlc endif;
+           endif;
+      endif;
+      loc:=(lstlc/FTAB(key).fac);
+%+D   if TRCSW > 2
+%+D   then BegTrace("LSTLOC: Result = "); EdInt(TrcBuf,loc); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:E2:E3:end;
+
+%title ******   DELETE   ******
+
+Visible Routine DELETE;
+import range(1:255) key; export Boolean res;
+begin integer curlc,lstlc,mrklc,newlc; ref(FileBufr) buf;
+%-E   range(0:MaxWord) h,n,fac;
+%+E   integer          h,n,fac;
+%+D   if TRCSW > 1
+%+D   then BegTrace("DELETE("); EdWrd(TrcBuf,key);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      h:=key-1;
+%+M   curlc:=DOS_FPTR(h,1,0);
+%+O   OS2_FPTR(h,0,1,name2ref(@curlc));
+%+X   curlc:=XNX_LSEEK(1,0,h);
+      if OsStat <> 0 then OS_STAT("DELETE-1"); goto E1 endif;
+%+M   lstlc:=DOS_FPTR(h,2,0);
+%+O   OS2_FPTR(h,0,2,name2ref(@lstlc));
+%+X   lstlc:=XNX_LSEEK(2,0,h);
+      if OsStat <> 0 then OS_STAT("DELETE-2"); goto E2 endif;
+      curlc:=curlc+FTAB(key).DifLoc; FTAB(key).DifLoc:=0;
+      fac:=FTAB(key).fac; newlc:=curlc+fac;
+      if newlc > lstlc
+      then --- Current image is outside last loc ---
+           FTAB(key).DifLoc:=curlc-lstlc; res:=false;
+      else --- Check if Current image is Written ---
+           mrklc:=newlc - 2;
+%+M        mrklc:=DOS_FPTR(h,0,mrklc);
+%+O        OS2_FPTR(h,mrklc,0,name2ref(@mrklc));
+%+X        mrklc:=XNX_LSEEK(0,mrklc,h);
+           if OsStat <> 0
+           then OS_STAT("DELETE-3"); goto E3 endif;
+%+M        n:=DOS_READ(h,2,ximg.chradr);
+%+O        OS2_READ(h,name2ref(ximg.chradr),2,name2ref(@n));
+%+X        n:=XNX_READ(2,name2ref(ximg.chradr),h);
+           if OsStat <> 0
+           then OS_STAT("DELETE-4"); goto E4 endif;
+           if  (var(ximg.chradr)(0)=(0 qua character))
+           and (var(ximg.chradr)(1)=(0 qua character))
+           then --- Current Image was never Written ---
+                FTAB(key).DifLoc:=curlc-newlc; res:=false; goto E5;
+           endif;
+
+           if newlc < lstlc
+           then --- Delete an image in the middle of the file ---
+                mrklc:=newlc - 2;
+%+M             mrklc:=DOS_FPTR(h,0,mrklc);
+%+O             OS2_FPTR(h,mrklc,0,name2ref(@mrklc));
+%+X             mrklc:=XNX_LSEEK(0,mrklc,h);
+                if OsStat <> 0
+                then OS_STAT("DELETE-6"); goto E6 endif;
+%+M             n:=DOS_WRITE(h,2,@NULLs);
+%+O             OS2_WRITE(h,name2ref(@NULLs),2,name2ref(@n));
+%+X             n:=XNX_WRITE(2,name2ref(@NULLs),h);
+                if OsStat <> 0
+                then OS_STAT("DELETE-7"); goto E7 endif;
+                FTAB(key).DifLoc:=0; res:=true;
+           else --- Delete the last image of the file ---
+                mrklc:=lstlc - 2;
+           R:   mrklc:=mrklc-fac;
+                if mrklc > 0
+                then
+%+M                  mrklc:=DOS_FPTR(h,0,mrklc);
+%+O                  OS2_FPTR(h,mrklc,0,name2ref(@mrklc));
+%+X                  mrklc:=XNX_LSEEK(0,mrklc,h);
+                     if OsStat <> 0
+                     then OS_STAT("DELETE-8"); goto E8 endif;
+%+M                  n:=DOS_READ(h,2,ximg.chradr);
+%+O                  OS2_READ(h,name2ref(ximg.chradr),2,name2ref(@n));
+%+X                  n:=XNX_READ(2,name2ref(ximg.chradr),h);
+                     if OsStat <> 0
+                     then OS_STAT("DELETE-9"); goto E9 endif;
+                     if  (var(ximg.chradr)(0)=(0 qua character))
+                     and (var(ximg.chradr)(1)=(0 qua character))
+                     then goto R endif;
+                endif;
+                --- Set new File-Size ---
+                newlc:=mrklc + 2; SETLST(key,newlc);
+                if OsStat <> 0 then OS_STAT("DELETE-10"); goto E10 endif;
+                FTAB(key).DifLoc:=curlc-newlc; res:=true;
+           endif;
+      endif;
+E5:
+%+D   if TRCSW > 2
+%+D   then BegTrace("DELETE: Result = "); EdBool(TrcBuf,res); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:E2:E3:E4:E6:E7:E8:E9:E10:end;
+
+%title ******   GETLOC   ******
+Visible Routine GETLOC;  --- location
+import range(1:255) key; export integer loc;
+begin integer curlc; ref(FileBufr) buf;
+%-E   range(0:MaxWord) h;
+%+E   integer          h;
+      h:=key-1;
+      buf:=Name2Ref(FTAB(key).buf);
+%+D   if TRCSW > 1
+%+D   then BegTrace("GETLOC("); EdWrd(TrcBuf,key);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if buf <> none
+      then if buf.mode <> 0
+           then curlc:=buf.FileLoc+buf.nxt; goto L endif;
+      endif;
+%+M   curlc:=DOS_FPTR(h,1,0);
+%+O   OS2_FPTR(h,0,1,name2ref(@curlc));
+%+X   curlc:=XNX_LSEEK(1,0,h);
+      if OsStat <> 0 then OS_STAT("GETLOC-1"); goto E1 endif;
+L:    loc:=((curlc+FTAB(key).DifLoc)/FTAB(key).fac)+1;
+%+D   if TRCSW > 2
+%+D   then BegTrace("GETLOC: Result = "); EdInt(TrcBuf,loc); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:end;
+
+end;

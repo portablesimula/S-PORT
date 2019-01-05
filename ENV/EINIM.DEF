@@ -1,0 +1,196 @@
+ Module EINIM("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT;
+%-D begin insert ECOMN,EBASE,      ECENT;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+%title ******   INIMAG   ******
+
+Visible Routine INIMAG;  --- inimage;
+import range(1:255) key; infix(String) image; export integer filled;
+begin ref(FileBufr) buf; integer b4;
+%-E   range(0:MaxWord) h,k,n,fl,icnt,bcnt;
+%+E   integer          h,k,n,fl,icnt,bcnt;
+      h:=key-1;
+      buf:=Name2Ref(FTAB(key).buf);
+%+D   if TRCSW > 2
+%+D   then BegTrace("INIMAG("); EdWrd(TrcBuf,key);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if FTAB(key).type = F_directfile
+      then if FTAB(key).DifLoc <> 0
+           then CHGLOC(h,true); if Status<>0 then goto E1 endif endif;
+      endif;
+
+      if buf <> none
+      then case 0:F_max (FTAB(key).type)
+           when F_infile: fl:=0;
+            L:  n:=buf.lim-buf.nxt;
+                if buf.PrevCR -- Last buffer was terminated by CR --
+                then var(image.chradr):=(ISO_CR qua character);
+                     image.chradr:=name(var(image.chradr)(1));
+                     image.nchr:=image.nchr-1; fl:=fl+1; buf.PrevCR:=false;
+                elsif n=0 -- Read in next buffer --
+                then TRMBUF(h,buf); if Status<>0 then goto Eb1 endif;
+                     INIBUF(h,buf); if Status<>0 then goto Eb2 endif;
+                     n:=buf.lim-buf.nxt;
+                endif;
+                if n > (image.nchr+2) then n:=image.nchr+2 endif;
+                k:=APX_SFINDI(ISO_LF qua character,n,@buf.byt(buf.nxt));
+                if k <> 0
+                then -- LF was found --
+                     icnt:=n-k; bcnt:=icnt+1;
+                     if icnt <> 0
+                     then if buf.byt(buf.nxt+icnt-1)=(ISO_CR qua character)
+                     then icnt:=icnt-1 endif endif;
+                     if icnt > image.nchr
+                     then -- Partial record read --
+                 P:       bcnt:=icnt:=image.nchr; STAT("INIMAGE-b1",xq_part);
+                     endif;
+                     if icnt <> 0
+                     then APX_SMOVEI(icnt,image.chradr,@buf.byt(buf.nxt));
+                          fl:=fl+icnt;
+                     endif;
+                     buf.nxt:=buf.nxt+bcnt;
+                elsif n = (image.nchr+2)
+                then -- LF not found -- Image filled and not terminated
+                     goto P; -- Partial record read 
+                elsif n <= image.nchr
+                then -- LF not found -- Image not filled or terminated --
+                     bcnt:=icnt:=n;
+                     if buf.byt(buf.lim-1)=(ISO_CR qua character)
+                     then buf.PrevCR:=true; icnt:=n-1 endif;
+                     APX_SMOVEI(icnt,image.chradr,@buf.byt(buf.nxt));
+                     fl:=fl+icnt; buf.nxt:=buf.nxt+bcnt;
+                     TRMBUF(h,buf); if Status <> 0 then goto Eb3 endif;
+                     INIBUF(h,buf); if Status <> 0
+                     then if Status<>xq_eof then goto Eb4 endif; Status:=0;
+                     elsif buf.byt(0)=(ISO_LF qua character)
+                     then buf.nxt:=buf.nxt+1; buf.PrevCR:=false;
+                     else image.chradr:=name(var(image.chradr)(icnt));
+                          image.nchr:=image.nchr-icnt; goto L;
+                     endif;
+                elsif n = (image.nchr+1)
+                then -- LF not found -- Image filled
+                     bcnt:=icnt:=image.nchr;
+                     APX_SMOVEI(icnt,image.chradr,@buf.byt(buf.nxt));
+                     fl:=fl+icnt; buf.nxt:=buf.nxt+bcnt;
+                     if buf.byt(buf.nxt)=(ISO_CR qua character)
+                     then TRMBUF(h,buf); if Status <> 0 then goto Eb5 endif;
+                          INIBUF(h,buf); if Status <> 0
+                          then if Status<>xq_eof then goto Eb6 endif;
+                               Status:=0; goto iF1;
+                          elsif buf.byt(0)=(ISO_LF qua character)
+                          then buf.nxt:=buf.nxt+1; goto iF2 endif;
+                          buf.PrevCR:=true;
+                     endif;
+                     STAT("INIMAGE-b7",xq_part);
+%+D             else SYSPRI("*** ERROR *** INIMAGE-b8")
+%+D                  STAT("INIMAGE-b8",xq_imposs);
+                endif;
+iF1:iF2:        -- Test for CTRL Z  I.e. MS-DOS EndFile Character
+                if var(image.chradr)(0)=(26 qua character)
+                then STAT("INIMAG-b9",xq_eof) endif;
+           when F_directfile: fl:=0;
+----            icnt:=image.nchr;
+----            L: if (buf.nxt+icnt) <= buf.lim
+----            then --- Complete read from buffer ---
+----                 APX_SMOVEI(icnt,image.chradr,@buf.byt(buf.nxt));
+----                 buf.nxt:=buf.nxt+icnt; fl:=fl+icnt; goto E2;
+----            elsif buf.lim > buf.nxt
+----            then --- Partial read from buffer ---
+----                 bcnt:=buf.lim-buf.nxt;
+----                 APX_SMOVEI(bcnt,image.chradr,@buf.byt(buf.nxt));
+----                 cnt:=cnt-bcnt; buf.nxt:=buf.lim; fl:=fl+bcnt;
+----                 image.chradr:=name(var(image.chradr)(bcnt));
+----            endif;
+----            TRMBUF(h,buf); if Status <> 0 then goto E3 endif;
+----            INIBUF(h,buf); if Status=0 then goto L endif;
+
+
+
+                
+           endcase;
+      else --- Unbuffered Input ---
+%+M        fl:=DOS_READ(h,image.nchr,image.chradr);
+%+O        OS2_READ(h,name2ref(image.chradr),image.nchr,name2ref(@fl));
+%+X        fl:=XNX_READ(image.nchr,name2ref(image.chradr),h);
+           if OsStat <> 0 then OS_STAT("INIMAG-5"); goto E5 endif;
+           if fl = 0  then STAT("INIMAG-6",xq_eof); goto E6 endif;
+           case 0:F_max (FTAB(key).type)
+           when F_infile: image.nchr:=fl;
+                -- Test for CTRL Z  I.e. MS-DOS EndFile Character
+                if var(image.chradr)(0)=(26 qua character)
+                then STAT("INIMAG-7",xq_eof); goto E7 endif;
+                k:=APX_SFINDI(ISO_LF qua character,image.nchr,image.chradr)
+                if k > 0 then fl:=fl-k; k:=k-1;
+                else --- LF not found: read two more characters --
+%+M                  k:=DOS_READ(h,2,ximg.chradr);
+%+O                  OS2_READ(h,name2ref(ximg.chradr),2,name2ref(@k));
+%+X                  k:=XNX_READ(2,name2ref(ximg.chradr),h);
+                     if OsStat <> 0
+                     then OS_STAT("INIMAG-9"); goto E9 endif;
+                     if k < 2 -- Approaching End-of-File --
+                     then var(ximg.chradr)(k):=ISO_LF qua character;
+                          k:=k+1;
+                     endif;
+                     if var(ximg.chradr)=(ISO_LF qua character) then k:=k-1;
+                     elsif (var(ximg.chradr)=(ISO_CR qua character))
+                     and (var(ximg.chradr)(1)=(ISO_LF qua character)) then k:=0;
+                     else STAT("INIMAG-11",xq_part) endif;
+                endif;
+                if k > 0
+                then b4:=k; b4:= -b4;
+%+M                  b4:=DOS_FPTR(h,1,b4);           -- Move file pointer
+%+O                  OS2_FPTR(h,b4,1,name2ref(@b4)); -- Move file pointer
+%+X                  b4:=XNX_LSEEK(1,b4,h);          -- Move file pointer
+                     if OsStat <> 0
+                     then OS_STAT("INIMAG-12"); goto E12 endif;
+                endif;
+                if var(image.chradr)(fl-1)=(ISO_CR qua character)
+                then fl:=fl-1 endif
+           when F_directfile:
+                if fl <> image.nchr
+                then STAT("INIMAG-13",xq_illrec); goto E13 endif;
+                if FTAB(key).fac > 1
+                then --- SIMULA formated Directfile should have CR LF
+%+M                  if DOS_READ(h,2,ximg.chradr) <> 2
+%+M                  then STAT("INIMAG-14",xq_illrec); goto E14 endif;
+%+O                  OS2_READ(h,name2ref(ximg.chradr),2,name2ref(@k));
+%+O                  if k <> 2 then STAT("INIMAG-14",xq_illrec); goto E14 endif;
+%+X                  if XNX_READ(2,name2ref(ximg.chradr),h) <> 2
+%+X                  then STAT("INIMAG-14",xq_illrec); goto E14 endif;
+                     if FCRLF(ximg) <> 2
+                     then if  (var(ximg.chradr)(0)=(0 qua character))
+                          and (var(ximg.chradr)(1)=(0 qua character))
+                          then STAT("INIMAG-15",xq_undrec); goto E15;
+                          else STAT("INIMAG-16",xq_illrec); goto E16 endif;
+                     endif;
+                endif;
+           otherwise STAT("INIMAG-17",xq_illuse) endcase;
+      endif;
+
+      filled:=fl;
+%+D   if TRCSW > 2
+%+D   then BegTrace("INIMAG: Filled = "); EdWrd(TrcBuf,fl);
+%+D        Ed(TrcBuf,", Image = ");
+%+D        image.nchr:=fl; Ed(TrcBuf,image); OutTrace;
+%+D   endif;
+Eb1:Eb2:Eb3:Eb4:Eb5:Eb6:
+E1:E5:E6:E7:E9:E12:E13:E14:E15:E16:end;
+
+end;

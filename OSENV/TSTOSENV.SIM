@@ -1,0 +1,23 @@
+%  Testing class OsEnv; output from the program (to screen) is as
+%  from "DIR" (of current directory), with heading and ./.. entries
+%  removed. A temporary file is created and removed afterwards, this
+%  file's name is included in the output from the program.
+%
+%  Compilation:   sim tstosenv.sim
+%  Assumption: that osenv has been compiled, either in this directory,
+%              or in a directory visible along the SLIB-path.
+%  ****************************************************************
+external class osenv;
+osenv begin text fname; character ch;
+    fname:-tempfile;
+    system("dir>" & fname);
+    inspect new infile(fname) do begin
+       open(blanks(80)); inimage;
+       while not endfile do begin
+          ch:=inchar;
+          if ch<>' ' and then ch<>'.' then outtext(image); inimage end;
+       close;
+    end;
+    deleteFile(fname); ! or alternately: system("del " & fname);
+end;
+

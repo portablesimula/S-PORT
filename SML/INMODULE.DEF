@@ -1,0 +1,344 @@
+External class Common;
+External class InptFile;
+
+Procedure InModule(comn,afile,modid); ref(Common) comn;text afile,modid;
+%      ----------------------------------------------------------------
+%      ---                                                          ---
+%      ---  COPYRIGHT 1989 by                                       ---
+%      ---  Simula a.s.                                             ---
+%      ---  Oslo, Norway                                            ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                 P O R T A B L E     S I M U L A          ---
+%      ---                                                          ---
+%      ---              S I M U L E T T A    C O M P I L E R        ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---              P r o c e d u r e    I n M o d u l e        ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      --- Selection switches: DI                                   ---
+%      ---                                                          ---
+%      ---    'D' Included when dump is wanted                      ---
+%      ---    'I' Included to make compiler use inserted mnemonic   ---
+%      ---    'N' Included to produce ND-500 version                ---
+%      ---    'U' Included to produce UNIVAC version                ---
+%      ---    'X' Included to produce XENIX version                 ---
+%      ---                                                          ---
+%      ----------------------------------------------------------------
+
+%SPORT ON
+%REUSE ON
+
+%-D %BOUNDCHECK OFF
+%-D %QUACHECK OFF
+%-D %NONECHECK OFF
+
+inspect comn do inspect new InptFile(afile,comn) do begin
+inspect new module(modid) do begin
+
+%-D %macro ininstr:
+%-D        char(inbyte)
+%-D %endmacro
+
+%-D %macro inbyt:
+%-D        char(inbyte)
+%-D %endmacro
+
+%-D %macro innumber:
+%-D        in2byte
+%-D %endmacro
+
+      short integer i;
+      character istr;
+      character inhi,inlo; !*** result from intag ***;
+      ref(quant) qnt;
+      ref(peculiar) pculiar;
+      ref(mnemonic) mnem; ref(macro) mcro;
+
+      procedure MERR(t); text t;
+      begin ERROR(t & " Illegal layout of module: " & modid);
+            goto MXX;
+      end;
+
+%+D   character procedure inAbyte;
+%+D   begin character chr;
+%+D         inAbyte:=chr:=char(inbyte);
+%+D         if input_trace > 0 then inspect comn do begin
+%+D            outcode; TRC("Inbyte",leftint(rank(chr))); end;
+%+D   end;
+
+%-D %macro inAbyte:
+%-D        char(inbyte)
+%-D %endmacro
+
+      procedure intag;
+      begin short integer thi,tlo; text s;
+            thi:=inbyte+rank(hiBias); tlo:=inbyte+rank(loBias);
+            if tlo>255 then begin tlo:=tlo-256; thi:=thi+1 end;
+            inlo:=char(tlo); inhi:=char(thi);
+            if inhi>'!127!' then
+               ERROR("Illegal intag: " & eddouble(inhi,inlo));
+            if (inlo>ntaglo and then inhi=ntaghi) or else inhi>ntaghi
+            then begin
+               while inhi>ntaghi do begin
+                     ntaghi:=char(rank(ntaghi)+1);
+                     tagtab(rank(ntaghi)):-new tagbox;
+               end;
+               ntaglo:=inlo;
+            end;
+            simsymbol:-instring; DEFIDENT;
+            tagtab(rank(inhi)).val(rank(inlo)):-boxof(hashhi,hashlo);
+%+D         if input_trace > 0
+%+D         then TRC("Intag ",TagName(inhi,inlo));
+      end;
+
+%title ******   intype   ******
+      !*** recursive ***;
+      character procedure intype;
+      begin character c; short integer inf1,inf2;
+%BOUNDCHECK ON
+          switch(M_NULL:M_MXMX) inAbyte begin
+%-D %BOUNDCHECK OFF
+            when M_INTEGER do   intype:= T_INT;
+            when M_SHORT   do   intype:= T_SINT;
+            when M_RANGE   do   begin inf1:=innumber; inf2:=innumber;
+                 intype:=def_type(integer_types,NUL,S_RANGE,inf1,inf2)
+                 end;
+            when M_REAL    do   intype:= T_REAL;
+            when M_LONG    do   intype:= T_LREAL;
+            when M_SIZE    do   intype:= T_SIZE;
+            when M_CHAR    do   intype:= T_CHAR;
+            when M_BOOL    do   intype:= T_BOOL;
+            when M_LABEL   do   intype:= T_LABEL;
+            when M_STRUCT  do   begin inident;
+                 inf1:=innumber;
+                 intype:=def_type(struct_types,hashhi,hashlo,inf1,0);
+                 end;
+            when M_REF     do   begin inident;
+                 intype:=def_type(ref_types,hashhi,hashlo,0,0); end;
+            when M_ENTRY   do   begin inident;
+                 intype:=def_type(ent_types,hashhi,hashlo,0,0); end;
+            when M_FIELD   do   begin c:=intype;
+                 intype:=def_type(field_types,NUL,c,0,0); end;
+            when M_NAME    do   begin c:=intype;
+                 intype:=def_type(name_types,NUL,c,0,0); end;
+            when NONE      do   intype:= T_NULL;
+          end otherwise         intype:= T_NULL;
+      end;
+
+%REUSE OFF
+      ref(quant) procedure inquant;
+      inspect new quant(intype) do begin
+         intag; taghi:=inhi; taglo:=inlo; symb:-boxof(hashhi,hashlo);
+         count:=innumber; inquant:-this quant;
+%+D      if module_trace > 2 then prt(this descr,20);
+      end *** inquant ***;
+
+      ref(quant) procedure inpar;
+      inspect new quant(intype) do begin
+            inident; symb:-boxof(hashhi,hashlo);
+            count:=innumber; inpar:-this quant;
+%+D         if module_trace > 2 then prt(this descr,20);
+      end *** inpar ***;
+
+      ref(parspec) procedure inparspec;
+      begin character c;
+         rutlev:=rutlev+1;
+         inspect new parspec do begin
+            inparspec:-this parspec;
+            while true do begin
+               c:=inbyt;
+%+D            if input_trace > 0 then outcode;
+               if c=M_IMPORT then begin
+                  if import==none then import:-new head;
+                  inpar.into(import); end
+          else if c=M_EXPORT then export:-inpar
+          else if c=M_EXIT   then exit:-inpar
+          else if c=M_END    then goto EXPS
+               else MERR("InParspec:" & leftint(rank(c)));
+            end;
+ EXPS:   end inspect;
+         rutlev:=rutlev-1;
+      end *** inparspec ***;
+
+      ref(parspec) procedure inxparspec;
+      begin character c;
+         rutlev:=rutlev+1;
+         inspect new parspec do begin
+            inxparspec:-this parspec;
+            while true do begin
+               c:=inbyt;
+%+D            if input_trace > 0 then outcode;
+               if c=M_IMPORT then begin
+                  if import==none then import:-new head;
+                  inquant.into(import); end
+          else if c=M_EXPORT then export:-inquant
+          else if c=M_EXIT   then exit:-inquant
+          else if c=M_END    then goto EXPS
+               else MERR("InXParspec:" & leftint(rank(c)));
+            end;
+ EXPS:   end inspect;
+         rutlev:=rutlev-1;
+      end *** inxparspec ***;
+%REUSE ON
+
+      !*********    M   O   N   I   T   O   R    *********;
+
+            ! *** this InptFile.open;
+%+D         if module_trace > 0 then inspect sysout do begin
+%+D            outtext("*************    Begin  -  Input-module  " &
+%+D                    modid &       "   **************"); outimage;
+%+D               input_trace:=module_trace;
+%+D         end;
+            istr:=inAbyte;
+            if istr ne M_MODULE
+            then MERR("M_MODULE:" & leftint(rank(istr)));
+            modcode:-instring;
+            if modcode ne "V2.0" then MERR("checkcode:" & modcode);
+            modcode:-instring;
+            if modcode ne modid then MERR("modid:" & modcode);
+            modcode:-instring;  !***  Check  code  ***;
+
+            !******   Input Descriptors   ******;
+            while true do begin
+               istr:=inAbyte;
+%BOUNDCHECK ON
+                 switch(M_NULL:M_MXMX) istr    begin
+%-D %BOUNDCHECK OFF
+               when M_END do
+                    goto EXDESCR;
+               when M_VAR do
+                 inspect new quant(intype) do begin
+                    intag; taghi:=inhi; taglo:=inlo;
+                    symb:-boxof(hashhi,hashlo);
+                    count:=innumber; this quant.into(dclset);
+%+D                 if module_trace > 2 then prt(this descr,20);
+                end;
+               when M_LABSPEC do
+                 inspect new label_descr do begin
+                    intag; taghi:=inhi; taglo:=inlo;
+                    symb:-boxof(hashhi,hashlo);
+                    this label_descr.into(dclset);
+%+D                 if module_trace > 2 then prt(this descr,20);
+                end;
+               when M_RECORD do
+                 inspect new record do begin
+                    intag; taghi:=inhi; taglo:=inlo;
+                    symb:-boxof(hashhi,hashlo);
+                    inident; if boxof(hashhi,hashlo)=/= dummybox
+                    then prefbox:-boxof(hashhi,hashlo);
+                    this record.into(dclset);
+                    atrset:-new head; variantset:-new head;
+                LX1:istr:=inbyt;
+%+D                 if input_trace > 0 then outcode;
+                    if istr=M_VAR then begin
+                       qnt:-inquant; qnt.into(atrset); goto LX1 end;
+                    while istr=M_ALT do inspect new variant do begin
+                        into(variantset); atrset:-new head;
+                LX2:    istr:=inbyt;
+%+D                     if input_trace > 0 then outcode;
+                        if istr=M_VAR then begin
+                           qnt:-inquant; qnt.into(atrset); goto LX2 end;
+                    end;
+                    if istr ne M_ENDRECORD
+                    then MERR("M_ENDRECORD:" & leftint(rank(istr)));
+                    if qnt =/= none then indefinite := qnt.count=0;
+%+D                 if module_trace > 2 then prt(this descr,20);
+                end;
+               when M_PROFILE do
+                 inspect new profile do begin
+                    intag; taghi:=inhi; taglo:=inlo;
+                    symb:-boxof(hashhi,hashlo);
+                    this profile.into(dclset); spec:-inparspec;
+%+D                 if module_trace > 2 then prt(this descr,20);
+                end;
+               when M_GLOBAL do
+                 inspect new profile do begin
+                    intag; taghi:=inhi; taglo:=inlo;
+                    symb:-boxof(hashhi,hashlo);
+                    this profile.into(dclset); spec:-inxparspec;
+%+D                 if module_trace > 2 then prt(this descr,20);
+                end;
+               when M_BODY do
+                 inspect new routine do begin
+                    intag; taghi:=inhi; taglo:=inlo;
+                    symb:-boxof(hashhi,hashlo);
+                    inident; profbox:-boxof(hashhi,hashlo);
+                    this routine.into(dclset);
+%+D                 if module_trace > 2 then prt(this descr,20);
+                end;
+               when M_SYSRUT   do begin
+                    pculiar:-new peculiar(S_SYSRUT); goto PECUL end;
+               when M_KNOWN    do begin
+                    pculiar:-new peculiar(S_KNOWN); goto PECUL end;
+               when M_EXTERNAL do begin
+                    pculiar:-new peculiar(S_EXTERNAL); goto PECUL end;
+               when M_ROUTINE  do begin
+                    pculiar:-new peculiar(S_ROUTINE);
+      PECUL:        inspect pculiar do begin
+                       intag; taghi:=inhi; taglo:=inlo;
+                       symb:-boxof(hashhi,hashlo);
+                       intag; bodyhi:=inhi; bodylo:=inlo;
+                       info:-instring;
+                       into(dclset);
+                       spec:-inparspec;
+%+D                    if module_trace > 2 then prt(this peculiar,20);
+                    end;
+                end;
+               when NONE do
+                    MERR("OutDescr:" & leftint(rank(istr)));
+               end otherwise MERR("OutDescr:" & leftint(rank(istr)));
+            end *** descriptors ***;
+
+            !******   Input Mnemonics Definitions   ******;
+   EXDESCR: while true do begin istr:=inAbyte;
+               if istr = M_DEFINE   then begin
+                  inident;
+                  inspect boxof(hashhi,hashlo)
+                  do begin if curmeaning =/= none
+                           then ERROR("Redefinition of mnemonic");
+                           curmeaning:-mnem:-new mnemonic(false);
+                  end;
+                  new macro_symbol(inAbyte,boxof(hashhi,hashlo),
+                                   instring).into(mnem);
+%+D               if module_trace > 2 then prt(mnem,20);
+               end
+          else if istr = M_MACRO    then begin
+                  inident;
+                  inspect boxof(hashhi,hashlo)
+                  do begin if curmeaning =/= none
+                           then ERROR("Redefinition of mnemonic");
+                           curmeaning:-mcro:-new macro(false,innumber);
+                  end;
+                  for istr:=inAbyte while istr ne M_ENDMACRO do
+                  if istr=M_MARK then begin inident;
+                     new macro_symbol(inAbyte,boxof(hashhi,hashlo),
+                                      instring).into(mcro) end
+             else if istr=M_MPAR then
+                     new macro_param(innumber).into(mcro)
+                  else MERR("M_PAR:" & leftint(rank(istr)));
+%+D               if module_trace > 2 then prt(mcro,20);
+               end
+          else if istr = M_END      then goto EXMCRO
+               else MERR("MneInput:" & leftint(rank(istr)));
+            end *** macro/mnemonic definitions ***;
+
+ EXMCRO: -- this module.bias:=this InptFile.tag_bias;
+         -- this module.ntag:=tagno-bias;
+            this module.bias:=rank(hiBias)*256+rank(loBias);
+            this module.ntag:=rank(ntaghi)*256+rank(ntaglo)-bias;
+            this InptFile.close;
+%+D         if module_trace > 0 then inspect sysout do
+%+D         begin outtext("*************   End of  -  Input-module  " &
+%+D                       modid & "   *************");
+%+D               outimage;
+%+D               if module_trace > 1 then prt(this module,5);
+%+D         end;
+%+D         if input_trace>2 then prt(this module,(20));
+            update_display(dclset);
+
+MXX:
+    end *** inspect inptfile ***;
+end *** InModule ***;

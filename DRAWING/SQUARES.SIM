@@ -1,0 +1,40 @@
+begin short integer sq,n;
+  external class drawing;
+  n:= 13;
+  outtext("For each square drawn the upper left has been scanned,"); outimage;
+  outtext("saved on file, overwritten with a new colour and"); outimage;
+  outtext("finally read back and painted."); outimage;
+  outtext("Hit Enter when it stops at lower right corner."); outimage;
+  outimage;
+  while sq<1 do begin
+     outtext("Square size (>=1 - 20 is a good number): ");
+     breakoutimage; sq:=inint end;
+  sq:=sq-1;
+  outtext("stop on keyin (q for quit)");
+  outimage;
+  outtext("Graphic mode: (e.g. 13,14,16)"); breakoutimage; n:= inint;
+  drawing (n) begin short integer lstart,col,maxl,maxp,sq2,i,ch,n,l;
+    col:=1; SetColour(col); fillsquare(10,10,sq,sq);
+    setpos(textline(10)+2,textpos(10)+2); outchar(char(col+rank('a')));
+    saveBox(col,"demo.pix",1,10,10,sq,sq);
+  AGAIN:
+    maxl:=maxline; maxp:=maxpos; sq2:=(sq+1)*2;
+    lstart:=sq+1;
+    n:=0; while n<=maxl do begin
+        l:=lstart:=sq+1-lstart;
+        while l<=maxp do begin
+            col:=col+1; if col=16 then col:=0;
+            ch:=CINBT; !*** console input, no wait ***;
+            if ch<>0 and then inchar='q' then goto EXIT;
+            loadBox("demo.pix",n,l); saveBox(col,"demo.pix",1,10,10,sq,sq);
+            setpos(textline(10)+2,textpos(10)+2); outchar(char(col+rank('a')));
+            l:=l+sq2;
+        end;
+        n:=n+sq+1;
+    end;
+    inchar;
+ EXIT:   setpos(textline(10)+2,textpos(10)+2); outtext("more (y)?");
+    if inchar='y' then begin sq:=sq+1; goto AGAIN; end;
+  end;
+end;
+

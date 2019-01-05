@@ -1,0 +1,2 @@
+    external library procedure scanfrac is
+    integer procedure scanfrac(t); name t; text t; ;

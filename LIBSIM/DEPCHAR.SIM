@@ -1,0 +1,2 @@
+    external library procedure depchar is
+    procedure depchar(t,p,c); text t; short integer p; character c; ;

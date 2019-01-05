@@ -1,0 +1,502 @@
+Module UBASE("iAPX-286");
+begin insert UCOMN;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s., Oslo, Norway                                ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---     T  H  E     M  S  -  D  O  S     L  I  N  K  E  R     ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     C - Includes Consistency Tests                        ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Generate code for MS-DOS                          ---
+       ---     O - Generate code for MS-OS2                          ---
+       ---     X - Generate code for XENIX                           ---
+       ---     E - Extended Mode I.e XENIX/386, UNIX/386             ---
+       -----------------------------------------------------------------
+
+Visible const byte CRLFs(10)=(13,10,10,10,10,10,10,10,10,10);
+
+    Visible macro ALLOC(2);
+    begin %1 :=PoolNxt; PoolNxt:=PoolNxt + %2;
+          if PoolNxt >= PoolBot 
+          then PoolNxt:= %1; %1:=NEWOBJ(%2) endif;
+    endmacro;
+
+Visible Routine ASCIIZ2String;
+import ref(ASCIIZ) asc; unsigned mlng; export infix(String) S;
+begin S.chradr:=Ref2Name(asc);
+      S.nchr:=mlng-APX_SFINDI(0 qua character,mlng,S.chradr);
+end;
+
+Visible Known("SYSPRI") SYSPRI; import infix(String) im;
+begin unsigned result; if im.nchr > 0
+      then WRITE(kSYSOUT,im.nchr,im.chradr,result); OsStat:=0 endif;
+      WRITE(kSYSOUT,2,@CRLFs,result); OsStat:=0;
+end;
+
+Visible Routine SYSPRT; import infix(String) im;
+begin unsigned result; if im.nchr > 0
+      then WRITE(kSYSOUT,im.nchr,im.chradr,result); OsStat:=0 endif;
+end;
+
+Visible Routine ECASE;
+begin MESSAGE("*** INTERNAL ERROR *** ","Case index out of range") end;
+
+Visible Routine WARNING; import infix(string) msg;
+begin MESSAGE("*** WARNING *** ",msg) end;
+
+Visible Routine ERROR; import infix(string) msg;
+begin MESSAGE("*** ERROR *** ",msg); ErrCnt:=ErrCnt+1;
+%-D   TERMIN(4,"ERROR TERMINATION");
+end;
+
+Visible Routine CAPERR; import infix(string) msg;
+begin MESSAGE("*** CAPACITY ERROR *** ",msg); ErrCnt:=ErrCnt+1;
+      TERMIN(4,"ERROR TERMINATION");
+end;
+
+Routine MESSAGE; import infix(string) ms1,ms2;
+begin Unsigned Stat; Stat:=OsStat; OsStat:=0;
+%+D   OutTrace;
+      OutImage; Ed(EdtBuf,ms1);
+      Ed(EdtBuf,PickUp(ErrMsg)); Ed(EdtBuf,ms2); OutImage;
+      if Stat <> 0
+      then Ed(EdtBuf,"    OsStat = ");
+           EdWrd(EdtBuf,Stat); Outimage;
+      endif;
+end;
+
+Visible Routine INITIATE;
+begin unsigned i;
+      ErrCnt:=0; EndFile:=false;
+      PoolTop:=none; PoolNxt:=none; PoolBot:=none; -- Storage boundary pointers
+      nSmb.val:=0; i:=MaxHash; repeat while i > 0
+      do i:=i-1; HashKey(i):=none endrepeat; -- Hash Key table (Dictionary)
+%+D   TrcBuffer.nChr:=132; TrcBuffer.Pos:=0; TrcBuf:=ref(TrcBuffer);
+      EdtBuffer.nChr:=132; EdtBuffer.Pos:=0; EdtBuf:=ref(EdtBuffer);
+      ErrBuffer.nChr:=132; ErrBuffer.Pos:=0; ErrMsg:=ref(ErrBuffer);
+end;
+
+Visible Routine TERMIN;
+import byte code; infix(String) msg;
+begin if msg.nchr<>0 then SYSPRI(msg) endif  --- The given text is printed
+%+M   DOS_TERM(code);    --- Then leave the program
+%+O   OS2_EXIT(0,code);  --- Then leave the program
+%+X   XNX_EXIT(code);    --- Then leave the program
+end;
+%title *********    S y m b o l T a b l e    *********
+Visible Routine DICREF;
+import Word n; export infix(String) s; 
+begin ref(Symbol) x; x:=SMBTAB(n.HI).elt(n.LO);
+      if x=none then s:=nostring;
+      else s.nchr:=x.nchr; s.chradr:=@x.chr endif;
+end;
+
+Visible Routine LOOKUP;
+import infix(String) s; export Word n;
+begin Word m; byte k; ref(Symbol) x;
+      unsigned i; k:=0; i:=s.nchr;
+      repeat while i > 0
+      do i:=i-1; k:=k+var(s.chradr)(i) qua integer endrepeat;
+---   k:=HASH(s);
+      x:=HashKey(k); repeat while x<>none
+      do
+%+D      if TrcSw > 5
+%+D      then BegTrace("LOOKUP: x="); EdSymbol(TrcBuf,x.index); outtrace endif;
+         if s.nchr <> x.nchr then -- Nothing
+         elsif APX_SCMPEQ(s.nchr,s.chradr,@x.chr) then n:=x.index; goto E endif;
+         x:=x.SMBLNK;
+      endrepeat;
+      n.val:=0; -- Symbol Not Found --
+E:
+%+D   if TrcSw > 5
+%+D   then BegTrace("LOOKUP("); Ed(TrcBuf,s);
+%+D        Ed(TrcBuf,")="); EdWrd(TrcBuf,n.val); OutTrace;
+%+D   endif;
+end;
+
+Visible Routine DICDEF;
+import infix(String) s; export Word n;
+begin Word m; byte k; ref(Symbol) x,bucket;
+      unsigned i; k:=0; i:=s.nchr;
+      repeat while i > 0
+      do i:=i-1; k:=k+var(s.chradr)(i) qua integer endrepeat;
+---   k:=HASH(s);
+      bucket:=x:=HashKey(k); repeat while x<>none
+      do
+%+D      if TrcSw > 5
+%+D      then BegTrace("DICDEF: x="); EdSymbol(TrcBuf,x.index); outtrace endif;
+         if s.nchr <> x.nchr then -- Nothing
+         elsif APX_SCMPEQ(s.nchr,s.chradr,@x.chr) then n:=x.index; goto E endif;
+         x:=x.SMBLNK;
+      endrepeat;
+      nSmb.val:=nSmb.val+1; n:=nSmb;
+      if n.HI >= MxpSmb then CAPERR("Symbol-Table Overflow") endif;
+      if SMBTAB(n.HI)=none
+      then SMBTAB(n.HI):=NEWOBJ(size(RefBlock)) endif;
+      ALLOC(x,Size(Symbol:s.nchr)); SMBTAB(n.HI).Elt(n.LO):=x;
+      x.SMBLNK:=bucket; HashKey(k):=x; x.index:=n;
+      APX_SMOVEI(s.nchr,@x.chr,s.chradr); x.nchr:=s.nchr;
+E:
+%+D   if TrcSw > 5
+%+D   then BegTrace("DICDEF("); EdSymb(TrcBuf,n);
+%+D        Ed(TrcBuf,")="); EdWrd(TrcBuf,n.val); OutTrace;
+%+D   endif;
+end;
+
+--- Routine HASH; import infix(string) s; export byte k;
+--- begin unsigned i; k:=0; i:=s.nchr;
+---       repeat while i > 0
+---       do i:=i-1; k:=k+var(s.chradr)(i) qua integer endrepeat;
+---       k:=bAND(k,255); -- NOTE: -- MaxHash Supposed = 256
+--- end;
+
+Visible Routine SEQ; import infix(String) s,t; export Boolean res;
+begin if s.nchr <> t.nchr then res:=false
+      else res:=APX_SCMPEQ(s.nchr,s.chradr,t.chradr) endif;
+end;
+%title ***   O b j e c t    G e n e r a t i o n   ***
+
+%-E Visible Routine NEWOBJ; import size lng; export ref() obj;  
+%-E begin Word PoolSize;
+%-E %+M   infix(WRKPAK) y;
+%-E %+O   Dword y;
+%-E       obj:=PoolNxt; PoolNxt:=PoolNxt+lng;
+%-E       if PoolNxt >= PoolBot 
+%-E       then
+%-E %+M        y:=DOS_ALOC(4096);           PoolSize.AsWord:=64000;
+%-E %+O        y.Ofst.val:=0;               PoolSize.AsWord:=64000;
+%-E %+O        OS2_ALOC(64000,name2ref(@y.Segm),0);
+%-E %+X        PoolTop:=XNX_SBRK(64000);    PoolSize.AsWord:=64000;
+%-E            if OsStat <> 0 then TERMIN(3,"Can't get work space") endif;
+%-E %+M        PoolTop:=y.area;
+%-E %+O        PoolTop:=y.AsOaddr;
+%-E %+D        if TrcSw > 0 then BegTrace("NEWPOOL"); OutTrace endif;
+%-E            PoolBot:=PoolTop+PoolSize.AsSize; 
+%-E            ZeroArea(PoolTop,PoolBot);
+%-E            obj:=PoolTop; PoolNxt:=PoolTop+lng;
+%-E            if PoolNxt >= PoolBot
+%-E            then TERMIN(3,"Requesting a too large object") endif;
+%-E       endif;
+%-E end;
+
+
+%+E Visible Routine NEWOBJ; import size lng; export ref() obj;  
+%+E begin Dword PoolSize; ref() NewArea;
+%+E       obj:=PoolNxt; PoolNxt:=PoolNxt+lng;
+%+E       repeat while PoolNxt >= PoolBot 
+%+E       do PoolSize.AsInt:=8000; NewArea:=XNX_SBRK(PoolSize.AsInt);
+%+E          if OsStat <> 0 then TERMIN(3,"Can't get work space") endif;
+%+E          if NewArea = PoolBot
+%+E          then PoolBot:=PoolBot+PoolSize.AsSize; 
+%+ED              if TrcSw>0 then BegTrace("EXTEND POOL"); OutTrace endif;
+%+E          else PoolTop:=NewArea; PoolBot:=PoolTop+PoolSize.AsSize; 
+%+E               obj:=PoolTop; PoolNxt:=PoolTop+lng;
+%+ED              if TrcSw>0 then BegTrace("NEW    POOL"); OutTrace endif;
+%+E          endif;
+%+E          ZeroArea(NewArea,PoolBot);
+%+E       endrepeat;
+%+E end;
+
+
+Visible Routine NewWrdVector;
+import unsigned MaxElt; export ref(WrdVector) x;
+----- x:=NEWOBJ(Size(WrdVector:MaxElt)); x.MaxElt:=Maxelt; x.nElt:=0 end
+begin ALLOC(x,  Size(WrdVector:MaxElt)); x.MaxElt:=Maxelt; x.nElt:=0 end
+
+Visible Routine NewRefVector;
+import unsigned MaxElt; export ref(RefVector) x;
+----- x:=NEWOBJ(Size(RefVector:MaxElt)); x.MaxElt:=Maxelt; x.nElt:=0 end;
+begin ALLOC(x,  Size(RefVector:MaxElt)); x.MaxElt:=Maxelt; x.nElt:=0 end;
+
+%title ***  B a s i c    I n p u t / O u t p u t  ***
+Visible Routine Open; 
+import Word FileName; infix(String) FileExt; unsigned acode;
+export unsigned h; 
+begin infix(String) path; unsigned i; character c;
+%+M   byte fattr;
+%+O   unsigned actn,atr,oflg;
+%+D   if TrcSw > 0
+%+D   then BegTrace("*** OPEN("); EdSymb(TrcBuf,FileName);
+%+D        EdChar(TrcBuf,','); Ed(TrcBuf,FileExt); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,acode); edchar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      EdSymb(EdtBuf,FileName); EdChar(EdtBuf,0 qua character);
+      path:=Pickup(EdtBuf); i:=0; repeat while i < path.nchr
+      do if var(path.chradr)(i)='.' then goto L1 endif; i:=i+1 endrepeat;
+      EdSymb(EdtBuf,FileName); Ed(EdtBuf,FileExt);
+      EdChar(EdtBuf,0 qua character); path:=Pickup(EdtBuf);
+L1:   i:=0; repeat while i < path.nchr
+      do
+%+M      if var(path.chradr)(i)='/' then var(path.chradr)(i):='\' endif;
+%+O      if var(path.chradr)(i)='/' then var(path.chradr)(i):='\' endif;
+%+X      if var(path.chradr)(i)='\' then var(path.chradr)(i):='/' endif;
+         i:=i+1;
+      endrepeat;
+%+D   if TrcSw > 0
+%+D   then BegTrace("*** OPEN("); Ed(TrcBuf,Path); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,acode); edchar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+O   atr:=0; oflg:=1
+%+O   if acode=accwrite then oflg:=18
+%+O   elsif acode=accrw then oflg:=18 endif;
+
+%+M   h:=DOS_OPEN(acode,path.chradr);               -- Open if possible
+%+O   OS2_OPEN(Name2Ref(path.chradr),Name2Ref(@h),Name2Ref(@actn),
+%+O                     0,atr,oflg,acode,0);        -- Open if possible
+%+X   h:=XNX_OPEN(438,acode,Name2Ref(path.chradr)); -- Open if possible
+      if OsStat <> 0
+      then --- File could not be opened ---
+           if (acode=accwrite) or (acode=accrw)
+           then --- Try to Create a new File ---
+%+M             OsStat:=0; fattr:=0;                 --- TEMP ???
+%+M             h:=DOS_CREF(fattr,path.chradr);
+                if OsStat <> 0 then goto L endif;
+           else L: OutImage; Ed(EdtBuf,"Can't open file: ");
+                EdSymb(EdtBuf,FileName); Ed(EdtBuf,", OsStat=");
+                EdWrd(EdtBuf,OsStat); OutImage;
+                h:=0; EndFile:=true; goto E;
+           endif;
+      endif;
+      EndFile:=false;
+%+D   if TrcSw > 0
+%+D   then BegTrace("OPFILE: Handle = ");
+%+D        EdWrd(TrcBuf,h); OutTrace;
+%+D   endif;
+E:end;
+
+Visible Routine Close; import unsigned h;
+begin
+%+D   if TrcSw > 0
+%+D   then BegTrace("CLOSE("); EdWrd(TrcBuf,h);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+M   DOS_CLOSE(h);
+%+O   OS2_CLOSE(h);
+%+X   XNX_CLOSE(h);
+      if OsStat <> 0 then OsStat:=0 endif;
+end;
+
+Visible Routine outimage; begin printout(EdtBuf) end;
+
+%title ******  G E T   E N V I R O N M E N T   S T R I N G S   ******
+
+Visible Routine GetEnv;
+import infix(string) nam; export infix(String) val;
+begin infix(String) S; 
+%+M   Dword EnvRef;
+%+O   Dword EnvRef;
+%+X   ref(ASCIIZ) x; Unsigned i;
+%+D   if TrcSw > 0
+%+D   then BegTrace("GetEnv("); Ed(TrcBuf,nam);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+
+      if nam.nchr=0 then goto L1 endif;
+%+M   EnvRef.Segm:=PSPREF.EnvStr; EnvRef.Ofst.val:=0;
+%+O   EnvRef:=ENVSEG; EnvRef.Ofst.val:=0;
+%+X   i:=0;
+
+%+M   repeat S:=ASCIIZ2String(EnvRef.AsOaddr,80) while S.nchr > 0
+%+M   do EnvRef.Ofst.val:=EnvRef.Ofst.val+S.nchr+1;
+%+O   repeat S:=ASCIIZ2String(EnvRef.AsOaddr,80) while S.nchr > 0
+%+O   do EnvRef.Ofst.val:=EnvRef.Ofst.val+S.nchr+1;
+%+X   repeat x:=XNXREF.envp.elt(i); i:=i+1 while x <> none
+%+X   do S:=ASCIIZ2String(x,80);
+%+D      if TrcSw > 0 then BegTrace(S); OutTrace endif;
+         if var(S.chradr)(nam.nchr)='='
+         then if APX_SCMPEQ(nam.nchr,nam.chradr,S.chradr)
+              then val.chradr:=name(var(S.chradr)(nam.nchr+1));
+                   val.nchr:=S.nchr-(nam.nchr+1); goto E1;
+              endif;
+         endif;
+      endrepeat;
+L1:   val:=nostring;
+E1:
+%+D   if TrcSw > 0
+%+D   then BegTrace("GetEnv: Result = ^"); Ed(TrcBuf,val);
+%+D        EdChar(TrcBuf,'^'); OutTrace;
+%+D   endif;
+end;
+%title ******  G E T   A R G U M E N T   S T R I N G S   ******
+
+Visible Routine GetPar; import Unsigned n; export infix(String) val;
+begin infix(String) S; Unsigned i,p,p1;
+%+O   Dword ArgRef;
+%+X   ref(ASCIIZ) x;
+%+D   if TrcSw > 0
+%+D   then BegTrace("GetPar("); EdWrd(TrcBuf,n);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+M   if n=0 then val:=nostring
+%+M   else p:=0; repeat while n > 0
+%+M        do repeat while (p<PSPREF.npar) and (PSPREF.par(p)=' ')
+%+M           do p:=p+1 endrepeat; p1:=p;
+%+M           repeat while (p<PSPREF.npar) and (PSPREF.par(p) <> ' ')
+%+M           do p:=p+1 endrepeat; n:=n-1;
+%+M        endrepeat;
+%+M        if p=p1 then val:=nostring
+%+M        else val.chradr:=name(PSPREF.par(p1)); val.nchr:=p-p1 endif;
+%+M   endif;
+%+O   i:=0; ArgRef:=ENVSEG;
+%+O   S:=ASCIIZ2String(ArgRef.AsOaddr,80);
+%+OD  if TrcSw > 0 then BegTrace(S); OutTrace endif;
+%+O   if n=0 then val:=S
+%+O   else ArgRef.Ofst.val:=ArgRef.Ofst.val+S.nchr+1;
+%+O        S:=ASCIIZ2String(ArgRef.AsOaddr,80);
+%+OD       if TrcSw > 0 then BegTrace(S); OutTrace endif;
+%+O        p:=0; repeat while n > 0
+%+O        do repeat while (p<S.nchr) and (var(S.chradr)(p)=' ')
+%+O           do p:=p+1 endrepeat; p1:=p;
+%+O           repeat while (p<S.nchr) and (var(S.chradr)(p) <> ' ')
+%+O           do p:=p+1 endrepeat; n:=n-1;
+%+O        endrepeat;
+%+O        if p=p1 then val:=nostring
+%+O        else val.chradr:=name(var(S.chradr)(p1)); val.nchr:=p-p1 endif;
+%+O   endif;
+%+X   i:=0;
+%+X   repeat x:=XNXREF.argv.elt(i) while x <> none
+%+X   do S:=ASCIIZ2String(x,80);
+%+XD     if TrcSw > 0 then BegTrace(S); OutTrace endif;
+%+X      if i=n then val:=S; goto E1 else i:=i+1 endif;
+%+X   endrepeat;
+%+X   val:=nostring; E1:
+%+D   if TrcSw > 0
+%+D   then BegTrace("GetPar: Result = ^"); Ed(TrcBuf,val);
+%+D        EdChar(TrcBuf,'^'); OutTrace;
+%+D   endif;
+end;
+%title ***   E D I T I N G   ***
+
+Visible Routine Prt; import infix(String) msg;
+begin PrintOut(EdtBuf); Ed(EdtBuf,msg); PrintOut(EdtBuf) end;
+
+%+D Visible Routine Trc; import infix(String) msg;
+%+D begin if TrcSw <> 0
+%+D       then PrintOut(TrcBuf); Ed(TrcBuf,msg); PrintOut(TrcBuf) endif;
+%+D end;
+
+Visible Routine Pickup; import ref(EdBuff) BF; export infix(String) s;
+begin if BF.pos=0 then s:=nostring  
+      else s.chradr:=@BF.chr; s.nchr:=BF.pos; BF.pos:=0 endif 
+end;
+
+%+D Visible Routine BegTrace; import infix(String) id;
+%+D begin PrintOut(TrcBuf); Ed(TrcBuf,id) end;
+
+%+D Visible Routine OutTrace;
+%+D begin PrintOut(TrcBuf) end;
+
+Visible Routine PrintOut; import ref(EdBuff) B;  
+begin if B.pos>0 then SYSPRI(Pickup(B)) endif end;
+
+Visible Routine SetPos; import ref(EdBuff) BF; byte p; 
+begin if p<1 then p:=0 elsif p>=BF.nchr then p:=BF.nchr-1 endif; 
+      repeat while p>BF.pos do EdChar(BF,' ') endrepeat; BF.pos:=p;
+end;
+
+Visible Routine MovePos; import ref(EdBuff) B; byte p;
+begin SetPos(B,if B.Pos<p then p else B.Pos+1) end;
+
+Visible Routine Ed; import ref(EdBuff) BF; infix(String) t;
+begin infix(String) s; byte p; p:=BF.pos;
+      if (p+t.nchr) >= BF.nchr  
+      then PrintOut(BF); p:=0;  
+           if t.nchr>BF.nchr then t.nchr:=BF.nchr endif; 
+      endif;
+      s.chradr:=@BF.chr(p); s.nchr:=t.nchr; 
+      APX_SMOVEI(s.nchr,s.chradr,t.chradr); BF.pos:=p+t.nchr;  
+end;
+
+Visible Routine EdChar; import ref(EdBuff) BF; character c;
+begin byte p; p:=BF.pos; 
+      if (p+1) >= BF.nchr then PrintOut(BF); p:=0 endif; 
+      BF.pos:=p+1; BF.chr(p):=c; 
+end;
+
+Visible Routine EdChars;
+import ref(EdBuff) BF; name(character) c; byte n;
+begin infix(String) s; s.chradr:=c; s.nchr:=n; Ed(BF,s) end;
+
+Visible Routine EdSymb; import ref(EdBuff) F; Word i; 
+begin if i.val > 0 then Ed(F,DICREF(i)) endif end;
+
+Visible Routine EdSymbol; import ref(EdBuff) F; ref(Symbol) T;
+begin infix(String) s; if T=none then ed(F,"notext")
+      else s.chradr:=@T.chr; s.nchr:=T.nchr; ed(F,s) endif;
+end;
+
+Visible Routine EdHex; import ref(EdBuff) BF; integer val; byte n;  
+begin Dword x; x.AsInt:=val;
+      if n>4 then EdHexWrd(BF,x.AsWord(1).val,n-4); n:=4 endif;
+      EdHexWrd(BF,x.AsWord(0).val,n);
+end;
+
+Visible Routine EdHexWrd; import ref(EdBuff) BF; unsigned val; byte n;  
+begin byte d,p; p:=BF.pos;
+      if (p+n) >= BF.nchr then PrintOut(BF); p:=0 endif; BF.pos:=p+n; 
+      repeat while n > 0 
+      do n:=n-1; d:=wAND(val,15); val:=wSHR(val,4);
+         if d > 9 then d:=d+7 endif;
+         d:=d+(48); BF.chr(p+n) := d qua character;
+      endrepeat;
+end;
+
+Visible Routine EdWrd; import ref(EdBuff) BF; unsigned i;  
+begin byte n,p; p:=BF.pos;
+      if i<10      then n:=1 elsif i<100   then n:=2  
+      elsif i<1000 then n:=3 elsif i<10000 then n:=4 else n:=5 endif;
+      if (p+n) >= BF.nchr then PrintOut(BF); p:=0 endif; 
+      BF.pos:=p+n;
+      repeat if n = 0 then goto E1 endif;
+             n:=n-1; BF.chr(p+n):=((i rem 10)+48) qua character; i:=i/10
+      while i > 0 do endrepeat;
+      repeat while n > 0 do n:=n-1; BF.chr(p+n):=' ' endrepeat;
+E1:end;
+
+Visible Routine EdInt; import ref(EdBuff) BF; integer i;  
+begin byte n,p; p:=BF.pos;
+      if i<0 then EdChar(BF,'-'); i:=-i endif;  
+      if    i<10       then n:=1 elsif i<100       then n:=2  
+      elsif i<1000     then n:=3 elsif i<10000     then n:=4  
+      elsif i<100000   then n:=5 elsif i<1000000   then n:=6  
+      elsif i<10000000 then n:=7 elsif i<100000000 then n:=8  
+      else n:=9 endif;
+      if (p+n) >= BF.nchr then PrintOut(BF); p:=0 endif; 
+      BF.pos:=p+n;
+      repeat if n = 0 then goto E1 endif;
+             n:=n-1; BF.chr(p+n):=((i rem 10)+48) qua character; i:=i/10
+      while i > 0 do endrepeat;
+      repeat while n > 0 do n:=n-1; BF.chr(p+n):=' ' endrepeat;
+E1:end;
+
+%+D Visible Routine HexDump;
+%+D import integer Lpos,Cnt; name(character) chradr;
+%+D begin integer i,p,n; character c;
+%+D       i:=0; OutTrace; 
+%+D       repeat while i < Cnt
+%+D       do EdHex(TrcBuf,Lpos+i,6);
+%+D          p:=0; n:=Cnt-i; if n > 16 then n:=16 endif;
+%+D          repeat while p < n
+%+D          do if p=8 then EdChar(TrcBuf,' ') endif; EdChar(TrcBuf,' ')
+%+D             EdHexWrd(TrcBuf,var(chradr)(i+p) qua integer,2); p:=p+1;
+%+D          endrepeat;
+%+D          p:=0; SetPos(TrcBuf,56);
+%+D          repeat while p < n
+%+D          do c:=var(chradr)(i+p); p:=p+1;
+%+D             if c qua integer <   32 then c:='.' endif;
+%+D             if c qua integer >= 127 then c:='.' endif;
+%+D             EdChar(TrcBuf,c);
+%+D          endrepeat;
+%+D          OutTrace; i:=i+16;
+%+D       endrepeat;
+%+D end;
+
+
+end;

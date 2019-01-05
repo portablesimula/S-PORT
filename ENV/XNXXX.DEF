@@ -1,0 +1,157 @@
+%pass 1 input = 1;
+ Module UNIXX("Version 104");
+ begin insert ECOMN
+       -----------------------------------------------------------------------
+       ---  COPYRIGHT 1986 by                                              ---
+       ---  Simula a.s.                                                    ---
+       ---                                                                 ---
+       ---                 P O R T A B L E     S I M U L A                 ---
+       ---                                                                 ---
+       ---                    F O R    i A P X    2 8 6                    ---
+       ---                                                                 ---
+       ---                                                                 ---
+       ---         T H E   U N I X / X E N I X   I N T E R F A C E         ---
+       ---                   ( Debugging purposes only )                   ---
+       ---                                                                 ---
+       ---  Selection Switches: D                                          ---
+       ---                                                                 ---
+       ---     D - Includes tracing dumps                                  ---
+       ---                                                                 ---
+       -----------------------------------------------------------------------
+
+
+--- UNIX/XENIX:CREAT  ---   Create File and Open File
+
+Visible Routine TST_CREAT;
+begin range(0:MaxWord) mode;     -- File attributes
+      ref(Chars) path;           -- Pointer to ASCIIZ Pathname
+      range(0:MaxWord) fildes;   -- File Descriptor
+
+      fildes:=UNIX_CREAT(mode,path);
+end;
+
+
+--- UNIX/XENIX:OPEN   ---   Open file for reading and/or writing
+
+Visible Routine TST_OPEN;
+begin range(0:MaxWord) mode;     -- Access mode
+      range(0:MaxWord) oflag;    -- Access code
+      ref(Chars) path;           -- Pointer to ASCIIZ Pathname
+      range(0:MaxWord) fildes;   -- File Descriptor
+
+      fildes:=UNIX_OPEN(mode,oflag,path);
+end;
+
+
+--- UNIX/XENIX:CLOSE  ---   Closes a File Descriptor
+
+Visible Routine TST_CLOSE;
+begin range(0:MaxWord) fildes;   -- File Descriptor
+
+      UNIX_CLOSE(fildes);
+end;
+
+
+--- UNIX/XENIX:READ   ---   Read from a File
+
+Visible Routine TST_READ;
+begin range(0:MaxWord) nbyte;    -- Buffer length
+      ref(Chars) buffer;         -- Pointer to Buffer
+      range(0:MaxWord) fildes;   -- File Descriptor
+      range(0:MaxWord) count;    -- 0:EOF, else Bytes read
+
+      count:=UNIX_READ(nbyte,buffer,fildes);
+end;
+
+
+--- UNIX/XENIX:WRITE  ---   Writes to a File
+
+Visible Routine TST_WRITE;
+begin range(0:MaxWord) nbyte;    -- Buffer length
+      ref(Chars) buffer;         -- Pointer to Buffer
+      range(0:MaxWord) fildes;   -- File Descriptor
+      range(0:MaxWord) count;    -- Bytes written
+
+      count:=UNIX_WRITE(nbyte,buffer,fildes);
+end;
+
+
+--- UNIX/XENIX:LSEEK  ---   Moves File Pointer
+
+Visible Routine TST_LSEEK;
+begin range(0:MaxWord) method;    -- 0:L=O, 1:L=P+O, 2:L=Size+O
+      infix(Any4Byte) Ofst;       -- Offset (O) Note: 4-byte integer
+      range(0:MaxWord) fildes;    -- File Descriptor
+      infix(Any4Byte) location;   -- New Location (L) Note: 4-byte integer
+
+      location:=UNIX_LSEEK(method,Ofst,fildes);
+end;
+
+
+--- UNIX/XENIX:CHDIR  ---   Changes the Working Directory
+
+Visible Routine TST_CHDIR;
+begin ref(Chars) path;           -- Pointer to ASCIIZ Pathname
+
+      UNIX_CHDIR(path);
+end;
+
+
+--- UNIX/XENIX:SBRK   ---   Changes Data Segment Space Allocation
+
+Visible Routine TST_SBRK;
+begin short integer incr;        -- increment (decrement) in bytes
+      ref() area;                -- address of new area
+
+      area:=UNIX_SBRK(incr);
+end;
+
+
+--- UNIX/XENIX:EXIT   ---   Terminates a Process
+
+Visible Routine TST_EXIT;
+begin short integer stat;        -- status
+
+      UNIX_EXIT(stat);
+end;
+
+
+--- UNIX/XENIX:CLOCK  ---   Reports CPU Time Used
+
+Visible Routine TST_CLOCK;
+begin infix(Any4Byte) res;       -- Note: 4-Byte Integer
+
+      res:=UNIX_CLOCK;
+end;
+
+
+--- UNIX/XENIX:TIME   ---   Reports Time and Date
+
+Visible Routine TST_TIME;
+begin ref() result;              -- Address or none
+      infix(Any4Byte) res;       -- Note: 4-Byte Integer
+
+      res:=UNIX_TIME(result);
+end;
+
+
+--- UNIX/XENIX:LOCALTIME   ---   Converts Time and Date (Ref: CTIME(S))
+
+Visible Routine TST_LOCALTIME;
+begin infix(Any4Byte) tim;       -- Note: 4-Byte Integer
+      ref(TIMPAK) res;           -- Resulting Time&Date Packet
+
+      res:=UNIX_LOCALTIME(tim);
+end;
+
+
+--- UNIX/XENIX:GETENV ---   Get Value of (name=value) in UNIX Environment
+
+Visible Routine TST_GETENV;
+begin ref(Chars) ident;            -- Pointer to identification
+      ref(Chars) res;              -- Pointer to 'value' string
+
+      res:=UNIX_GETENV(ident);
+end;
+
+end;

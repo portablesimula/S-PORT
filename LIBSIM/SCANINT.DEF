@@ -1,0 +1,24 @@
+Module scanint_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("scanint")scanint;
+       import name(infix(txtqnt)) tt; export integer res;
+       ---  return t.getint, if possible, else minint
+       ---  NOTE: DEC returns -maxint in "getint error case"
+       ---        but that overflows !!!
+       begin infix(string) str; infix(txtqnt) txt;
+             txt:=var(tt); str.nchr:=txt.lp-txt.cp;
+             if str.nchr <> 0
+             then str.chradr:=name(txt.ent.cha(txt.cp));
+                  res:=GETINT(str);
+                  if status<>0 then status:=0; res:=minint;
+                  else var(tt).cp:=txt.cp+itsize endif
+             else res:=minint endif
+       end;
+end;

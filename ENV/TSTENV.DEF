@@ -1,0 +1,44 @@
+%pass 1 input = 1;
+%visible
+ Global TSTENV("Version 1.0");
+ begin range(0:36) status system "STATUS";
+
+       Record string; info "TYPE";
+       begin name(character) chradr; integer nchr; end;
+
+       Global Profile PEXCHDL;
+       import range(0:14) code;
+              infix(string) msg;
+              label addr;
+       export label cont;
+       end;
+
+       Sysroutine("INITIA") env_init;
+       import entry(perhandl) exhandl end;
+
+       Sysroutine("TERMIN") env_term;
+       import range(0:3) code; infix(string) msg end;
+
+
+       Sysroutine("OPFILE") env_open;
+       import infix(string) dsetspec;
+              range(0:7) dsettype;
+              infix(string) action;
+              integer imlng;
+       export range(0:255) filekey;
+       end;
+
+       Sysroutine("CLFILE") env_close;
+       import range(1:255) filekey; infix(string) action end;
+
+       Sysroutine("OUTIMA") env_outimage;
+       import range(1:255) filekey; infix(string) image end;
+
+       integer key;
+
+       infix(string) sysfileid;
+
+       Visible const infix(string)
+         nostring=record:string(nchr=0,chradr=noname);
+
+ end;

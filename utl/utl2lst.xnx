@@ -1,0 +1,38 @@
+set -kv
+sport   <<endlist
+CC ====================================================================
+CC :                                                                   :
+CC :                 U   T   I   L   I   T   I   E   S                 :
+CC :                                                                   :
+CC ====================================================================
+CC
+CC      1  uasm0.asm         Common Assembly Code
+CC      2  ucomn.def         Common Global Module
+CC      3  ubase.def         Common Simuletta Routines
+CC      4  cnv.def           INTEL Relocatable to AT&T COFF Conversion
+CC      5  toc.def           MS-DOS .lib Dump Program
+CC      6  lnk.def           SIMULA Linker for MS-DOS
+CC      7  sport.sim         Sport Monitor
+CC      8  hexdump.sim       Hex Dump Program
+CC      9  exedump.sim       MS-DOS .exe Dump Program
+CC     10  objdump.sim       Intel Relocatable Dump Program
+CC     11  coffdump.sim      UNIX Coff Dump Program
+CC
+CC
+PRINTER /tmp/prt L-P
+TAIL SIMULA A.S. -- COMPANY PRIVATE -- UTILITIES
+A5 $SIMSRC/utl/utl2lst.xnx
+A5 $SIMSRC/utl/uasm0.asm
+A5 $SIMSRC/utl/ucomn.def
+A5 $SIMSRC/utl/ubase.def
+A5 $SIMSRC/utl/cnv.def
+A5 $SIMSRC/utl/toc.def
+A5 $SIMSRC/utl/lnk.def
+A5 $SIMSRC/utl/sport.sim
+A5 $SIMSRC/utl/hexdump.sim
+A5 $SIMSRC/utl/exedump.sim
+A5 $SIMSRC/utl/objdump.sim
+A5 $SIMSRC/utl/coffdump.sim
+EXIT
+endlist
+lp -r /tmp/prt

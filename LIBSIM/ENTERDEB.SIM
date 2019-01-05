@@ -1,0 +1,2 @@
+    external library procedure enterdebug is
+    procedure enterdebug(mayctn); boolean mayctn; ;

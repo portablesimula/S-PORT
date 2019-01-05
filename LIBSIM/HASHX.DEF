@@ -1,0 +1,33 @@
+Module hashx_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("hash")hashx;
+       import infix(txtqnt) txt; integer n;
+       export integer res;
+       ---  return a hash code, computed from txt
+       begin txt:=STRIP(txt); txt.cp:=txt.sp;
+             res:=0;
+             repeat while txt.cp < txt.lp
+             do if txt.ent.cha(txt.cp)<>' '
+                then res:=txt.ent.cha(txt.cp) qua integer;
+                     if txt.lp > (txt.cp+2)
+                     then res:=res +
+                               (8*(txt.ent.cha(txt.cp+1) qua integer));
+                          res:=res +
+                               (64*(txt.ent.cha(txt.cp+2) qua integer));
+                     endif;
+                     res:= res +
+                               (512*(txt.ent.cha(txt.lp-1) qua integer))
+                           + (txt.lp-txt.sp+1);
+                endif;
+                txt.cp:=txt.cp+1;
+             endrepeat;
+             res:= mod(res,n);
+       end;
+end;

@@ -1,0 +1,22 @@
+Module maketext_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("maketext")maketext;
+       import character c; short integer ncha;
+       export infix(txtqnt) res;
+       ---  return text of length ncha, c-filled
+       ---  NOTE: may call GC
+       begin size lng; -- used in NEW_TXT macro
+             if (ncha>0) and (ncha<=MAX_TXT)
+             then NEW_TXT(bioref);
+                  repeat while ncha <> 0
+                  do ncha:=ncha-1; res.ent.cha(ncha):=c endrepeat; 
+             else res:=notext endif;
+       end;
+end;

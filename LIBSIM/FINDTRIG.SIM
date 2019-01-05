@@ -1,0 +1,2 @@
+    external library procedure findtrigger is
+    character procedure findtrigger(m,t); name m; text m,t; ;

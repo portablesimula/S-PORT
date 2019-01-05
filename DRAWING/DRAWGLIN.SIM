@@ -1,0 +1,28 @@
+begin short integer grm;
+external class drawing;
+outtext("Grm: "); breakoutimage; grm:= inint;
+drawing(grm) begin
+   short integer cnt, col, x,y,hx,hy,mx,my,dx,dy,cl;
+   real tm1, tm2; tm1:= cputime;
+   hx:=MaxPos; hy:=MaxLine; dx:=MaxPos//80; dy:=MaxLine//80; col:= 1;
+ny:while cnt < 256 do begin
+      mx:= rank(Ifchar); if mx<>0 then goto slutt;
+      mx:=hx//2; hx:=mx-10; my:=hy//2; hy:=my-5;
+      SetColour(col);
+      for x:=-hx step dx  until hx  do DrawLine(my,mx,-hy,x);
+      col:= col + 1; SetColour(col);
+      for y:=-hy step dy  until hy  do DrawLine(my,mx,y,hx);
+      col:= col + 1; SetColour(col);
+      for x:=hx  step -dx until -hx do DrawLine(my,mx,hy,x);
+      col:= col + 1; SetColour(col);
+      for y:=hy  step -dy until -hy do DrawLine(my,mx,y,-hx);
+      col:= col + 1; SetColour(col);
+      hx:= MaxPos-cnt; hy:= MaxLine; dy:= MaxLine//80; dx:= MaxPos//80;
+      cnt:= cnt + 16;
+   end; cnt:= 0;
+%  goto ny;
+   tm2:= cputime-tm1; outtext("time used:"); outreal(tm2,5,15);
+   slutt: inimage;
+end;
+end;
+

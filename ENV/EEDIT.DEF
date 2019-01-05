@@ -1,0 +1,664 @@
+ Module EEDIT("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT,EPERI;
+%-D begin insert ECOMN,EBASE,      ECENT,EPERI;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1989 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches: D                                    ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       -----------------------------------------------------------------
+
+
+define D_NUL=0.0&&0,
+       D_P208=1.0&&+208,D_P104=1.0&&+104,D_P52=1.0&&+52,D_P26=1.0&&+26,
+       D_N208=1.0&&-208,D_N104=1.0&&-104,D_N52=1.0&&-52,D_N26=1.0&&-26;
+
+define I_MAX10=214748364,I_MAX10m=214748363;
+
+const integer I_POWER(10)   --- All integer powers of ten up to 1.0&&9
+    = (1,10,100,1000,10000,100000,1000000,10000000,100000000,1000000000)
+
+const long real D_POWER(22) --- All powers of ten up to 1.0&&21
+    = ( 1.0&&000, 1.0&&001, 1.0&&002, 1.0&&003, 1.0&&004,
+        1.0&&005, 1.0&&006, 1.0&&007, 1.0&&008, 1.0&&009,
+        1.0&&010, 1.0&&011, 1.0&&012, 1.0&&013, 1.0&&014,
+        1.0&&015, 1.0&&016, 1.0&&017, 1.0&&018, 1.0&&019,
+        1.0&&020, 1.0&&021 )
+
+const long real D_POW1(15) --- powers of ten / 22 up to limit 308
+    = ( 1.0&&000, 1.0&&021, 1.0&&042, 1.0&&063, 1.0&&084,
+        1.0&&105, 1.0&&126, 1.0&&147, 1.0&&168, 1.0&&189,
+        1.0&&210, 1.0&&231, 1.0&&252, 1.0&&273, 1.0&&294 )
+
+short integer sc_exp;      --- exports from routine "IEEE"
+integer sc_int1, sc_int0;  --- exports from routine "IEEE"
+%title ******    D E - E D I T I N G   ******
+
+Visible Routine GTREAL;  --- get_real;
+import infix(string) item; export long real val;
+begin ---
+      ---  Real_number
+      ---    ::=  < + ! - >?  & < + ! - >?  <digit>+
+      ---    ::=  < + ! - >?  decimals  < & < + ! - >?  <digit>+ >?
+      ---
+      ---  decimals
+      ---    ::=  < + ! - >?  . <digit>+
+      ---    ::=  < + ! - >?  <digit>+  < . <digit>+ >?
+      ---
+
+      ---  Notes: 1. insignificant (leading) zeroes should be skipped,
+      ---         2. at most 19 significant digits are considered.
+
+      short integer ps;      -- Item position indicator
+      character c;           -- current character value
+      short integer i;       -- Integer value of current digit
+      short integer n;       -- Number of digits (various uses)
+      short integer signif;  -- No of digits read after leading zeroes
+      short integer fzeroes; -- counts trailing zeroes in fraction part
+      integer int1, int0;    -- val = (int1*10**8+int0) * 10**exp
+      short integer exp;     -- where at most 9 digits in int1 and int0
+      integer carry;
+      integer round1,round0; -- for rounding if more than 17 digits
+      short integer incr;    -- exp increment
+      long real powr;        -- temp during final evaluation
+      Boolean minus;         -- Negative number indicator
+      Boolean skipz;         -- skip leading zeroes indicator
+      Boolean dot;           -- true if dot found
+
+%+D   if TRCSW > 3
+%+D   then begtrace("GTREAL("); ed(trcbuf,item);
+%+D        edchar(trcbuf,')'); outtrace;
+%+D   endif;
+
+      val:=0.0&&0; ps:=0;  --- Scan off all leading blanks ---
+      repeat if ps>=item.nchr then STAT("GTREAL-1",xq_nonnum); goto E1;
+             else c := var(item.chradr)(ps); ps:=ps+1 endif;
+      while c = ' ' do endrepeat;
+
+      if    c = '+' then minus := false;
+      elsif c = '-' then minus := true;
+      else minus := false; goto IMAN endif;
+      --- If leading + or - : get next non-blank character
+      repeat if ps>=item.nchr then STAT("GTREAL-2",xq_nonnum); goto E2;
+             else c := var(item.chradr)(ps); ps:=ps+1 endif;
+      while c = ' ' do endrepeat;
+
+IMAN: n:=0; signif:=0; exp:=0;
+      if c = LTEN then int0:=1; int1:=0; skipz:=false;
+      else -- look for integer part of mantissa
+           int0:=int1:=0;
+           dot:=false; incr:=0; skipz:=true;
+           repeat while (c>='0') and (c<='9') do n:=n+1;
+                  if skipz
+                  then if c='0' then goto NXTDIG endif;
+                       skipz:=false; if dot then incr:= -1 endif;
+                  endif;
+                  if signif < 8
+                  then int0:=int0*10+((c qua integer)-ISO_0)
+                       signif:=signif+1;
+                  elsif signif < 17
+                  then carry:=int0/I_POWER(7); int1:=int1*10+carry;
+                       int0:=(int0-(carry*I_POWER(7)))*10
+                              + ((c qua integer)-ISO_0);
+                       signif:=signif+1;
+                  elsif signif=17
+                  then round1:=(c qua integer)-ISO_0;
+                       if dot then incr:=0 else incr:=1 endif
+                       signif:=signif+1;
+                  elsif signif=18
+                  then round0:=(c qua integer)-ISO_0;
+                       signif:=signif+1;
+                  endif;
+      NXTDIG:     exp:=exp+incr;
+      SCAN:       if ps >= item.nchr
+                     then ps:=ps+1; goto L1; endif; -- c is digit
+                  c:=var(item.chradr)(ps); ps:=ps+1;
+           endrepeat;
+
+           if c = DMRK
+           then if dot then -- second dot terminates scan
+                else dot:=true; n:=0;
+                     if signif<18 then incr:= -1 else incr:=0; endif;
+                     goto SCAN endif;
+           endif;
+           if skipz then exp:=0 endif;  -- nothin but zeroes found
+      endif;
+
+  L1: if signif > 17
+      then -- round int0
+           carry:= int0 rem 10; int0:=int0-carry;
+           if signif=19
+           then carry:= ( ( ( (carry*100) + (round1*10) + round0 )
+                          qua long real ) / D_POWER(2) ) qua integer;
+           else carry:= ( ( ( (carry*10 ) + (round1   )          )
+                          qua long real ) / D_POWER(1) ) qua integer;
+           endif;
+           int0:=int0+carry; signif:=17;
+           if int0>=I_POWER(8) --- test for 999... => 1000... rounding ???
+           then int0:=int0-I_POWER(8); int1:=int1+1 endif;
+      endif;
+           
+      if c = LTEN
+      then --- Call getint to get the exponent
+           item.chradr:=@var(item.chradr)(ps);
+           item.nchr:=item.nchr-ps;
+           i:=GETINT(item);
+           if status <> 0
+           then if status = xq_value
+                then if skipz then i:=0; status:=0; endif; endif;
+                goto E3
+           endif;
+           ps:=ps+itemsize; n:=1; exp:=exp+i;
+      else ps:=ps-1; --- Finish: Backspace
+      endif;
+
+      if n=0 then STAT("GTREAL-4",xq_nonnum); goto E4 endif;
+
+      if (int1<>0) or (int0<>0)
+      then val:=powintmult(int1,int0,exp)
+           if minus then val:= -val endif; -- cannot overflow
+      else val:=D_NUL;
+      endif;
+
+E1:E2:E3:E4: itemsize := ps;
+%+TD  begtrace("GTR exit "); edhexlreal(trcbuf,val); outtrace;
+end;
+%page
+Visible Routine GTFRAC;  --- get_frac;
+import infix(string) item; export integer val;
+begin short integer p,d; character c; Boolean plus,sep,dot;
+%+D   if TRCSW > 3
+%+D   then begtrace("GTFRAC("); ed(trcbuf,item);
+%+D        edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      sep:=false; dot:=false; val:=0; p:=0; d:=0;
+      --- Scan off all leading blanks ---
+      repeat if p >= item.nchr then STAT("GTFRAC-1",xq_nonnum); goto E1
+             else c := var(item.chradr)(p); p:=p+1; endif;
+      while c = ' ' do endrepeat;
+      if    c = '+' then plus := true;
+      elsif c = '-' then plus := false;
+      else plus := true; goto FSTDIG endif;
+      --- If leading + or - : get next non-blank character
+      repeat if p>=item.nchr then STAT("GTFRAC-2",xq_nonnum); goto E2;
+             else c := var(item.chradr)(p); p:=p+1 endif;
+      while c = ' ' do endrepeat;
+FSTDIG:--- Convert digit to -9..0, or error exit
+      if c = DMRK -- Skip leading dot
+      then dot:=true;
+           if p >= item.nchr then STAT("GTFRAC-3",xq_nonnum); goto E3;
+           else c := var(item.chradr)(p); p:=p+1 endif;
+      endif;
+      if (c >= '0') and (c <= '9')
+      then val := ISO_0-(c qua integer); d:=p;
+      else STAT("GTFRAC-4",xq_nonnum); goto E4 endif;
+
+      --  Note: Explicit overflow check, no setting of MODE --
+      --        Computations done on negative "val"         --
+
+      repeat while p < item.nchr  -- While more characters in item:
+      do c := var(item.chradr)(p); p:=p+1;
+         --- Convert if digit
+         if (c >= '0') and (c <= '9')
+         then if val <= -I_MAX10  -- minint//10
+              then if (val<-I_MAX10) or (c='9')
+                   then STAT("GTFRAC-5",xq_value); goto E5 endif;
+              endif;
+              val:=(val*10)+ISO_0-(c qua integer); sep:=false; d:=p;
+         elsif sep then goto L1
+         elsif c=' ' then sep:=true
+         elsif dot then goto L2
+         elsif c=DMRK then sep:=dot:=true
+         else  goto L3; endif;
+      endrepeat;
+
+L1:L2:L3: itemsize := d;
+      if plus then if val <> (-214783647-1) -- minint - error in Simuletta
+                   then val:= -val;
+                   else STAT("GTFRAC-6",xq_value); goto E6; endif;
+      endif;
+E1:E2:E3:E4:E5:E6: end;
+%title ******    E D I T I N G   ******
+
+Visible Routine PTREAL;  --- put_real;
+import infix(string) item; real val; integer frac;
+begin
+%+D   if TRCSW > 3
+%+D   then begtrace("PTREAL("); edhexreal(trcbuf,val); edchar(trcbuf,',');
+%+D        edint(trcbuf,frac); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      putrealtype(item, val qua long real, 8, frac, 2);
+--    putrealtype(item, val qua long real, 9, frac, 2);
+end;
+
+Visible Routine PLREAL;  --- put_lreal;
+import infix(string) item; long real val; integer frac;
+begin long real temp;
+%+D   if TRCSW > 3
+%+D   then begtrace("PLREAL("); edhexlreal(trcbuf,val); edchar(trcbuf,',');
+%+D        edint(trcbuf,frac); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+---   putrealtype(item, val, 16, frac, 3);
+      putrealtype(item, val, 17, frac, 3);
+end;
+
+Routine putrealtype;
+import infix(string) item; long real exactval;
+       short integer fdig, frac, edig;
+begin --- Edit number in the format:  SN.MMMM000...&TE..E where:
+      --- 'S' is empty or '-', and
+      --- If frac=0 then 'N.MMMM0000' is empty
+      --- If frac is 1 then '.MMMM0000' is empty
+      --- If frac>1 then there are min(fdig-1,frac-1) 'M's and frac-fdig 0's
+      --- T is '+' or'-', and there are edig E's
+      Boolean mantsign,expsign;
+      short integer iexp; short integer si;
+      long real val;
+%+D   if TRCSW > 3
+%+D   then begtrace("PutRealType(");
+%+D        edhexlreal(trcbuf,exactval); edchar(trcbuf,',');
+%+D        edint(trcbuf,fdig); edchar(trcbuf,',');
+%+D        edint(trcbuf,frac); edchar(trcbuf,',');
+%+D        edint(trcbuf,edig); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      if frac < 0 then STAT("PUTREA-1",xq_flt0); goto E1; endif;
+      if exactval < D_NUL then mantsign:=true; exactval:= -exactval
+                     else mantsign:=false; endif;
+
+      if item.nchr < (4+(if frac>1 then frac+1 else frac)
+                     + (if mantsign then 1 else 0))
+      then STAT("PUTREA-2",xq_tshort); goto E2; endif;
+
+      if frac<fdig then fdig:=frac; endif;
+      IEEE(exactval,fdig);
+      if (sc_int1<>0) or (sc_int0<>0)
+      then iexp:=sc_exp-1+fdig else iexp:=0; endif;
+
+      -- edit exponent
+      if iexp<0 then expsign:=true; iexp:= -iexp
+                else expsign:=false endif;
+      si:=item.nchr-1;       -- index to rigthmost character in item
+
+      repeat while edig>0
+      do var(item.chradr)(si):=((iexp rem 10)+ISO_0) qua character;
+         si:=si-1; edig:=edig-1; iexp:=iexp/10;
+      endrepeat;
+      var(item.chradr)(si):=if expsign then '-' else '+'; si:=si-1;
+      var(item.chradr)(si):=LTEN;
+
+      -- edit mantissa
+      item.nchr:=si; sc_exp:=1-fdig;
+      if frac=0 then if mantsign then var(item.chradr)(si-1):='-'; endif;
+      else putfixrealtype(mantsign,item,frac-1); endif;
+
+E1:E2:end;
+%page
+
+Visible Routine PUTFIX;     --- put_fix;
+import infix(string) item; real val; integer frac;
+begin long real tempval; boolean sign; short integer fdig;
+%+D   if TRCSW > 3
+%+D   then begtrace("PUTFIX("); edhexreal(trcbuf,val); edchar(trcbuf,',');
+%+D        edint(trcbuf,frac); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      tempval:=val qua long real;
+      if tempval < D_NUL then sign:=true; tempval:= -tempval;
+      else sign:=false; endif;
+      IEEE(tempval,8);
+--    IEEE(tempval,9);
+      if frac < -sc_exp     --- not enough room, rescale
+      then fdig:=frac+sc_exp+8;
+           if fdig < 0
+           then sc_int1:=sc_int0:=sc_exp:=0
+           else IEEE(tempval,fdig); endif;
+      endif;
+      putfixrealtype(sign, item, frac);
+end;
+
+
+Visible Routine PTLFIX;  --- put_lfix;
+import infix(string) item; long real val; integer frac;
+begin boolean sign; short integer fdig;
+%+D   if TRCSW > 3
+%+D   then begtrace("PTLFIX("); edhexlreal(trcbuf,val); edchar(trcbuf,',');
+%+D        edint(trcbuf,frac); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      if val<D_NUL then val:= -val; sign:=true else sign:=false; endif;
+      IEEE(val,17);
+      if frac<-sc_exp --- not enough room, rescale
+      then fdig:=frac+sc_exp+17;
+           if fdig<0
+           then sc_int1:=sc_int0:=sc_exp:=0 else IEEE(val,fdig); endif;
+      endif;
+      putfixrealtype(sign,item,frac);
+end
+
+Routine putfixrealtype;
+import boolean sign; infix(string)item; short integer frac;
+begin --- Edit scaled value in the format:  SIIII.MMMM0000, where
+      --- 'S' is empty or '-'
+      --- If frac = 0 then '.MMM000' is empty
+      --- If frac > 0 then there are min(fdig-#I,frac) 'M's
+      --- and a total of frac M's and 0's
+      --- Note: must be preceded by a call to IEEE (see comments there)
+      ---       thus there are sc_exp+fdig I's and sc_exp+frac zeroes.
+      integer ival0, ival1; character c; short integer si, exp;
+      long real val;
+%+D   if TRCSW > 3
+%+D   then begtrace("PutFixRealType(");
+%+D        if sign then ed(trcbuf,"true,") else ed(trcbuf,"false,") endif;
+%+D        edint(trcbuf,frac); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      if frac < 0 then STAT("PUTFIXR-1",xq_flt0); goto E1 endif;
+
+      ival1:=sc_int1; ival0:=sc_int0; exp:=sc_exp+frac;
+
+      -- if no fraction do not edit decimal point
+      if frac = 0 then frac:= -1 endif;
+
+      si:=item.nchr;
+      repeat si:=si-1 while si >= 0
+      do  if frac = 0 then c:=DMRK
+          elsif exp > 0 then c:='0'; exp:=exp-1;
+          else if ((ival1+ival0) > 0) or (frac >= -1)
+               then c:=((ival0 rem 10)+ISO_0) qua character;
+                    ival0:=(ival0/10)+((ival1 rem 10)*I_POWER(7)); -- 10**8
+                    ival1:=ival1/10;
+               elsif sign then sign:=false; c:='-' else c:=' ';
+               endif;
+          endif;
+          var(item.chradr)(si):=c;
+          frac:=frac-1;
+      endrepeat;
+
+      if ((ival1+ival0) > 0) or sign or (frac >= -1)
+      then STAT("PUTFIXR-2",xq_tshort); endif;
+E1:end;
+%page
+
+Routine IEEE; import long real exactval; short integer fdig;
+begin short integer exp,i; long real val, temp;
+      integer uplim1, uplim0, lowlim1, lowlim0, ival1, ival0, itemp;
+      boolean round;
+      --- Scale exactval so that
+      ---    1. 10**(fdig-1) <= scaled_val < 10**fdig
+      ---    2. exactval = scaled_val * 10**sc_exp
+      --- i.e. scaled_val may be regarded as a normalised fraction
+      --- Note: exactval >= 0 always
+      --- TEMP: values are exported via globals sc_int1,sc_int0 and sc_exp
+%+D   if TRCSW > 3
+%+D   then begtrace("IEEE("); edhexlreal(trcbuf,exactval); edchar(trcbuf,',');
+%+D        edint(trcbuf,fdig); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      if exactval <> D_NUL
+      then val:=exactval; exp:=0;
+           if fdig<17 then fdig:=fdig+1;  --- extra digit for rounding
+              round:=true else round:=false endif;
+           uplim1:=lowlim1:=uplim0:=lowlim0:=0;
+           if fdig >= 9      --- Note: 0 =< fdig <= 18 always
+           then uplim1:=I_POWER(fdig-9);
+                if fdig > 9
+                then lowlim1:=I_POWER(fdig-10) else lowlim0:=I_POWER(8) endif
+           else uplim0:=I_POWER(fdig); lowlim0:=I_POWER(fdig-1) endif
+           --- clumsy "1'st exp = log10(val)"-algorithm follows
+           --- (val <= 10**308)
+           if val >= D_POWER(1)
+           then if val >= D_P208
+                then val:=val/D_P208; exp:=    208 endif;
+                if val >= D_P104
+                then val:=val/D_P104; exp:=exp+104 endif;
+                if val >= D_P52
+                then val:=val/D_P52;  exp:=exp+52 endif;
+                if val >= D_P26
+                then val:=val/D_P26;  exp:=exp+26 endif;
+                repeat while val >= D_POWER(1)
+                do exp:=exp+1; val:=val/D_POWER(1); endrepeat; -- no overflow
+           elsif val < D_POWER(0)
+           then if val <= D_N208
+                then val:=val*D_P208; exp:=exp-208 endif;
+                if val <= D_N104
+                then val:=val*D_P104; exp:=exp-104 endif;
+                if val <= D_N52
+                then val:=val*D_P52;  exp:=exp-52 endif;
+                if val <= D_N26
+                then val:=val*D_P26;  exp:=exp-26 endif;
+                repeat while val < D_POWER(0)
+                do exp:=exp-1; val:=val*D_POWER(1); endrepeat; -- no overflow
+           endif;
+           exp:=exp+1-fdig; -- IEEE4 - first V
+%+T        begtrace("IEEE => ");
+%+TD       edhexlreal(trcbuf,exactval); edchar(trcbuf,',');
+%+T        edint(trcbuf,fdig-1);
+%+T        edchar(trcbuf,','); edint(trcbuf,exp); outtrace;
+
+IEEE51:IEEE52:IEEE53:IEEE54:
+           --- Scaling and conversion to double integer fraction
+           --- so that (ival*10**8+ival0) * 10**exp = exactval
+           --- NOTE: one extra digit introduced for rounding below
+---        val:=powtenmult(exactval,-exp);
+---        ival1:=powtenmult(0,exactval,-exp-9) qua integer;
+           ival1:=powtenmult(0,exactval,-exp-9);
+%+T        begtrace("IEEE5(");
+%+T        edint(trcbuf,exp); edchar(trcbuf,',');
+%+T        edint(trcbuf,ival1); edchar(trcbuf,')'); outtrace;
+
+           repeat -- if exp<=300
+                  -- then ival0:=((powtenmult(exactval,-exp-1)
+                  --       -((ival1 qua long real)*D_POWER(8)))*D_POWER(1))
+                  --         qua integer
+                  -- else ival0:=((powtenmult(exactval, -exp)
+                  --         -((ival1 qua long real)*D_POWER(9)))      )
+                  --         qua integer
+                  -- endif
+                  ival0:=powtenmult(ival1,exactval,-exp)
+           while ival0 < 0 do ival1:=ival1-1 endrepeat;
+
+IEEE6:     --- Adjust value and exponent
+           repeat while ival0 >= I_POWER(9)
+           do ival1:=ival1+1; ival0:=ival0-I_POWER(9);
+%+T           begtrace("  ival0 decr "); edint(trcbuf,ival0); outtrace;
+           endrepeat;
+
+           if ival1 > uplim1 then exp:=exp+1; goto IEEE51 endif;
+           if ival1 = uplim1
+           then if ival0 > uplim0 then exp:=exp+1; goto IEEE52 endif;
+                if ival0 = uplim0 then
+%+T        begtrace("IEEE 10**k"); outtrace;
+                     if fdig <> 1 then
+                          exp:=exp+1;
+                          ival0:=(ival0/10) + ((ival1 rem 10)*I_POWER(8));
+                          ival1:=ival1/10;
+                     endif
+                     goto IEEE7;
+                endif;
+           endif;
+           if ival1 < lowlim1 then exp:=exp-1; goto IEEE53 endif;
+           if ival1 = lowlim1 then if ival0 < lowlim0
+           then exp:=exp-1; goto IEEE54 endif endif;
+
+IEEE7:      --- export scaled and rounded values
+           if round
+           then i:= ival0 rem 10;
+                if i >= 5 -- round ???
+                then ival0:=ival0 + 10 - i;
+                     goto IEEE6 endif; -- check 99..9 => 10..0
+                sc_int0:=ival0/10; sc_exp:=exp+1; sc_int1:=ival1;
+           else sc_int1:=ival1*10+(ival0/I_POWER(8));
+                sc_int0:=ival0 rem I_POWER(8); sc_exp:=exp;
+           endif;
+%+T        begtrace("IEEE res("); edint(trcbuf,sc_int1);
+%+T        edchar(trcbuf,','); edint(trcbuf,sc_int0);
+%+T        edchar(trcbuf,','); edint(trcbuf,sc_exp); outtrace;
+      else
+%+T        begtrace("IEEE => 0"); outtrace;
+           sc_int1:=sc_int0:=sc_exp:=0;
+      endif;
+end;
+%page
+
+---   MULT - DIV with powers of TEN -  utilities   ---
+
+--- The constants for full IEEE are: D_P216,D_P108,D_P54,D_POWER(0:26)
+--- NOTE: These must be in EXTENDED precision (i.e. 64 bits significand)
+---       Status will be set implicitly to xq_value if overflow occurs
+---       - it must be tested after each operation to avoid
+---       "exception during exception"
+
+---  - here we use other constants, because only 52 signif. bits
+
+Routine powintmult; import integer i1,i0; short integer exp;
+                    export long real val;
+begin range(0:M_max) oldmode; short integer exp1,exp0; boolean neg;
+%+T   begtrace("intcase  "); edint(trcbuf,exp); edchar(trcbuf,'=');
+      --- append trailing zeroes to minimize exp
+---   repeat while (signif < 17) and (exp>0)
+---   do i1:=i1*10+(i0/I_POWER(7)); i0:=(i0 rem I_POWER(7))*10
+---      exp:=exp-1; signif:=signif+1; endrepeat
+---   --- strip off trailing zeroes to homogenize results
+---   repeat while (i0 rem 10) = 0
+---   do i0:=(i1 rem 10)*I_POWER(8)+(i0/10); i1:=i1/10; exp:=exp+1;
+---   endrepeat;
+      if exp<0 then exp:=-exp; neg:=true else neg:=false endif;
+      exp1:=exp/21; exp0:=exp rem 21;
+%+T   edint(trcbuf,exp1); edchar(trcbuf,'/');
+%+T   edint(trcbuf,exp0); edchar(trcbuf,',');
+%+T   edint(trcbuf,i1); edchar(trcbuf,':');
+%+T   edint(trcbuf,i0); edchar(trcbuf,'=');
+      if ((i1=0) and (i0=0)) or (status<>0) then val:=D_NUL; goto E1
+      elsif RTRAP(1) -- ****** Set Reporting of Traps ******
+      then OFLOW: STAT("PowintMult",xq_value);
+           UFLOW: val:=D_NUL; goto E2 endif;
+      if    neg  --- underflow possible
+      then if exp1>=15
+           then if exp1>16 then goto UFLOW endif;
+                val:=((i1 qua long real)*D_POWER(8)+(i0 qua long real))
+                     /(D_POWER(exp0)*D_POW1(14))/D_POW1(exp1-14)
+           else val:=((i1 qua long real)*D_POWER(8)+(i0 qua long real))
+                     /(D_POWER(exp0)*D_POW1(exp1)) endif
+      elsif exp <> 0  --- overflow possible
+      then oldmode:=EXMODE; EXMODE:=M_ENVM; --- set non-trapping mode
+           if exp1>=15
+           then if exp1>16 then goto OFLOW endif;
+                val:=(i1 qua long real)
+                     *D_POW1( 14 )*D_POW1(exp1-14)*D_POWER(exp0+8)
+                     +((i0 qua long real)
+                      *D_POW1( 14 )*D_POW1(exp1-14)*D_POWER(exp0))
+           else val:=((i1 qua long real)*D_POWER(8)+(i0 qua long real))
+                     *(D_POWER(exp0)*D_POW1(exp1)) endif
+           EXMODE:=oldmode;               --- set mode back
+      else val:=(i1 qua long real)*D_POWER(8)+(i0 qua long real) endif;
+      if status <> 0 then val:=D_NUL endif;
+E2:   RTRAP(0); -- Clear Reporting of Traps
+E1:
+%+TD  edhexlreal(trcbuf,val);
+%+T   outtrace;
+%+D   if TRCSW > 3
+%+D   then begtrace("PowintMult: Result=");
+%+D        edhexlreal(trcbuf,val); outtrace;
+%+D   endif;
+end;
+
+
+Routine powtenmult; import integer i1; long real r; short integer exp;
+                    export integer   val;
+begin range(0:M_max) oldmode; short integer exp1,exp0; boolean neg;
+%+D   if TRCSW > 3
+%+D   then begtrace("PowtenMult("); edhexlreal(trcbuf,r); edchar(trcbuf,',');
+%+D        edint(trcbuf,exp); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+%+T   begtrace("powcase  "); edint(trcbuf,exp); edchar(trcbuf,'=');
+      if exp<0 then exp:=-exp; neg:=true else neg:=false endif;
+      exp1:=exp/21; exp0:=exp rem 21;
+%+T   edint(trcbuf,exp1); edchar(trcbuf,'/');
+%+T   edint(trcbuf,exp0); edchar(trcbuf,',');
+%+TD  edhexlreal(trcbuf,r); edchar(trcbuf,'=');
+--    if (r = D_NUL) or (status<>0) then val:=D_NUL; goto E1 endif;
+      if                 status<>0  then val:=0    ; goto E1 endif;
+      if RTRAP(1) -- ****** Set Reporting of Traps ******
+      then OFLOW: STAT("PowtenMult",xq_value);
+--         UFLOW: val:=D_NUL; goto E2 endif;
+           UFLOW: val:=0    ; goto E2 endif;
+      if    neg  --- underflow possible
+      then if exp1>=15
+           then if exp1>16 then goto UFLOW endif;
+                val:=(r/(D_POWER(exp0)*D_POW1(14))/D_POW1(exp1-14)
+                      -((i1 qua long real)*D_POWER(9))) qua integer
+           else val:=(r/(D_POWER(exp0)*D_POW1(exp1))
+                      -((i1 qua long real)*D_POWER(9))) qua integer
+           endif
+--    elsif exp <> 0  then --- overflow possible
+      else            --- overflow possible
+           oldmode:=EXMODE; EXMODE:=M_ENVM; --- set non-trapping mode
+           if exp1>=15
+           then if exp1>16 then goto OFLOW endif;
+                val:=(r*D_POW1( 14 )*D_POW1(exp1-14)*D_POWER(exp0)
+                      -((i1 qua long real)*D_POWER(9))) qua integer
+           else val:=(r*D_POW1(exp1)*D_POWER(exp0)
+                      -((i1 qua long real)*D_POWER(9))) qua integer
+           endif
+           EXMODE:=oldmode;               --- set mode back
+--    else val:=r
+      endif;  --- val := r * 10**exp
+--    if status <> 0 then val:=D_NUL endif;
+      if status <> 0 then val:=0 endif;
+E2:   RTRAP(0); -- Clear Reporting of Traps
+E1:
+-- %+TD  edhexlreal(trcbuf,val);
+%+T   edint(trcbuf,val);
+%+T   if status<>0 then edchar(trcbuf,'S') endif; outtrace;
+%+D   if TRCSW > 3
+%+D   then begtrace("PowtenMult: Result=");
+-- %+D        edhexlreal(trcbuf,val); outtrace;
+%+D   endif;
+end;
+%page
+
+Visible Routine PTFRAC;  --- put_frac;
+import infix(string) item; integer val,n;
+begin integer v; -- Scaled value (abs)
+      short integer d; -- Number of digits written
+      short integer r; -- Remaining digits in current group
+      short integer p; -- Next available position in item
+      short integer c; -- Current digit (numerical)
+%+D   if TRCSW > 3
+%+D   then begtrace("PTFRAC("); edint(trcbuf,val); edchar(trcbuf,',');
+%+D        edint(trcbuf,n); edchar(trcbuf,')'); outtrace;
+%+D   endif;
+      if n<=0 then r:=3 else r:=n rem 3; if r=0 then r:=3 endif endif;
+      v:=val/10; d:=0; p:=item.nchr-1;
+      if val<0 then c:=(v*10)-val; v:= -v else c:=val-(v*10) endif;
+      repeat if r = 0
+             then r:=3; if d <> n
+                  then if p<0 then STAT("PTFRAC-1",xq_tshort); goto E1 endif;
+                       var(item.chradr)(p):=' '; p:=p-1;
+                  endif;
+             endif;
+             if p < 0 then STAT("PTFRAC-2",xq_tshort); goto E2 endif;
+             var(item.chradr)(p):=(c+ISO_0) qua character; p:=p-1;
+             r:=r-1; d:=d+1;
+             if d = n
+             then if p < 0 then STAT("PTFRAC-3",xq_tshort); goto E3 endif;
+                  var(item.chradr)(p):=DMRK; p:=p-1;
+             endif;
+      while (v>0) or (d<n) do c:=v rem 10; v:=v/10; endrepeat;
+      if val < 0
+      then if p < 0 then STAT("PTFRAC-4",xq_tshort); goto E4; endif;
+           var(item.chradr)(p):='-'; p:=p-1;
+      endif;
+      repeat while p>=0 do var(item.chradr)(p):=' '; p:=p-1; endrepeat;
+E1:E2:E3:E4:end;
+
+
+end;

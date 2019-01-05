@@ -1,0 +1,2 @@
+external library procedure linecount is
+integer procedure linecount(pfil); ref(printfile) pfil; ;

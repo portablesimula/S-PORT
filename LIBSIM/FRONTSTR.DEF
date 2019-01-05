@@ -1,0 +1,21 @@
+Module frontstr_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("frontstrip")frontstrip;
+       import infix(txtqnt) t; export infix(txtqnt) res;
+       ---  return t with leading blanks stripped
+       begin 
+             repeat while t.sp < t.lp
+             do if t.ent.cha(t.sp)<>' '
+                then res.sp:=res.cp:=t.sp; res.lp:=t.lp;
+                     res.ent:=t.ent; goto X1 endif;
+                t.sp:=t.sp+1 endrepeat
+             res:=notext;
+  X1:  end;
+end;

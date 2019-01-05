@@ -1,0 +1,24 @@
+Module skipx_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("skip")skipx;
+       import name(infix(txtqnt)) tt; character c;
+       export infix(txtqnt) res;
+       ---  set tt.pos at first character <> c, or tt.length+1
+       ---  return "tt.sub(newpos .. last)"
+       begin range(0:MAX_TXT) pos;
+             res:=var(tt); pos:=res.cp;
+             repeat while pos < res.lp
+             do if res.ent.cha(pos) <> c
+                then res.sp:=res.cp:=pos; goto X1 endif;
+                pos:=pos+1 endrepeat;
+             res:=notext;
+       X1:   var(tt).cp:=pos;
+       end;
+end;

@@ -1,0 +1,2 @@
+    external library procedure startpos is
+    short integer procedure startpos(t); text t; ;

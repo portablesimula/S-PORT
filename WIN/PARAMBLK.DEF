@@ -1,0 +1,730 @@
+%SPORT ON
+External class MENUES;
+
+MENUES Class ParamBlk(Initfile);
+      text InitFile;
+begin
+      Integer NoNPX=0,  iAPX87=1,  iAPX287=2, WTLx167=4;
+      Integer iAPX86=1, iAPX186=2, iAPX286=3, iAPX386=4;
+      Integer oMSDOS=0, oMSDOS87=1, oMSOS2=2, oXENIX286=3,
+              oXENIX386=4, oXENIX386W=5, oUNIX386=6, oUNIX386W=7,
+              oMAX=7;
+%title ***  Parameter  Block  for  MTR/FEC/BEC/EDT  ***
+Short Integer Magic,    ! 0000:2  - Magic number = 5425;
+              Hedlng,   ! 0002:2  - Size of parameter block in bytes;
+              Auxlng;   ! 0004:2  - Size of aux-info in bytes;
+character     State;    ! 0006:1  - 0:Init/Exit 1:FEC 2:BEC 3:EDT; 
+character     Ccode;    ! 0007:1  - 0:pass ok, 1:error, >1:fatal error;
+%+D Ref(Interval) Sysgen;   ! 0008:1  - System generation mode;
+Ref(Interval) Cpuid;    ! 0009:1  - ;
+Ref(Interval) Numid;    ! 0010:1  - ;
+Ref(EnumType) Target;   ! 0011:1  - Target operating system;
+Ref(EnumType) Chkstk;   ! 0012:1  - >0: Produce CHKSTK calls;
+Ref(EnumType) Recomp;   ! 0013:1  - 0:Normal comp, 1:compatible recomp;
+Ref(EnumType) Debmod;   ! 0014:1  - Simob info generation level;
+%+D %-M Ref(Interval) Becdeb;   ! 0015:1  - Debugging level (0:skip all info);
+%-D %-M character     Becdeb;   ! 0015:1  - Debugging level (0:skip all info);
+Ref(EnumType) Lintab;   ! 0016:1  - >0: Generate LIN_CODE segment;
+Ref(EnumType) Rngchk;   ! 0017:1  - >0: produce range check;
+Ref(EnumType) Idxchk;   ! 0018:1  - >0: produce array index check;
+Ref(EnumType) Tstofl;   ! 0019:1  - >0: produce INTO after arith instr;
+Ref(EnumType) Bnklnk;   ! 0020:1  - >0: Prepare code for banking;
+Ref(EnumType) Standard; ! 0021:1  - >0: Restrict to pure SIMULA;
+Ref(EnumType) Interact; ! 0022:1  - >0: Interactive execution;
+Ref(EnumType) Cbind;    ! 0023:1  - C-Binding (None,MS,TURBO, etc.);
+Ref(OptnList) Options;  ! 0024:28 - Option values;
+Ref(Interval) Minalloc; ! 0052:2  - Min no. of allocations before GC;
+Ref(Interval) Maxalloc; ! 0054:2  - Max no. of storage allocations;
+Ref(Interval) Stepsize; ! 0056:4  - Allocation step sizes in bytes;
+Ref(Interval) Wrktail;  ! 0060:4  - Size of extra allocation;
+Ref(Interval) Minfree;  ! 0064:4  - Min free storage after GC in bytes;
+Ref(Interval) Buflng;   ! 0068:2  - File buffer length;
+Ref(Interval) Inplth;   ! 0070:2  - Input line length (=132);
+Ref(Interval) Outlth;   ! 0072:2  - Output line length (=132);
+Ref(Interval) Maxerr;   ! 0074:2  - Max nr of error messages;
+Ref(Interval) Lppage;   ! 0076:2  - Default lines per page;
+Ref(Interval) Masslv;   ! 0078:2  - BEC: Massage level;
+Ref(Interval) Qbflim;   ! 0080:2  - Nr of Q-instr before Exhaust Half;
+Ref(Interval) Seglim;   ! 0082:2  - ;
+Ref(Interval) Nline;    ! 0084:2  - Nr of source lines;
+Ref(Interval) Nerr;     ! 0086:2  - Nr of errors detected;
+Ref(Interval) Nwarn;    ! 0088:2  - Nr of warnings given;
+character BECversion;   ! 0090:1  - former FREE01;
+%+D %-M Ref(Interval) TrcDisp;
+%-D %-M character TrcDisp;  ! 0091:1  - 0:Production, 20:Trace, 40:Interim;
+!**********  her we should have 4-byte alignment  *******************;
+Ref(TextType) Syspfx;   ! 0092:8  - Current target Prefix, e.g. sd7108;
+Ref(TextType) Simlib;   ! 0100:72 - Current RTS/ENV Library Path;
+Ref(TextType) Source;   ! 0172:72 - Source input file specification;
+Ref(TextType) Listfil;  ! 0244:72 - Listing output file specification;
+Ref(TextType) Relcode;  ! 0316:72 - Relocatable output file spec.;
+Ref(TextType) Scratch;  ! 0388:72 - Scratch file (interpass info);
+Ref(TextType) Scode;    ! 0460:72 - Scratch file (S-code file);
+Ref(TextType) Errfil;   ! 0532:72 - Error messages (FEC and RTS);
+Ref(TextType) Select;   ! 0604:72 - FEC/SML Selection:option;
+Ref(TextType) Editor;   ! 0676:72 - Editor name + poss. def/help files;
+Ref(TextType) Stapre;   ! 0748:72 - AttrFile for Standard SIMULA PREDEF;
+Ref(TextType) Simpre;   ! 0820:72 - AttrFile for extended SIMULA PREDEF;
+%+D Ref(TextType) Prfxid;   ! 0892:8  - BEC: Ext. symbol prefix ident;
+%+D Ref(TextType) Csegnam;  ! 0900:8  - BEC: Code segment prefix ident;
+%+D Ref(TextType) Dsegnam;  ! 0908:8  - BEC: Data segment prefix ident;
+
+%title ***  TRACE VERSION SPECIFIC PART OF PARAMETER BLOCK  ***
+%+D Ref(Interval) Sk1lin;   ! 0916:2  - Pass 1 trace: starting line;
+%+D Ref(Interval) Sk1lim;   ! 0918:2  - Pass 1 trace: stopping line;
+%+D Ref(Interval) Sk1trc;   ! 0920:4  - Pass 1 trace: switches;
+%+D Ref(Interval) Sk2lin;   ! 0924:2  - Pass 2 trace: starting line;
+%+D Ref(Interval) Sk2lim;   ! 0926:2  - Pass 2 trace: stopping line;
+%+D Ref(Interval) Sk2trc;   ! 0928:4  - Pass 2 trace: switches;
+%+D Ref(Interval) Sk3lin;   ! 0933:2  - Pass 3 trace: starting line;
+%+D Ref(Interval) Sk3lim;   ! 0934:2  - Pass 3 trace: stopping line;
+%+D Ref(Interval) Sk3trc;   ! 0936:4  - Pass 3 trace: switches;
+%+D Ref(Interval) Sk4lin;   ! 0940:2  - Pass 4 trace: starting line;
+%+D Ref(Interval) Sk4lim;   ! 0942:2  - Pass 4 trace: stopping line;
+%+D Ref(Interval) Sk4trc;   ! 0944:4  - Pass 4 trace: switches;
+% Ref(TextType) FREE11;   ! 0948:36 - -- former SIMSET;
+% Ref(TextType) FREE12;   ! 0984:36 - -- former SIMLTN;
+%             ! FREE02    ! 1020:2  - Reserved for future use;
+%             ! FREE03    ! 1022:2  - Reserved for future use;
+                
+! *********  MONITOR SPECIFIC PART OF PARAMETER BLOCK  *********;
+
+%+D Ref(Interval) Langua;       ! 0:Simula, 1:Simuletta;
+%+D Ref(Interval) Sysmode;      ! 0:User, else System Maintenance Mode;
+%-D character     Langua;       ! 0:Simula, 1:Simuletta;
+%-D character     Sysmode;      ! 0:User, else System Maintenance Mode;
+            ! FREE03    ! 1027:1  - force 4-byte alignment;
+   
+Ref(TextType) Exefile;      ! Executable output file spec;
+Ref(TextType) DOSLNK;       ! Name of DOS-Linker;
+Ref(TextType) DOSLIB;       ! Path of DOS-Library;
+%-M Ref(TextType) OS2LNK;       ! Name of OS2-Linker;
+%-M Ref(TextType) OS2LIB;       ! Path of OS2-Library;
+%-M Ref(TextType) XNX286LNK;    ! Name of XENIX/286-Linker;
+%-M Ref(TextType) XNX286LIB;    ! Path of XENIX/286-Library;
+%-M Ref(TextType) XNX386LNK;    ! Name of XENIX/386-Linker;
+%-M Ref(TextType) XNX386LIB;    ! Path of XENIX/386-Library;
+%-M Ref(TextType) UNX386LNK;    ! Name of UNIX/386-Linker;
+%-M Ref(TextType) UNX386LIB;    ! Path of UNIX/386-Library;
+Ref(TextType) Sportrel;     ! Sport release id;
+Ref(DataSet)  IncSet;       ! Include files;
+Ref(DataSet)  LibSet;       ! Libraries;
+
+%   ***********   global variables    ***********
+
+text errorfile;  ! *** T E M P *** ;
+text fec;
+
+%record on
+text systemid(7);          !*** sysprefix d0/d7... part   ***;
+%+o character option(127); !*** for efficiency            ***;
+%record off
+
+short integer closeCode;   !*** exit code for closescreen ***;
+text currel;               !*** current release number ***;
+
+%title ***    DATA  TYPE:  Interval   ***
+
+%+i   DataType Class Interval(Ub); integer Ub;
+%+i   Hidden Protected val;
+%+i   begin integer val;
+
+%+i         Integer Procedure GetInt; GetInt:=val;
+
+%+i         Boolean Procedure PutInt(i); integer i;
+%+i         begin if i >= 0 and then i <= Ub then
+%+i               begin val:=i; Picture.Putint(i); Justify(-1); 
+%+i                     PutInt:=true; RepaintForms;
+%+i               end;
+%+i         end;
+
+%+i         Boolean Procedure Edit(Frm,Lin,Pos);     !** Local Match **;
+%+i         ref(Form) Frm; Short integer Lin,Pos;
+%+i         begin integer v;
+%+i            inspect Frm do begin
+%+i               ExplEdit;
+%+i               SetPos(Lin,Pos); v:=Inint(Picture.Length);
+%+i               if LastKey.map <> EscKey and then v <> val
+%+i               then Edit:=PutInt(v)
+%+i               else begin
+%+i                  SetPos(Lin,Pos); OutText(Picture.sub
+%+i                                  (1,min(Width-Pos,Picture.Length)));
+%+i               end;
+%+i               if LastKey.map=CrKey  then LastKey.map:=DownKey;
+%+i               if LastKey.map=EscKey then LastKey.map:=DownKey;
+%+i            end;
+%+i         end;
+
+%+i         Picture:-blanks(6);
+%+i   end;
+%title ***    DATA  TYPE:  EnumerationType   ***
+
+%+e   Class Enumeration(MaxVal); short integer MaxVal;
+%+e   begin text array Expl,Optn(0:MaxVal);
+
+%+e         Short integer Procedure Lookup(id); text id;
+%+e         begin short integer i;
+%+e               for i:=0 step 1 until MaxVal do
+%+e               if id=Optn(i) then goto E; i:=MaxVal+1;
+%+e            E: Lookup:=i;
+%+e         end;
+%+e   end;
+
+%+e   DataType Class EnumType(eNum); ref(Enumeration) eNum;
+%+e   Hidden Protected val;
+%+e   begin short integer val;
+
+%+e         Short integer Procedure GetInt; GetInt:=val;
+
+%+e         Boolean Procedure PutText(id); text id;
+%+e         PutText:=PutInt(eNum.Lookup(id));
+
+%+e         Boolean Procedure Increment; Increment:=PutInt(Val+1);
+%+e         Boolean Procedure Decrement; Decrement:=PutInt(Val-1);
+
+%+e         Boolean Procedure PutInt(i); integer i;
+%+e         begin if i >= 0 and then i <= eNum.MaxVal then
+%+e               begin val:=i; Picture:=eNum.Optn(i);
+%+e                     PutInt:=true; RepaintForms;
+%+e               end;
+%+e         end;
+
+%+e         Boolean Procedure Edit(Frm,Lin,Pos);     !** Local Match **;
+%+e         ref(Form) Frm; Short integer Lin,Pos;
+%+e         begin integer v;
+%+e            inspect Frm do begin
+%+e               v:=Val; Show;
+%+e               while true do
+%+e               begin Explain(eNum.Expl(v)); setpos(Lin,Pos);
+%+e                     HighLight(eNum.Optn(v)); Inchar;
+%+e                     if LastKey.map = CrKey
+%+e                     then v:=if v >= eNum.MaxVal then 0 else v+1
+% --                    if LastKey.map = UpKey
+% --                    then v:=if v <= 0 then eNum.MaxVal else v-1
+% --               else if LastKey.map = DownKey
+% --                    then v:=if v >= eNum.MaxVal then 0 else v+1
+%+e                else goto Ex;
+%+e               end;
+%+e           Ex: if LastKey.map <> EscKey and then v <> val
+%+e               then Edit:=PutInt(v) else
+%+e               begin Setpos(Lin,pos); OutText(eNum.Optn(Val)) end;
+%+e               if LastKey.map=CrKey  then LastKey.map:=DownKey;
+%+e               if LastKey.map=EscKey then LastKey.map:=DownKey;
+%+e            end;
+%+e         end;
+%+e   end;
+%title ***    DATA  TYPE:  OptnList   ***
+% --- modified for efficiency (options) ---
+
+%+o   DataType Class OptnList;
+%+o   Hidden Protected Optn,EnCode,DeCode;
+%+o   begin Character array Optn(0:27);
+
+%+o         Procedure DeCode(t); text t; !** t ==> Optn(..) **;
+%+o         begin integer i,k; character c;
+%+o               short integer tpos,lim;
+
+%+o               boolean procedure nextchar;
+%+o               if tpos < lim then begin
+%+o                  c:=loadchar(t,tpos); tpos:=tpos+1; nextchar:=true;
+%+o               end else c:='!0!';
+
+%+o               for i:=0 step 1 until 27 do
+%+o                   option(i+rank('A')):=
+%+o                                         Optn(i):='!0!';
+%+o               tpos:=0; lim:=t.length;
+%+o               while nextchar do begin
+%+o             L1:  if letter(c) then begin
+%+o                     i:=rank(c)-rank('A'); k:=1;
+%+o                     if nextchar then begin
+%+o                        if digit(c) then begin
+%+o                           k:=rank(c)-rank('0');
+%+o                           while nextchar and then digit(c)
+%+o                              do k:=k*10+(rank(c)-rank('0'));
+%+o                           ! *** k:=rem(k,256);
+%+o                        end;
+%+o                     end;
+%+o                     option(i+rank('A')):=
+%+o                     Optn(i):=char(k); goto L1;
+%+o                  end;
+%+o               end;
+%+o         end;
+
+%+o         Procedure EnCode(t); text t; !** Optn(..) ==> t **;
+%+o         begin short integer i,k,w;
+%+o               t:=notext; t.setpos(1);
+%+o               for i:=0 step 1 until 27 do
+%+o               begin k:=rank(Optn(i));
+%+o                     if k <> 0 then
+%+o                     begin t.putchar(char(rank('A')+i));
+%+o                           if k=1 then ! OK ;
+%+o                      else begin w:=if k<10 then 1
+%+o                                    else if k<100 then 2 else 3;
+%+o                                 t.sub(t.pos,w).putint(k); t.setpos(t.pos+w)  
+%+o                           end;
+%+o                     end;
+%+o               end;
+%+o         end;
+
+%+o         character Procedure GetOpt(c); Character c;
+%+o         begin
+%+o               if c >= 'A' and then c<='Z'
+%+o               then GetOpt:=Optn(rank(c)-rank('A'));
+%+o         end;
+
+%+o         Boolean Procedure PutOpt(c,v); character c,v;
+%+o         begin
+%+o               if c >= 'A' and then c<='Z' then begin
+%+o                  option(rank(c)):=
+%+o                  Optn(rank(c)-rank('A')):=v; EnCode(Picture);
+%+o                  PutOpt:=true; RepaintForms;
+%+o               end;
+%+o         end;
+
+%+o         Boolean Procedure Edit(Frm,Lin,Pos);    !** Local Match **;
+%+o         ref(Form) Frm; Short integer Lin,Pos;
+%+o         begin text t;
+%+o            inspect Frm do begin
+%+o               ExplEdit; SetPos(Lin,Pos);
+%+o               t:-Intext(min(Width-Pos,Picture.Length));
+%+o               UpCase(t);
+%+o               if LastKey.map <> EscKey and then t <> Picture then
+%+o               begin Picture:=t; DeCode(Picture);
+%+o                     EnCode(Picture); Edit:=True;
+%+o               end;
+%+o               if LastKey.map=CrKey  then LastKey.map:=DownKey;
+%+o               if LastKey.map=EscKey then LastKey.map:=DownKey;
+%+o            end;
+%+o         end;
+
+%+o         DeCode(Picture);
+
+%+o   end;
+%title ***  Input  ParamBlk  from  inform.xcg  ***
+
+Procedure InParamBlk;
+% inspect new inbytefile("inform.xcg") do
+inbytefile("inform.xcg")
+begin Short integer i;
+
+      Procedure InSet(S); ref(DataSet) S;
+      begin short integer n;
+            for n:=InByte while n <> 0 do S.PutText(Intext(Blanks(n)));
+      end;
+
+      Procedure Instring(tt); ref(TextType) tt;
+      begin text str; character ch; short integer n;
+            str:-tt.Picture;
+            str.setpos(1); ch:= char(inbyte); n:= str.length;
+            while n>0 and ch<>char(0) do
+            begin str.putchar(ch); n:= n-1;
+                  if n>0 then ch:= char(inbyte);
+            end;
+            while n>0 do
+            begin str.putchar(' '); n:= n-1;
+                  if n>0 then ch:= char(inbyte);
+            end;
+      end;
+
+      Short integer Procedure InWord; InWord:=Inbyte+(Inbyte*256);
+
+      Integer Procedure InInt;
+      begin integer i1,i2,i3,i4;
+            i1:=inbyte; i2:=inbyte; i3:=inbyte; i4:=inbyte;
+            InInt:=i1 + i2*256 + i3*65536 + i4*16777216;
+      end;
+%     InInt:=Inbyte+(Inbyte*256)+(Inbyte*65536)+(Inbyte*16777216);
+
+%     if not open then goto noxcg; InParamBlk:= true;
+      if not open then exitsystem;
+      Options:-new OptnList("Options",blanks(28));
+      Magic:=InWord;           ! 0000:2  - Magic number = 5425;
+      Hedlng:=InWord;          ! 0002:2  - Size of parameter block in bytes;
+      Auxlng:=InWord;          ! 0004:2  - Size of aux-info in bytes;
+      State:=char (InByte);    ! 0006:1  - 0:Init/Exit 1:FEC 2:BEC 3:LNK; 
+      if state > '!4!' then state:='!4!';
+      if state = '!0!' or state > '!2!'
+      then initScreen("  ---  WAIT: reloading window system  ---");
+      Ccode:=char (InByte);    ! 0007:1  - 0:pass ok, 1:error, >1:fatal error;
+%+D   Sysgen.PutInt(InByte);   ! 0008:1  - System generation mode;
+%-D                 InByte ;   ! 0008:1  - System generation mode;
+      Cpuid.PutInt(InByte);    ! 0009:1  - ;
+      Numid.PutInt(InByte);    ! 0010:1  - ;
+      Target.PutInt(InByte);   ! 0011:1  - Target operating system;
+      Chkstk.PutInt(InByte);   ! 0012:1  - >0: Produce CHKSTK calls;
+      Recomp.PutInt(InByte);   ! 0013:1  - 0:Normal comp, 1:compatible recomp;
+      Debmod.PutInt(InByte);   ! 0014:1  - Simob info generation level;
+%+D %-M  Becdeb.PutInt(InByte);   ! 0015:1  - Debugging level (0:skip all info);
+%-D %-M  Becdeb:=char( InByte);   ! 0015:1  - Debugging level (0:skip all info);
+%+M                    inbyte;
+      Lintab.PutInt(InByte);   ! 0016:1  - >0: Generate LIN_CODE segment;
+      Rngchk.PutInt(InByte);   ! 0017:1  - >0: produce range check;
+      Idxchk.PutInt(InByte);   ! 0018:1  - >0: produce array index check;
+      Tstofl.PutInt(InByte);   ! 0019:1  - >0: produce INTO after arith instr;
+      Bnklnk.putint(inbyte);   ! 0020:1  - >0: Prepare code for banking;
+      Standard.PutInt(InByte); ! 0021:1  - >0: Restrict to pure SIMULA;
+      Interact.PutInt(InByte); ! 0022:1  - >0: Interactive execution;
+      Cbind.PutInt(InByte);    ! 0023:1  - C-Binding (None,MS,TURBO, etc.);
+      for i:=0 step 1 until 27 ! 0024:28 - Option values;
+       do Options.PutOpt(Char(Rank('A')+i),Char(Inbyte));
+      Minalloc.PutInt(InWord); ! 0052:2  - Min no. of allocations before GC;
+      Maxalloc.PutInt(InWord); ! 0054:2  - Max no. of storage allocations;
+      Stepsize.PutInt(InInt);  ! 0056:4  - Allocation step sizes in bytes;
+      Wrktail.PutInt(InInt);   ! 0060:4  - Size of extra allocation;
+      Minfree.PutInt(InInt);   ! 0064:4  - Min free storage after GC in bytes;
+      Buflng.PutInt(InWord);   ! 0068:2  - File buffer length;
+      Inplth.PutInt(InWord);   ! 0070:2  - Input line length (=132);
+      Outlth.PutInt(InWord);   ! 0072:2  - Output line length (=132);
+      Maxerr.PutInt(InWord);   ! 0074:2  - Max nr of error messages;
+      Lppage.PutInt(InWord);   ! 0076:2  - Default lines per page;
+      Masslv.PutInt(InWord);   ! 0078:2  - BEC: Massage level;
+      Qbflim.PutInt(InWord);   ! 0080:2  - Nr of Q-instr before Exhaust Half;
+      Seglim.PutInt(InWord);   ! 0082:2  - ;
+      Nline.PutInt(InWord);    ! 0084:2  - Nr of source lines;
+      Nerr.PutInt(InWord);     ! 0086:2  - Nr of errors detected;
+      Nwarn.PutInt(InWord);    ! 0088:2  - Nr of warnings given;
+      BECversion:=char(inbyte);! 0090:1  - former FREE01;
+%+D %-M   TrcDisp.PutInt(Inbyte);
+%-D %-M   TrcDisp:=char (Inbyte);  ! 0091:1  - ;
+%+M                      inbyte ;
+
+      InString(Syspfx);        ! 0092:8  - Current target Prefix, e.g. sd7108;
+      InString(Simlib);        ! 0100:72 - Current RTS/ENV Library Path;
+      InString(Source);        ! 0172:72 - Source input file specification;
+      InString(Listfil);       ! 0244:72 - Listing output file specification;
+      InString(Relcode);       ! 0316:72 - Relocatable output file spec.;
+      InString(Scratch);       ! 0388:72 - Scratch file (interpass info);
+      InString(Scode);         ! 0460:72 - Scratch file (S-code file);
+      InString(Errfil);        ! 0532:72 - Error messages (FEC and RTS);
+      InString(Select);        ! 0604:72 - FEC/SML Selection:option;
+      InString(Editor);        ! 0676:72 - Editor name;
+      InString(Stapre);        ! 0748:72 - AttrFile for Standard SIMULA PREDEF;
+      InString(Simpre);        ! 0820:72 - AttrFile for extended SIMULA PREDEF;
+%+D   InString(Prfxid);        ! 0892:8  - BEC: Ext. symbol prefix ident;
+%+D   InString(Csegnam);       ! 0900:8  - BEC: Code segment prefix ident;
+%+D   InString(Dsegnam);       ! 0908:8  - BEC: Data segment prefix ident;
+%-D   for i:=1 step 1 until 24 do inbyte;
+
+%title ***  TRACE VERSION SPECIFIC PART OF PARAMETER BLOCK  ***
+%+D   Sk1lin.PutInt(InWord);   ! 0916:2  - Pass 1 trace: starting line;
+%+D   Sk1lim.PutInt(InWord);   ! 0918:2  - Pass 1 trace: stopping line;
+%+D   Sk1trc.PutInt(InInt );   ! 0920:4  - Pass 1 trace: switches;
+%+D   Sk2lin.PutInt(InWord);   ! 0924:2  - Pass 2 trace: starting line;
+%+D   Sk2lim.PutInt(InWord);   ! 0926:2  - Pass 2 trace: stopping line;
+%+D   Sk2trc.PutInt(InInt );   ! 0928:4  - Pass 2 trace: switches;
+%+D   Sk3lin.PutInt(InWord);   ! 0933:2  - Pass 3 trace: starting line;
+%+D   Sk3lim.PutInt(InWord);   ! 0934:2  - Pass 3 trace: stopping line;
+%+D   Sk3trc.PutInt(InInt );   ! 0936:4  - Pass 3 trace: switches;
+%+D   Sk4lin.PutInt(InWord);   ! 0940:2  - Pass 4 trace: starting line;
+%+D   Sk4lim.PutInt(InWord);   ! 0942:2  - Pass 4 trace: stopping line;
+%+D   Sk4trc.PutInt(InInt );   ! 0944:4  - Pass 4 trace: switches;
+%     Instring(FREE11);        ! 0948:36 - -- former SIMSET;
+%     Instring(FREE12);        ! 0984:36 - -- former SIMLTN;
+%     InWord;      ! FREE02    ! 1020:2  - Reserved for future use;
+%     InWord;      ! FREE03    ! 1022:2  - Reserved for future use;
+%+D   for i:=1 step 1 until 76 do inbyte;
+%-D   for i:=1 step 1 until 108 do inbyte;
+
+      !****** MONITOR  DEPENDENT PART OF PARAMETER BLOCK ***************;
+%+D   Langua.PutInt(Inbyte);
+%+D                 inbyte ;
+%+D   Sysmode.PutInt(Inbyte);
+%-D                in2byte ; ! language = 0 ;
+%-D   Sysmode:=char (Inbyte);
+      Inbyte;      ! FREE03    ! 1027:1  - Allignment byte;
+
+      InString(Exefile);
+      Instring(DOSLNK);         InString(DOSLIB);
+%-M   Instring(OS2LNK);         InString(OS2LIB);
+%-M   Instring(XNX286LNK);      InString(XNX286LIB);
+%-M   Instring(XNX386LNK);      InString(XNX386LIB);
+%-M   Instring(UNX386LNK);      InString(UNX386LIB);
+%+M   for i:=1 step 1 until 8*72 do inbyte;
+      Instring(Sportrel);
+      InSet(IncSet);            InSet(LibSet);
+
+%       if State = '!3!'
+%       then setaccess("PURGE");
+      currel:-copy(Initfile.sub(6,3));
+      close; noxcg:
+
+end;
+%title ***  Output  ParamBlk  to  inform.xcg  ***
+
+Procedure swapParamblk;
+begin outParamblk; inParamblk end;
+
+Procedure OutParamBlk; !*** closecode inpl. parameter;
+% inspect new OutBytefile("inform.xcg") do
+OutBytefile("inform.xcg")
+begin short integer i; character optch;
+
+      Procedure OutWord(i); Short Integer i;
+      begin OutByte(rem(i,256)); OutByte(i//256) end;
+
+      Procedure OutInt(i); Integer i;
+      begin short integer j;
+            while j<4 do begin j:=j+1;
+               OutByte(rem(i,256)); i:=i//256 end;
+      end;
+%     begin OutByte(rem(i,256)); OutByte(rem(i//256,256));
+%           OutByte(rem(i//65536,256)); OutByte(i//16777216);
+%     end;
+
+      Procedure OutSet(S); ref(DataSet) S;
+      begin text t; ref(TextType) x; x:-S.Set.First;
+            while x =/= none do
+            begin t:-x.Picture.strip;
+                  if t.Length <> 0 then
+                  begin OutByte(t.Length); OutText(t) end;
+            end;
+            OutByte(0);
+      end;
+
+      Procedure Outstring(tt); ref(TextType) tt;
+      begin text str; short integer nh;
+            str:-Copy(tt.Picture); nh:= str.length; str.setpos(1);
+            while nh > 0 and then str.sub(nh,1) = " " do
+            begin str.sub(nh,1):= "!0!"; nh:= nh-1; end;
+            outtext(str);
+      end;
+
+      open;
+
+      OutWord(Magic);           ! 0000:2  - Magic number = 5425;
+      OutWord(Hedlng);          ! 0002:2  - Size of parameter block in bytes;
+      OutWord(Auxlng);          ! 0004:2  - Size of aux-info in bytes;
+      OutByte(rank(State ));    ! 0006:1  - 0:Init/Exit 1:FEC 2:BEC 3:EDT; 
+      OutByte(rank(Ccode ));    ! 0007:1  - 0:pass ok, 1:error, >1:fatal error;
+%+D   OutByte(Sysgen.GetInt);   ! 0008:1  - System generation mode;
+%-D   OutByte(0);               ! 0008:1  - System generation mode;
+      OutByte(Cpuid.GetInt);    ! 0009:1  - ;
+      OutByte(Numid.GetInt);    ! 0010:1  - ;
+      OutByte(Target.GetInt);   ! 0011:1  - Target operating system;
+      OutByte(Chkstk.GetInt);   ! 0012:1  - >0: Produce CHKSTK calls;
+      OutByte(Recomp.GetInt);   ! 0013:1  - 0:Normal comp, 1:compatible recomp;
+      OutByte(Debmod.GetInt);   ! 0014:1  - Simob info generation level;
+%+D %-M OutByte(Becdeb.GetInt);   ! 0015:1  - Debugging level (0:skip all info);
+%-D %-M OutByte(rank(Becdeb));    ! 0015:1  - Debugging level (0:skip all info);
+%+M     outbyte(0);
+      OutByte(Lintab.GetInt);   ! 0016:1  - >0: Generate LIN_CODE segment;
+      OutByte(Rngchk.GetInt);   ! 0017:1  - >0: produce range check;
+      OutByte(Idxchk.GetInt);   ! 0018:1  - >0: produce array index check;
+      OutByte(Tstofl.GetInt);   ! 0019:1  - >0: produce INTO after arith instr;
+      OutByte(Bnklnk.getint);   ! 0020:1  - >0: Prepare code for banking;
+      OutByte(Standard.GetInt); ! 0021:1  - >0: Restrict to pure SIMULA;
+      OutByte(Interact.GetInt); ! 0022:1  - >0: Interactive execution;
+      OutByte(Cbind.GetInt);    ! 0023:1  - C-Binding (None,MS,TURBO, etc.);
+      for i:=0 step 1 until 27  ! 0024:28 - Option values;
+       do OutByte(rank(Options.GetOpt(Char(Rank('A')+i))));
+      OutWord(Minalloc.GetInt); ! 0052:2  - Min no. of allocations before GC;
+      OutWord(Maxalloc.GetInt); ! 0054:2  - Max no. of storage allocations;
+      OutInt(Stepsize.GetInt);  ! 0056:4  - Allocation step sizes in bytes;
+      OutInt(Wrktail.GetInt);   ! 0060:4  - Size of extra allocation;
+      OutInt(Minfree.GetInt);   ! 0064:4  - Min free storage after GC in bytes;
+      OutWord(Buflng.GetInt);   ! 0068:2  - File buffer length;
+      OutWord(Inplth.GetInt);   ! 0070:2  - Input line length (=132);
+      OutWord(Outlth.GetInt);   ! 0072:2  - Output line length (=132);
+      OutWord(Maxerr.GetInt);   ! 0074:2  - Max nr of error messages;
+      OutWord(Lppage.GetInt);   ! 0076:2  - Default lines per page;
+      OutWord(Masslv.GetInt);   ! 0078:2  - BEC: Massage level;
+      OutWord(Qbflim.GetInt);   ! 0080:2  - Nr of Q-instr before Exhaust Half;
+      OutWord(Seglim.GetInt);   ! 0082:2  - ;
+      OutWord(Nline.GetInt);    ! 0084:2  - Nr of source lines;
+      OutWord(Nerr.GetInt);     ! 0086:2  - Nr of errors detected;
+      OutWord(Nwarn.GetInt);    ! 0088:2  - Nr of warnings given;
+      OutByte(rank(BECversion));! 0090:1  - former FREE01;
+%+D %-M   OutByte(TrcDisp.GetInt);
+%-D %-M   OutByte(rank(TrcDisp));   ! 0091:1  - ;
+%+M       outbyte(0);
+      OutString(Syspfx);        ! 0092:8  - Current target Prefix, e.g. sd7108;
+      OutString(Simlib);        ! 0100:72 - Current RTS/ENV Library Path;
+      OutString(Source);        ! 0172:72 - Source input file specification;
+      OutString(Listfil);       ! 0244:72 - Listing output file specification;
+      OutString(Relcode);       ! 0316:72 - Relocatable output file spec.;
+      OutString(Scratch);       ! 0388:72 - Scratch file (interpass info);
+      OutString(Scode);         ! 0460:72 - Scratch file (S-code file);
+      OutString(Errfil);        ! 0532:72 - Error messages (FEC and RTS);
+      OutString(Select);        ! 0604:72 - FEC/SML Selection:option;
+      OutString(Editor);        ! 0676:72 - Editor name;
+      OutString(Stapre);        ! 0748:72 - AttrFile for Standard SIMULA PREDEF;
+      OutString(Simpre);        ! 0820:72 - AttrFile for extended SIMULA PREDEF;
+%+D   OutString(Prfxid);        ! 0892:8  - BEC: Ext. symbol prefix ident;
+%+D   OutString(Csegnam);       ! 0900:8  - BEC: Code segment prefix ident;
+%+D   OutString(Dsegnam);       ! 0908:8  - BEC: Data segment prefix ident;
+%-D   for i:=1 step 1 until 24 do outbyte(0);
+
+%title ***  TRACE VERSION SPECIFIC PART OF PARAMETER BLOCK  ***
+%+D   OutWord(Sk1lin.GetInt);   ! 0916:2  - Pass 1 trace: starting line;
+%+D   OutWord(Sk1lim.GetInt);   ! 0918:2  - Pass 1 trace: stopping line;
+%+D   OutInt(Sk1trc.GetInt);    ! 0920:4  - Pass 1 trace: switches;
+%+D   OutWord(Sk2lin.GetInt);   ! 0924:2  - Pass 2 trace: starting line;
+%+D   OutWord(Sk2lim.GetInt);   ! 0926:2  - Pass 2 trace: stopping line;
+%+D   OutInt(Sk2trc.GetInt);    ! 0928:4  - Pass 2 trace: switches;
+%+D   OutWord(Sk3lin.GetInt);   ! 0933:2  - Pass 3 trace: starting line;
+%+D   OutWord(Sk3lim.GetInt);   ! 0934:2  - Pass 3 trace: stopping line;
+%+D   OutInt(Sk3trc.GetInt);    ! 0936:4  - Pass 3 trace: switches;
+%+D   OutWord(Sk4lin.GetInt);   ! 0940:2  - Pass 4 trace: starting line;
+%+D   OutWord(Sk4lim.GetInt);   ! 0942:2  - Pass 4 trace: stopping line;
+%+D   OutInt(Sk4trc.GetInt);    ! 0944:4  - Pass 4 trace: switches;
+%     OutString(FREE11);        ! 0948:36 - -- former SIMSET;
+%     OutString(FREE12);        ! 0984:36 - -- former SIMLTN;
+%     OutWord(0);   ! FREE02    ! 1020:2  - Reserved for future use;
+%     OutWord(0);   ! FREE03    ! 1022:2  - Reserved for future use;
+%+D   for i:=1 step 1 until 76  do outbyte(0);
+%-D   for i:=1 step 1 until 108 do outbyte(0);
+                
+      !****** MONITOR  DEPENDENT PART OF PARAMETER BLOCK ***************;
+
+%+D   OutByte(Langua.GetInt); OutByte(0); OutByte(Sysmode.GetInt);
+%-D   OutWord(0);                         Outbyte(rank(Sysmode));
+      OutByte(0);               ! 1027:1  - Allignment byte;
+
+      OutString(Exefile);
+      Outstring(DOSLNK);         OutString(DOSLIB);
+%-M   Outstring(OS2LNK);         OutString(OS2LIB);
+%-M   Outstring(XNX286LNK);      OutString(XNX286LIB);
+%-M   Outstring(XNX386LNK);      OutString(XNX386LIB);
+%-M   Outstring(UNX386LNK);      OutString(UNX386LIB);
+%+M   for i:=1 step 1 until 8*72 do outbyte(0);
+      Outstring(Sportrel);
+      OutSet(IncSet);            OutSet(LibSet);
+   
+      close; if closecode<>0 then closeScreen(closecode);
+end outparamblk;
+
+%title ***   Set Defaults and Read InitFile and parameters  ***
+
+Procedure Default(InitFile); text InitFile;
+begin short integer key,i; text id,s; boolean secondTry;
+      ref(infile) Inpt; text inptName;
+      short integer version = 0; ! always version 0 at first call;
+
+      Text Procedure InItem;
+      begin text t; character c;
+            c:=Inpt.inchar; t:-blanks(72);
+            while c=' ' do c:=Inpt.inchar;
+            while c <> ' ' do begin t.putchar(c); c:=Inpt.inchar end;
+            InItem:-t.strip;
+      end;
+
+      procedure setoptn(t); text t;
+      begin character ch,d; short integer val;
+            t.setpos(1);
+            while t.more do begin
+               ch:=t.getchar;
+            L: if letter(ch) then begin
+                  val:=1;
+                  if t.more then begin
+                     d:=t.getchar; if digit(d) then val:=0;
+                     while digit(d) do begin
+                        val:=val*10 + (rank(d)-48);
+                        d:=if t.more then t.getchar else '!0!';
+                     end;
+                  end;
+                  Options.putopt(ch,char(val)); ch:=d; goto L;
+               end;
+            end;
+      end;
+                     
+
+      initScreen("  ---  WAIT: initializing window system  ---");
+      Options:-new OptnList("Options",blanks(28));
+      Magic:= 5425;        Hedlng:= 1020;       Auxlng:= 0;
+      State:='!0!';        Ccode:='!0!';
+      Debmod.PutInt(2);    Lintab.PutInt(1);
+%+D %-M                    Becdeb.PutInt(2);    
+%-D %-M                    Becdeb:='!0!'   ;
+      Rngchk.PutInt(1);    Idxchk.PutInt(1);    Tstofl.PutInt(0);
+      Standard.PutInt(1);  Interact.PutInt(1);
+
+      Minalloc.PutInt(20); Maxalloc.PutInt(20);
+%-E   Stepsize.PutInt(32000);
+%+E   Stepsize.PutInt(65520);
+      Buflng.PutInt(1024); Inplth.PutInt(120);  Outlth.PutInt(132);
+      Maxerr.PutInt(50);   Lppage.PutInt(68);   Masslv.PutInt(63);
+      Qbflim.PutInt(1500); Seglim.PutInt(20000);
+
+%+M   Target.PutInt(0); Simlib.PutText("\sim\lib\");
+%+O   Target.PutInt(2); Simlib.PutText("\sim\lib\");
+%+X   Target.PutInt(5); Simlib.PutText("/sim/lib/");
+
+      inptName:-InitFile; currel:-copy(Initfile.sub(6,3));
+ TRY: Inpt:- new infile(InptName); Inpt.setaccess("%NOBUFFER");
+      if not Inpt.open(blanks(80)) then begin
+         if secondTry then begin
+            outtext(InitFile); outtext(" is not available.");
+            outimage; terminate_program;
+         end; secondTry:=true; InptName:- "$PATH/" & InitFile; goto TRY;
+      end;
+
+      for id:-InItem while id <> "END" do
+      begin if id="SIMPRE"    then Simpre.PutText(InItem)
+       else if id="STAPRE"    then Stapre.PutText(InItem)
+       else if id="SIMLIB"    then Simlib.PutText(InItem)
+       else if id="OPTION"    then setoptn(initem)
+       else if id="DOSLNK"    then DOSLNK.PutText(InItem)
+       else if id="DOSLIB"    then DOSLIB.PutText(InItem)
+%-M    else if id="OS2LNK"    then OS2LNK.PutText(InItem)
+%-M    else if id="OS2LIB"    then OS2LIB.PutText(InItem)
+%-M    else if id="XNX286LNK" then XNX286LNK.PutText(InItem)
+%-M    else if id="XNX286LIB" then XNX286LIB.PutText(InItem)
+%-M    else if id="XNX386LNK" then XNX386LNK.PutText(InItem)
+%-M    else if id="XNX386LIB" then XNX386LIB.PutText(InItem)
+%-M    else if id="UNX386LNK" then UNX386LNK.PutText(InItem)
+%-M    else if id="UNX386LIB" then UNX386LIB.PutText(InItem)
+       else if id="EDITOR"    then Editor.PutText(InItem)
+       else if id="INCLUDE"   then IncSet.PutText(InItem)
+       else if id="LIBRARY"   then LibSet.PutText(InItem) 
+       else if id="SCRATCH"   then SCRATCH.PutText(InItem)
+       else if id="SCODE"     then SCODE.PutText(InItem)
+       else if id="ERRFIL"    then ERRFIL.PutText(InItem)
+%+D    else if id="PRFXID"    then Prfxid.PutText(InItem)
+%+D    else if id="CSEGNAM"   then Csegnam.PutText(InItem)
+%+D    else if id="DSEGNAM"   then Dsegnam.PutText(InItem)
+       else if id="INPLTH"    then Inplth.PutInt(InItem.getint)
+       else if id="OUTLTH"    then Outlth.PutInt(InItem.getint)
+       else if id="LPPAGE"    then Lppage.PutInt(InItem.getint)
+       else if id="MINALLOC"  then Minalloc.PutInt(InItem.getint)
+       else if id="MAXALLOC"  then Maxalloc.PutInt(InItem.getint)
+       else if id="STEPSIZE"  then Stepsize.PutInt(InItem.getint)
+       else if id="MINFREE"   then Minfree.PutInt(InItem.getint)
+%+D %-M    else if id="BECDEB"    then Becdeb.PutInt(InItem.getint)
+%-D %-M    else if id="BECDEB"    then Becdeb:=char((InItem.getint))
+       else if id="DEBMOD"    then Debmod.PutInt(InItem.getint)
+       else if id="MASSLV"    then Masslv.PutInt(InItem.getint)
+       else if id="QBFLIM"    then Qbflim.PutInt(InItem.getint)
+       else if id="RNGCHK"    then Rngchk.PutInt(InItem.getint)
+       else if id="IDXCHK"    then Idxchk.PutInt(InItem.getint)
+       else if id="TSTOFL"    then Tstofl.PutInt(InItem.getint)
+       else if id="LINTAB"    then Lintab.PutInt(InItem.getint)
+       else if id="BUFLNG"    then Buflng.PutInt(InItem.getint)
+       else if id="SEGLIM"    then Seglim.PutInt(InItem.getint)
+       else if id="TARGET"    then Target.PutInt(InItem.getint)
+       else if id="MAXERR"    then MAXERR.PutInt(InItem.getint)
+       else if id="CHKSTK"    then ChkStk.PutInt(InItem.getint)
+       else if id="BNKLNK"    then Bnklnk.putint(InItem.getint)
+            ;
+            Inpt.inimage;
+      end while;
+      Inpt.close;
+      s:-Editor.picture.strip;
+%+M   if s==notext then Editor.picture:="ped.exe";
+%+O   if s==notext then Editor.picture:="e";
+%+X   if s==notext then Editor.picture:="vi";
+
+      !*****   read parameters   ******;
+      s:-blanks(72); s:-GetArg(1,s); i:=1;
+      while s =/= notext do begin
+         id:-copy(s); i:=i+1; s:-GetArg(i,s.main) end;
+      inspect new inbytefile(id) do begin
+         setaccess("%nobuffer"); if open then Source.picture:=id; close end;
+%+D %-M  TrcDisp.PutInt(Version*20);
+      s:-systemid(Target.getint);
+      Syspfx.puttext( "s" & s & currel);
+      if bnklnk.getint <> 0 then syspfx.picture.sub(2,1):="b";
+      Sportrel.picture:-copy(currel);
+
+end;
+
+end;

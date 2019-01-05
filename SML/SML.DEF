@@ -1,0 +1,81 @@
+begin
+External class Common;
+External procedure Pass1;
+External procedure Pass2;
+
+%REUSE ON
+
+%      -----------------------------------------------------------------
+%      ---                                                           ---
+%      ---  COPYRIGHT 1989 by                                        ---
+%      ---  Simula a.s.                                              ---
+%      ---  Oslo, Norway                                             ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      ---                 P O R T A B L E     S I M U L A           ---
+%      ---                                                           ---
+%      ---              S I M U L E T T A    C O M P I L E R         ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      ---                   M A I N    P R O G R A M                ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      --- Selection switches:                                       ---
+%      ---                                                           ---
+%      ---    'D' Included when dump is wanted                       ---
+%      ---    'I' Included to make compiler use inserted mnemonic    ---
+%      ---    'N' Included to produce ND-500 version                 ---
+%      ---    'U' Included to produce UNIVAC version                 ---
+%      ---    'X' Included to produce XENIX version                  ---
+%      ---                                                           ---
+%      -----------------------------------------------------------------
+
+begin
+
+%SPORT ON
+
+%+D %BOUNDCHECK ON
+%+D %QUACHECK ON
+%+D %NONECHECK ON
+
+%-D %BOUNDCHECK OFF
+%-D %QUACHECK OFF
+%-D %NONECHECK OFF
+
+     inspect new Common do begin
+
+         Pass1(this Common);
+
+         Pass2(this Common);
+
+         if option(rank('Y'))<>NUL or nerr<>0 then begin
+            outimage; outtext("End " & smlid);
+            if curline > 0 then
+            begin outtext(", lines: "); outtext(leftint(curline)) end;
+            if nerr <> 0 then begin
+               outtext(" , "); outtext(leftint(nerr));
+            end else outtext(" no");
+            outtext(" errors.");
+            outimage; -- symboltable.close;
+         end;
+
+
+         if ListFile == none then  ! Nothing ;
+         else if ListFile =/= sysout then ListFile.close;
+
+         ! termstatus=0 means normal running, S-code completed,
+           termstatus=3 means normal running, no S-code
+           termstatus=4 means running, but errors found
+           termstatus=5 means term by testincerr or the like,
+           termstatus=6 means term by internerr ;
+         if nerr<>0 and then termstatus=NUL then termstatus:='!4!';
+         giveintinfo(1,rank(termstatus));
+         ! giveintinfo(2,maxtagno);  giveintinfo(3,curline);
+         giveintinfo(4,nerr);
+      end inspect common;
+
+      !*** now also signal SML end to environment ***;
+      giveintinfo(5,0);
+end;
+end of program;

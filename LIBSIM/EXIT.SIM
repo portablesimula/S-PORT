@@ -1,0 +1,2 @@
+    external library procedure exit is
+    procedure exit(code); short integer code; ;

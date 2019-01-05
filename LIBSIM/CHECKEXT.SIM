@@ -1,0 +1,2 @@
+    external library procedure checkextension is
+    text procedure checkextension(t,defext); value defext; text t,defext; ;

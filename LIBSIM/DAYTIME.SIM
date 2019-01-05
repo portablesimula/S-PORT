@@ -1,0 +1,2 @@
+    external library procedure daytime is
+    text procedure daytime; ;

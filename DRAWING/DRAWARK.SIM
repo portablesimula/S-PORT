@@ -1,0 +1,51 @@
+%reuse on
+% ******************************
+% selectors:
+%       C   draw circles
+%       S   draw squares
+%       F   draw filled squares
+%     none  draw lines
+% ******************************
+begin short integer ark, z;
+   external class drawing;
+%insert grmmenue.def
+   ark:=inint;
+   outtext("Width: "); breakoutimage; z:= inint;
+   if z>191 then goto xit;
+   drawing(ark) begin short integer x,y,i,clr,tr,incx,incy,mxps,mxln;
+      Procedure Dr; begin
+         if Ifchar<>'!0!' then goto exit;
+%+C      SetColour(clr-1); Drawcircle(x,y,z);
+%+S      SetColour(clr-1); DrawSquare(x,y,z,z);
+%+F      SetColour(clr-1); FillSquare(x,y,z,z);
+%-CSF    SetColour(clr-1); DrawBar(x,y,z+1);
+         x:=x+incx;y:=y+incy;  
+%+C      SetColour(clr);   Drawcircle(x,y,z);  
+%+S      SetColour(clr);   DrawSquare(x,y,z,z);
+%+F      SetColour(clr);   FillSquare(x,y,z,z);
+%-CSF    SetColour(clr);   DrawBar(x,y,z+1);
+      end Dr;
+
+      x:=0; y:=0;
+      clr:= 1;
+      mxps:= maxpos-z-1;
+      mxln:= maxline-z-1;
+Draw: incx:= 1; incy:= 1; while x<mxln and y<mxps do Dr;
+      if tr=tr//7*7 then clr:= clr+1;
+      tr:= tr+1; if y=mxps then goto har1;
+Hare: incx:=-1; incy:= 1; while y<mxps and x>0 do Dr;
+      tr:= tr+1; if x=0 then goto draw;
+vens: incx:=-1; incy:=-1; while x>0 and y>0 do Dr;
+      tr:= tr+1; if y=0 then goto hare;
+har1: incx:= 1; incy:=-1; while y>0 and x<mxln do Dr;
+      if x=mxln then goto vens else if y=0 then goto draw;
+exit: inchar;
+   end;
+xit:
+end;
+     if x=mxln then goto vens else if y=0 then goto draw;
+exit: inchar;
+   end;
+xit:
+end;
+

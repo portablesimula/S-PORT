@@ -1,0 +1,350 @@
+INSERT RT,KNWN,CENT,CINT,ARR,FIL,EDIT,FORM,LIBR,SMST,SML,MNTR;
+DEFINE
+       -----------------------------------------------------------------
+       ---                                                           ---
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---  Oslo, Norway                                             ---
+       ---                                                           ---
+       ---                                                           ---
+       ---                 P O R T A B L E     S I M U L A           ---
+       ---                  R U N T I M E     S Y S T E M            ---
+       ---                                                           ---
+       ---               I n t e r f a c e    W i t h    F E C       ---
+       ---                                                           ---
+       -----------------------------------------------------------------
+
+    ---    T h e   T y p e   T E X T    ---
+
+    T_CONSTANT1  = TXTCNS;         T_CONSTANT2  = TXTCNS.body;     
+--  T_START1     = START;          T_START2     = START.body;      
+    T_SUB1       = SUBATR;         T_SUB2       = SUBATR.body;
+    T_SUBV1      = SUBTMP;         T_SUBV2      = SUBTMP.body;
+    T_MAIN1      = MAIN;           T_MAIN2      = MAIN.body;
+    T_STRIP1     = STRIP;          T_STRIP2     = STRIP.body;
+--  T_LENGTH1    = LENGTH;         T_LENGTH2    = LENGTH.body;
+--  T_POS1       = POS;            T_POS2       = POS.body;
+--  T_MORE1      = MORE;           T_MORE2      = MORE.body;
+    T_SETPOS1    = SETPOS;         T_SETPOS2    = SETPOS.body;
+    T_SETPOSV1   = SETPOT;         T_SETPOSV2   = SETPOT.body;
+
+    T_GETCHAR1   = gtChaA;         T_GETCHAR2   = gtChaA.body;
+    T_GETCHARV1  = gtChaT;         T_GETCHARV2  = gtChaT.body;
+    T_GETINT1    = gtIntA;         T_GETINT2    = gtIntA.body;
+    T_GETINTV1   = gtIntT;         T_GETINTV2   = gtIntT.body;
+    T_GETREAL1   = gtReaA;         T_GETREAL2   = gtReaA.body;
+    T_GETREALV1  = gtReaT;         T_GETREALV2  = gtReaT.body;
+    T_GETFRAC1   = gtFraA;         T_GETFRAC2   = gtFraA.body;
+    T_GETFRACV1  = gtFraT;         T_GETFRACV2  = gtFraT.body;
+
+    T_PUTCHAR1   = ptChaA;    T_PUTCHAR2   = ptChaA.body;
+    T_PUTCHARV1  = ptChaT;    T_PUTCHARV2  = ptChaT.body;
+    T_PUTINT1    = ptIntA;    T_PUTINT2    = ptIntA.body;
+    T_PUTINTV1   = ptIntT;    T_PUTINTV2   = ptIntT.body;
+    T_PUTREAL1   = ptReaA;    T_PUTREAL2   = ptReaA.body;
+    T_PUTREALV1  = ptReaT;    T_PUTREALV2  = ptReaT.body;
+    T_PUTLREAL1  = ptLrlA;    T_PUTLREAL2  = ptLrlA.body;
+    T_PUTLREALV1 = ptLrlT;    T_PUTLREALV2 = ptLrlT.body;
+    T_PUTFRAC1   = ptFraA;    T_PUTFRAC2   = ptFraA.body;
+    T_PUTFRACV1  = ptFraT;    T_PUTFRACV2  = ptFraT.body;
+    T_PUTFIX1    = ptFixA;    T_PUTFIX2    = ptFixA.body;
+    T_PUTFIXV1   = ptFixT;    T_PUTFIXV2   = ptFixT.body;
+    T_PUTLFIX1   = ptLfxA;    T_PUTLFIX2   = ptLfxA.body;
+    T_PUTLFIXV1  = ptLfxT;    T_PUTLFIXV2  = ptLfxT.body;
+
+
+    ---     F i l e   C l a s s e s     ---
+
+    F_FI_DESC       = filRec;
+    F_IMF_DESC      = imfRec;
+    F_IF_DESC       = iflRec;
+    F_OF_DESC       = oflRec;
+    F_DF_DESC       = dflRec;
+    F_NAME          = FILENT.NAM;
+    F_IMAGE         = FILENT.IMG;
+    F_ENDFILE       = FILENT.EOF;
+    F_LOCATION      = FILENT.LOC ;
+    F_LOCKED        = FILENT.LOCKED;                   
+    B_BSIZE         = FILENT.BSIZE;                   
+
+    F_PF_DESC       = pflRec;
+    F_SPACINGV      = pflRec.SPC;
+    F_LINESPPV      = pflRec.LPP;
+    F_LINEV         = pflRec.LIN;
+    F_LINE          = pflRec.LIN;
+    F_PAGE          = pflRec.PAG;                   
+
+
+
+    F_FI_PROT  = FILPTP;
+    F_IMF_PROT = IMFPTP;                            
+    F_IF_PROT  = iflPtp;
+    F_OF_PROT  = oflPtp;
+    F_DF_PROT  = dflPtp;
+    F_PF_PROT  = pflPtp;
+
+    F_BF_DESC  = btfRec;
+    F_BF_PROT  = BTFPTP;   
+
+    F_OB_DESC  = obfRec;
+    F_OB_PROT  = obfPtp;
+
+    F_IB_DESC  = ibfRec;
+    F_IB_PROT  = ibfPtp;
+
+    F_DBF_DESC  = dbfRec;
+    F_DBF_PROT  = dbfPtp;   
+
+    ---   F I L E    R o u t i n e s   ---
+
+    B_OUTBYTE1   = utbyte;       B_OUTBYTE2   = utbyte.body;
+    B_OUT2BYTE1  = ut2byt;       B_OUT2BYTE2  = ut2byt.body;
+    B_OUTTEXT1   = boutex;       B_OUTTEXT2   = boutex.body;
+
+    B_INBYTE1    = INBYTE;       B_INBYTE2    = INBYTE.body;
+    B_IN2BYTE1   = IN2BYT;       B_IN2BYTE2   = IN2BYT.body;
+    B_INTEXT1    = BINTEX;       B_INTEXT2    = BINTEX.body;
+
+    B_DINBYTE1   = DINBYT;       B_DINBYTE2   = DINBYT.body;
+    B_DIN2BYTE1  = DIN2BY;       B_DIN2BYTE2  = DIN2BY.body;
+    B_DOUTBYTE1  = DUTBYT;       B_DOUTBYTE2  = DUTBYT.body;
+    B_DOUT2BYTE1 = DUT2BY;       B_DOUT2BYTE2 = DUT2BY.body;
+    B_DBENDF1    = DBENDF;       B_DBENDF2    = DBENDF.body;   
+
+    F_FILNAM1    = FILNAM;         F_FILNAM2    = FILNAM.body;  
+    F_FILSET1    = FILSET;         F_FILSET2    = FILSET.body;  
+    F_ISOPEN1    = ISOPEN;         F_ISOPEN2    = ISOPEN.body; 
+    F_SETACC1    = SETACC;         F_SETACC2    = SETACC.body;
+    F_CHKPNT1    = CHKPNT;         F_CHKPNT2    = CHKPNT.body;
+    F_LOCK1      = LOCK;           F_LOCK2      = LOCK.body;  
+    F_UNLOCK1    = UNLOCK;         F_UNLOCK2    = UNLOCK.body;
+    F_LASTLOC1   = LASTLC;         F_LASTLOC2   = LASTLC.BODY; 
+    F_MAXLOC1    = MAXLOC;         F_MAXLOC2    = MAXLOC.BODY; 
+    F_OPEN1      = OPEN;           F_OPEN2      = OPEN.body;
+    B_OPEN1      = BOPN;           B_OPEN2      = BOPN.body;
+    F_CLOSE1     = CLOSE;          F_CLOSE2     = CLOSE.body;
+    F_INIMAGE1   = INIMAG;         F_INIMAGE2   = INIMAG.body;
+    F_INRECORD1  = INREC;          F_INRECORD2  = INREC.body;
+    F_OUTIMAGE1  = OUTIM;          F_OUTIMAGE2  = OUTIM.body;
+    F_OUTRECORD1 = OUTREC;         F_OUTRECORD2 = OUTREC.body;
+    F_BREAKOUT1  = BRKOUT;         F_BREAKOUT2  = BRKOUT.body;
+
+    F_LOCATE1    = LOCATE;      F_LOCATE2    = LOCATE.body;
+    F_DELIMAGE1  = DELIM;       F_DELIMAGE2  = DELIM.body;
+    F_LASTITEM1  = LAST;        F_LASTITEM2  = LAST.body;
+
+    F_LINESPP1   = LPP;         F_LINESPP2   = LPP.body;
+    F_SPACING1   = SPACIN;      F_SPACING2   = SPACIN.body;
+    F_EJECT1     = EJECT;          F_EJECT2     = EJECT.body;
+
+    F_INCHAR1    = INCHAR;         F_INCHAR2    = INCHAR.body;
+    F_ININT1     = ININT;          F_ININT2     = ININT.body;
+    F_INREAL1    = INREAL;         F_INREAL2    = INREAL.body;
+    F_INFRAC1    = INFRAC;         F_INFRAC2    = INFRAC.body;
+    F_INTEXT1    = INTEXT;         F_INTEXT2    = INTEXT.body;
+
+
+    F_OUTCHAR1   = OUTCHA;       F_OUTCHAR2   = OUTCHA.body;
+    F_OUTINT1    = OUTINT;       F_OUTINT2    = OUTINT.body;
+    F_OUTFIX1    = OUTFIX;       F_OUTFIX2    = OUTFIX.body;
+    F_OUTLFIX1   = OUTLFX;       F_OUTLFIX2   = OUTLFX.body;
+    F_OUTREAL1   = OUTREA;       F_OUTREAL2   = OUTREA.body;
+    F_OUTLREAL1  = OUTLRL;       F_OUTLREAL2  = OUTLRL.body;
+    F_OUTFRAC1   = OUTFRC;       F_OUTFRAC2   = OUTFRC.body;
+    F_OUTTEXT1   = OUTTXT;       F_OUTTEXT2   = OUTTXT.body;
+
+
+    ------  S  I  M  S  E  T  ------
+
+    S_SMST_DESC  = smsRec;
+    S_SMST_PROT  = smsPtp;
+
+    S_LAGE_DESC  = linkag;
+    S_LAGE_PROT  = lkaPtp;
+
+    S_LAGE_SUC1  = sucSS;       S_LAGE_SUC2  = sucSS.body;
+    S_LAGE_PRED1 = predSS;      S_LAGE_PRED2 = predSS.body;
+    S_LAGE_PREV1 = prevSS;      S_LAGE_PREV2 = prevSS.body;
+
+    S_HEAD_DESC  = hedRec;
+    S_HEAD_PROT  = hedPtp;
+
+    S_HEAD_FIRS1 = sucSS;       S_HEAD_FIRS2 = sucSS.body;
+    S_HEAD_LAST1 = predSS;      S_HEAD_LAST2 = predSS.body;
+    S_HEAD_EMPT1 = emptSS;      S_HEAD_EMPT2 = emptSS.body;
+    S_HEAD_CARD1 = cardSS;      S_HEAD_CARD2 = cardSS.body;
+    S_HEAD_CLEA1 = cleaSS;      S_HEAD_CLEA2 = cleaSS.body;
+
+
+    S_LINK_DESC  = lnkRec;
+    S_LINK_PROT  = lnkPtp;
+
+    S_LINK_OUT1  = outSS;       S_LINK_OUT2  = outSS.body;
+    S_LINK_FOLW1 = FOLLOW;      S_LINK_FOLW2 = FOLLOW.body;
+    S_LINK_PREC1 = precSS;      S_LINK_PREC2 = precSS.body;
+    S_LINK_INTO1 = intoSS;      S_LINK_INTO2 = intoSS.body;
+
+    ------  S  I  M  U  L  A  T  I  O  N  ------
+
+    S_RNK_DESC   = rankin;
+    S_RNK_PROT   = rnkPtp;
+    S_RNK        = rankin.rnk;
+
+    S_SMLN_DESC  = simltn;
+    S_SMLN_PROT  = SMLPTP;
+    S_CURRENT    = simltn.cur;
+    S_MAIN       = simltn.main;
+
+    S_PROC_DESC  = proces;
+    S_PROC_PROT  = prcPtp;
+    S_PROC_TAIL  = PCSINR; -- Note!!!
+
+    S_PROC_IDLE1 = Idle;           S_PROC_IDLE2 = Idle.body;
+    S_PROC_TERM1 = term_d;         S_PROC_TERM2 = Term_d.body;
+    S_PROC_EVTM1 = Evtime;         S_PROC_EVTM2 = Evtime.body;
+    S_PROC_NXEV1 = Nextev;         S_PROC_NXEV2 = Nextev.body;
+    S_HOLD1      = Hold;           S_HOLD2      = Hold.body;
+    S_PASSIVATE1 = PASSIV;         S_PASSIVATE2 = PASSIV.body;
+    S_WAIT1      = Wait;           S_WAIT2      = Wait.body;
+    S_CANCEL1    = CANCEL;         S_CANCEL2    = CANCEL.body;
+    S_ACT11      = Activ1;         S_ACT12      = Activ1.body;
+    S_ACT21      = Activ2;         S_ACT22      = Activ2.body;
+    S_ACT31      = Activ3;         S_ACT32      = Activ3.body;
+    S_ACCUM1     = Accum;          S_ACCUM2     = Accum.body;
+    ------  S t a n d a r d    P r o c e d u r e s  ------
+
+    ---------------  BASIC OPERATIONS  ---------------
+
+    P_MOD1       = MOD;          P_MOD2       = MOD.body;
+--  P_REM1       = REMAIND;      P_REM2       = REMAIND.body; 
+--  P_IABS1      = IABS;         P_IABS2      = IABS.body;
+--  P_RABS1      = RABS;         P_RABS2      = RABS.body;
+--  P_DABS1      = DABS;         P_DABS2      = DABS.body;
+--  P_RSIGN1     = RSIGN;        P_RSIGN2     = RSIGN.body;
+--  P_DSIGN1     = DSIGN;        P_DSIGN2     = DSIGN.body;
+    P_RENTIER1   = RENTI;        P_RENTIER2   = RENTI.body;
+    P_DENTIER1   = DENTI;        P_DENTIER2   = DENTI.body;
+    P_RADDEPS1   = RADDEP;       P_RADDEPS2   = RADDEP.body;  
+    P_DADDEPS1   = DADDEP;       P_DADDEPS2   = DADDEP.body; 
+    P_RSUBEPS1   = RSUBEP;       P_RSUBEPS2   = RSUBEP.body; 
+    P_DSUBEPS1   = DSUBEP;       P_DSUBEPS2   = DSUBEP.body; 
+
+    ---------------  TEXT UTILITIES  ---------------
+
+    T_BLANKS1    = BLANKS;         T_BLANKS2    = BLANKS.body;
+    T_COPY1      = COPY;           T_COPY2      = COPY.body;
+    P_LETTER1    = LETTER;         P_LETTER2    = LETTER.body;
+    P_DIGIT1     = DIGIT;          P_DIGIT2     = DIGIT.body;
+    T_LOWTEN1    = LOWTEN;         T_LOWTEN2    = LOWTEN.body;
+    T_DCMARK1    = DCMARK;         T_DCMARK2    = DCMARK.body; 
+    T_UPTX1      = UPTX;           T_UPTX2      = UPTX.body;  
+    T_LWTX1      = LWTX;           T_LWTX2      = LWTX.body; 
+
+    ---------------  SCHEDULING  ---------------
+
+    Q_DETACH1    = DETACH;         Q_DETACH2    = DETACH.body;
+    Q_RESUME1    = RESUME;         Q_RESUME2    = RESUME.body;
+    Q_CALL1      = ATTACH;         Q_CALL2      = ATTACH.body;
+
+    ---------------  MATHEMATICAL FUNCTIONS  ---------------
+
+    P_RSQRT1     = RSQRT;          P_RSQRT2     = RSQRT.body;
+    P_DSQRT1     = DSQRT;          P_DSQRT2     = DSQRT.body;
+    P_RSIN1      = RSIN;           P_RSIN2      = RSIN.body;
+    P_DSIN1      = DSIN;           P_DSIN2      = DSIN.body;
+    P_RCOS1      = RCOS;           P_RCOS2      = RCOS.body;
+    P_DCOS1      = DCOS;           P_DCOS2      = DCOS.body;
+    P_RTAN1      = RTAN;           P_RTAN2      = RTAN.body;
+    P_DTAN1      = DTAN;           P_DTAN2      = DTAN.body;
+    P_RCOTAN1    = RCOTAN;         P_RCOTAN2    = RCOTAN.body;  
+    P_DCOTAN1    = DCOTAN;         P_DCOTAN2    = DCOTAN.body; 
+    P_RARCSIN1   = ARSINR;        P_RARCSIN2   = ARSINR.body;
+    P_DARCSIN1   = ARSIND;        P_DARCSIN2   = ARSIND.body;
+    P_RARCCOS1   = ARCOSR;        P_RARCCOS2   = ARCOSR.body;
+    P_DARCCOS1   = ARCOSD;        P_DARCCOS2   = ARCOSD.body;
+    P_RARCTAN1   = ARTANR;        P_RARCTAN2   = ARTANR.body;
+    P_DARCTAN1   = ARTAND;        P_DARCTAN2   = ARTAND.body;
+    P_RATAN21    = RATAN2;         P_RATAN22    = RATAN2.body;   
+    P_DATAN21    = DATAN2;         P_DATAN22    = DATAN2.body;  
+
+    P_RSINH1     = RSINH;          P_RSINH2     = RSINH.body; 
+    P_DSINH1     = DSINH;          P_DSINH2     = DSINH.body;    
+    P_RCOSH1     = RCOSH;          P_RCOSH2     = RCOSH.body;  
+    P_DCOSH1     = DCOSH;          P_DCOSH2     = DCOSH.body;
+    P_RTANH1     = RTANH;          P_RTANH2     = RTANH.body; 
+    P_DTANH1     = DTANH;          P_DTANH2     = DTANH.body;
+    P_RLN1       = RLN;            P_RLN2       = RLN.body;
+    P_DLN1       = DLN;            P_DLN2       = DLN.body;
+    P_RLOG1      = RLOG;           P_RLOG2      = RLOG.body;
+    P_DLOG1      = DLOG;           P_DLOG2      = DLOG.body;
+    P_REXP1      = REXP;           P_REXP2      = REXP.body;
+    P_DEXP1      = DEXP;           P_DEXP2      = DEXP.body;
+
+    ---------------  EXTREMUM FUNCTIONS  ---------------
+
+--  P_RMIN1      = RMIN;           P_RMIN2      = RMIN.body; 
+--  P_DMIN1      = DMIN;           P_DMIN2      = DMIN.body; 
+    P_TMIN1      = TXTMIN;         P_TMIN2      = TXTMIN.body; 
+--  P_RMAX1      = RMAX;           P_RMAX2      = RMAX.body; 
+--  P_DMAX1      = DMAX;           P_DMAX2      = DMAX.body; 
+    P_TMAX1      = TXTMAX;         P_TMAX2      = TXTMAX.body; 
+
+    ---------------  ENVIRONMENTAL ENQUIRIES  ---------------
+
+--  P_SRCLIN1    = SRCLIN;         P_SRCLIN2    = SRCLIN.body; 
+    G_SYSINVAR   = bioIns.SYSIN;  --- TEMP!!!!
+    G_SYSOUTVAR  = bioIns.SYSOUT;  --- TEMP!!!!
+    G_MAXLREAL   = MAXLRL;
+    G_MINLREAL   = MINLRL;
+    G_MAXREAL    = MAXREA;
+    G_MINREAL    = MINREA;
+    G_MAXRANK    = MAXRNK;
+    G_MAXINT     = MAXINT;
+    G_MININT     = MININT;
+    G_SIMID      = bioIns.SIMID;
+
+    ---------------  TERMINATION CONTROL  ---------------
+
+    P_TRMP1      = TRMP;           P_TRMP2      = TRMP.body; 
+    P_ERRX1      = ERRX;           P_ERRX2      = ERRX.body;
+
+    ---------------  ARRAY QUANTITIES  ---------------
+
+    P_LOWBND1    = LOWBND;         P_LOWBND2    = LOWBND.body;  
+    P_UPPBND1    = UPPBND;         P_UPPBND2    = UPPBND.body; 
+    P_ARRDIM1    = ARRDIM;         P_ARRDIM2    = ARRDIM.body; 
+
+    ---------------  RANDOM DRAWING  ---------------
+
+    D_DRAW1      = DRAW;      D_DRAW2      = DRAW.body;
+    D_RANDINT1   = RANDI;     D_RANDINT2   = RANDI.body;
+    D_UNIFORM1   = UNIFRM;    D_UNIFORM2   = UNIFRM.body;
+    D_NORMAL1    = NORMAL;    D_NORMAL2    = NORMAL.body;
+    D_NEGEXP1    = NEGEXP;    D_NEGEXP2    = NEGEXP.body;
+    D_POISSON1   = POISSN;    D_POISSON2   = POISSN.body;
+    D_ERLANG1    = ERLANG;    D_ERLANG2    = ERLANG.body;
+    D_DISCRETE1  = discrR;    D_DISCRETE2  = discrR.body;
+    D_DDISCRETE1 = discrD;    D_DDISCRETE2 = discrD.body;
+    D_LINEAR1    = lineaR;    D_LINEAR2    = lineaR.body;
+    D_DLINEAR1   = lineaD;    D_DLINEAR2   = lineaD.body;
+    D_HISTD1     =  HISTD;    D_HISTD2     =  HISTD.body;
+    D_DHISTD1    = DHISTD;    D_DHISTD2    = DHISTD.body;
+
+    ---------------  CALENDAR AND TIMING  ---------------
+
+    U_DANDT1     = timdat;    U_DANDT2     = timdat.body;
+    U_TIMEUSED1  = Tused;     U_TIMEUSED2  = Tused.body;
+    U_CLOCKTIME1 = Tclock;    U_CLOCKTIME2 = Tclock.body; 
+
+    ---------------  MISCELLANEOUS  ---------------
+
+    D_HISTO1     = HISTO;     D_HISTO2     = HISTO.body;
+    E_HASH1      = HASH;      E_HASH2      = HASH.body;
+    E_GETIINF1   = getII;     E_GETIINF2   = getII.body;
+    E_GETTINF1   = getTI;     E_GETTINF2   = getTI.body;
+    E_GIVEIINF1  = giveII;    E_GIVEIINF2  = giveII.body;
+    E_GIVETINF1  = giveTI;    E_GIVETINF2  = giveTI.body;
+    R_RTS_UTIL1  = RTutil;    R_RTS_UTIL2  = RTutil.body;
+    R_ERR_LAB1   = errLab;    R_ERR_LAB2   = errLab.body; 
+
+END

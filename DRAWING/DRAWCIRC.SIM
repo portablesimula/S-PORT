@@ -1,0 +1,24 @@
+begin short integer gr;
+   external class drawing;
+%INSERT grmmenue.def
+   gr:= inint;
+   drawing (gr) begin
+      short integer n,x,y,r,i,ant,att,st; real tm1, tm2;
+      y:= maxpos/2-10; x:= maxline/2; ant:= 1;
+      r:= min(maxpos,maxline)/2; tm1:= cputime;
+      while att < 16 do begin
+         while ant < 16 do begin
+            SetColour(att*16+ant);
+            for i:= 0 step 1 until 6 do
+               drawcircle(x,y,r+i);
+            st:= rank(Ifchar); if st <> 0 then goto Slutt;
+            ant:= ant + 1; x:= x-2; y:= y+7; r:= r-1;
+         end;
+         att:= att + 1; r:= r+4;
+         y:= maxpos/2-10; x:= maxline/2; ant:= 1;
+      end;
+      tm2:= cputime-tm1; outreal(tm2,5,15);
+Slutt:inchar;
+   end;
+end;
+

@@ -1,0 +1,15 @@
+Module front_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("front")front;
+       import infix(txtqnt) t; export infix(txtqnt) res;
+       ---  return "t.sub(1 .. t.pos-1)"
+       begin res:=t; res.lp:=res.cp; res.cp:=res.sp; end;
+
+end;

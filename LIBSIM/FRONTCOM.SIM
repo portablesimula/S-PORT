@@ -1,0 +1,2 @@
+    external library procedure frontcompare is
+    boolean procedure frontcompare(s,c); text s,c; ;

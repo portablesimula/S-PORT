@@ -1,0 +1,185 @@
+%SPORT ON
+External class Paramblk;
+
+Paramblk Class ParInit;
+begin
+      !*** the procedures below shall be in the root of the overlay;
+
+      Text Procedure GETPID;
+      begin short integer p,lng; character c; text t;
+            t:-Source.Picture.strip;
+            if t=/=notext then begin
+               t.setpos(1); p:=1;
+               while t.more do begin c:=t.getchar;
+                  if c='/' then p:=t.pos else if c='\' then p:=t.pos
+             else if c=':' then p:=t.pos else if c='.' then lng:=t.pos-p-1;
+               end;
+               GETPID:-t.sub(p,if lng=0 then t.length-p+1 else lng);
+            end;
+      end;
+
+      procedure DeleteScratch;
+      !*** delete scratch files - and errorfile if empty ***;
+      begin text fnam; boolean delerr;
+            DeleteFile(Scratch.Picture.strip);
+            DeleteFile(Scode.Picture.strip);
+            fnam:-GETPID;
+            if fnam=/=notext then begin fnam:-fnam & ".err";
+               inspect new inbytefile(fnam) do
+                  if open then begin inbyte; delerr:=endfile; close end;
+               if delerr then DeleteFile(fnam);
+            end;
+      end;
+
+%Title *** Initializing the Parameter Block ***
+begin ref(Enumeration) Dmd,OnOff,Std,Tgt,Cbd;
+
+      systemid(0):-"d0"; systemid(1):-"d7";
+%-M   systemid(2):-"o7";
+%-M   systemid(3):-"x7"; systemid(4):-"y7"; systemid(5):-"yw";
+%-M   systemid(6):-"u7"; systemid(7):-"uw";
+
+      Dmd:-New Enumeration(3);
+      Dmd.Optn(0):-"None    ";
+      Dmd.Optn(1):-"Minimum ";
+      Dmd.Optn(2):-"Moderate";
+      Dmd.Optn(3):-"Maximum ";
+      Dmd.Expl(0):-"No SIMOB information is generated";
+      Dmd.Expl(1):-
+         "Information for error reporting is generated";
+      Dmd.Expl(2):-
+         "All SIMOB information except single step support is generated";
+      Dmd.Expl(3):-
+         "All SIMOB information including single step support is generated";
+
+      OnOff:-New Enumeration(1);
+      OnOff.Optn(0):-"Off"; OnOff.Optn(1):-"On ";
+
+      Std:-New Enumeration(1);
+      Std.Optn(0):-"Standard";
+      Std.Optn(1):-"Extended";
+      Std.Expl(0):-"Compiler is restricted to pure Simula Standard";
+      Std.Expl(1):-"Compiler will accept extended language constructs";
+
+%-M   Tgt:-New Enumeration(7);
+%+M   Tgt:-New Enumeration(1);
+      Tgt.Optn(oMSDOS):-    "MS-DOS    ";
+      Tgt.Optn(oMSDOS87):-  "MS-DOS/87 ";
+%-M   Tgt.Optn(oMSOS2):-    "MS-OS/2   ";
+%-M   Tgt.Optn(oXENIX286):- "XENIX/286 ";
+%-M   Tgt.Optn(oXENIX386):- "XENIX/386 ";
+%-M   Tgt.Optn(oXENIX386W):-"XENIX/386w";
+%-M   Tgt.Optn(oUNIX386):-  "UNIX/386  ";
+%-M   Tgt.Optn(oUNIX386W):- "UNIX/386w ";
+      Tgt.Expl(oMSDOS):-"MS-DOS without numeric coprocessor";
+      Tgt.Expl(oMSDOS87):-"MS-DOS with 8087 or higher";
+%-M   Tgt.Expl(oMSOS2):-"MS-OS/2 with 80287 or higher";
+%-M   Tgt.Expl(oXENIX286):-"XENIX/286 with 80287 or emulator";
+%-M   Tgt.Expl(oXENIX386):-"XENIX/386 with 80287 or emulator";
+%-M   Tgt.Expl(oXENIX386W):-"XENIX/386 with Weitek x167 or emulator";
+%-M   Tgt.Expl(oUNIX386):-"UNIX/386 with 80287 or emulator";
+%-M   Tgt.Expl(oUNIX386W):-"UNIX/386 with Weitek x167 or emulator";
+
+      Cbd:-New Enumeration(2);
+      Cbd.Optn(0):-"None   ";
+      Cbd.Optn(1):-"Default";
+      Cbd.Optn(2):-"TURBO-C";
+      Cbd.Expl(0):-"Binding to C/Pascal procedures is undefined";
+      Cbd.Expl(1):-"MicroSoft/SCO/AT&T Mixed-Language Interface";
+      Cbd.Expl(2):-"Borland TURBO Pascal/C procedure interface";
+
+%+D   Sysgen   :- New Interval("SYSGEN",notext,10);
+      Cpuid    :- New Interval("CPUID",notext,10);
+      Numid    :- New Interval("NUMID",notext,10);
+      Target   :- New EnumType("Target",Blanks(10),Tgt);
+      ChkStk   :- New EnumType("CHKSTK",Blanks(3),OnOff);
+      Recomp   :- New EnumType("Recompile",Blanks(3),OnOff);
+      DebMod   :- New EnumType("Checkout",Blanks(8),Dmd);
+%+D   Becdeb   :- New Interval("BECDEB",notext,10);
+      LinTab   :- New EnumType("LINTAB",Blanks(3),OnOff);
+      RngChk   :- New EnumType("RNGCHK",Blanks(3),OnOff);
+      IdxChk   :- New EnumType("IDXCHK",Blanks(3),OnOff);
+      TstOfl   :- New EnumType("TSTOFL",Blanks(3),OnOff);
+      BnkLnk   :- New EnumType("BNKLNK",Blanks(3),OnOff);
+      Standard :- New EnumType("Language",Blanks(8),Std);
+      Interact :- New EnumType("INTERACT",Blanks(3),OnOff);
+      Cbind    :- New EnumType("C-Binding",Blanks(7),Cbd);
+% done in default/inParamblk:  Options  :- New OptnList("Options",Blanks(28));
+      Minalloc :- New Interval("MINALLOC",notext,32000);
+      Maxalloc :- New Interval("MAXALLOC",notext,32000);
+      Stepsize :- New Interval("STEPSIZE",notext,MaxInt);
+      Wrktail  :- New Interval("WRKTAIL",notext,MaxInt);
+      Minfree  :- New Interval("MINFREE",notext,MaxInt);
+      Buflng   :- New Interval("BUFLNG",notext,32000);
+      Inplth   :- New Interval("INPLTH",notext,32000);
+      Outlth   :- New Interval("OUTLTH",notext,32000);
+      Maxerr   :- New Interval("MAXERR",notext,32000);
+      Lppage   :- New Interval("LPPAGE",notext,32000);
+      Masslv   :- New Interval("MASSLV",notext,32000);
+      Qbflim   :- New Interval("QBFLIM",notext,32000);
+      Seglim   :- New Interval("SEGLIM",notext,32000);
+      Nline    :- New Interval("NLINE",notext,32000);
+      Nerr     :- New Interval("NERR",notext,32000);
+      Nwarn    :- New Interval("NWARN",notext,32000);
+
+      Syspfx :- New TextType("SYSPFX",Copy("sd7108  "));
+      Simlib :- New TextType("SIMLIB",Blanks(72));
+      Source :- New TextType("Source",Blanks(72));
+      Listfil:- New TextType("LISTFIL",Blanks(72));
+      Relcode:- New TextType("RELCODE",Blanks(72));
+      Scratch:- New TextType("SCRATCH",Blanks(72));
+      Scode  :- New TextType("SCODE",Blanks(72));
+      Errfil :- New TextType("ERRFIL",Blanks(72));
+      Select :- New TextType("SELECT",Blanks(72));
+      Editor :- New TextType("EDITOR",Blanks(72)); !** former smlpre **;
+      Simpre :- New TextType("SIMPRE",Blanks(72)); 
+      Stapre :- New TextType("STAPRE",Blanks(72)); 
+%+D   Prfxid :- New TextType("PRFXID",Blanks(8));
+%+D   Csegnam:- New TextType("CSEGNAM",Blanks(8));
+%+D   Dsegnam:- New TextType("DSEGNAM",Blanks(8));
+
+%+D   Sk1Lin:- New Interval("SK1LIN",notext,32000);
+%+D   Sk1Lim:- New Interval("SK1LIM",notext,32000);
+%+D   Sk1Trc:- New Interval("SK1TRC",notext,MaxInt);
+
+%+D   Sk2Lin:- New Interval("SK2LIN",notext,32000);
+%+D   Sk2Lim:- New Interval("SK2LIM",notext,32000);
+%+D   Sk2Trc:- New Interval("SK2TRC",notext,MaxInt);
+
+%+D   Sk3Lin:- New Interval("SK3LIN",notext,32000);
+%+D   Sk3Lim:- New Interval("SK3LIM",notext,32000);
+%+D   Sk3Trc:- New Interval("SK3TRC",notext,MaxInt);
+
+%+D   Sk4Lin:- New Interval("SK4LIN",notext,32000);
+%+D   Sk4Lim:- New Interval("SK4LIM",notext,32000);
+%+D   Sk4Trc:- New Interval("SK4TRC",notext,MaxInt);
+    
+%     FREE11    :- New TextType("SIMSET",Blanks(36));
+%     FREE12    :- New TextType("SIMLTN",Blanks(36));
+
+%+D   Langua  :- New Interval("LANGUA",notext,255);
+%+D %-M   TrcDisp :- New Interval("TRCDISP",notext,255);
+%+D   SysMode :- New Interval("SYSMODE",notext,255);
+
+      Exefile   :- New TextType("EXEFIL",blanks(72));
+      DOSLNK    :- New TextType("DOSLNK",blanks(72));
+      DOSLIB    :- New TextType("DOSLIB",blanks(72));
+%-M   OS2LNK    :- New TextType("OS2LNK",blanks(72));
+%-M   OS2LIB    :- New TextType("OS2LIB",blanks(72));
+%-M   XNX286LNK :- New TextType("XNX286LNK",blanks(72));
+%-M   XNX286LIB :- New TextType("XNX286LIB",blanks(72));
+%-M   XNX386LNK :- New TextType("XNX386LNK",blanks(72));
+%-M   XNX386LIB :- New TextType("XNX386LIB",blanks(72));
+%-M   UNX386LNK :- New TextType("UNX386LNK",blanks(72));
+%-M   UNX386LIB :- New TextType("UNX386LIB",blanks(72));
+      Sportrel  :- New TextType("SPORTREL",blanks(4));
+      IncSet    :- New DataSet("INCLUDE","IncludeFiles",35);
+      LibSet    :- New DataSet("LIBRARY","LibraryFiles",35);
+
+      fec:-copy(initfile); fec.sub(1,3):="fec";
+%+M   fec.sub(10,3):="exe";
+%+O   fec.sub(10,3):="exe";
+
+end;
+
+end;

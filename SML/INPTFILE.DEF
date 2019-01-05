@@ -1,0 +1,120 @@
+External class Common;
+
+%REUSE ON
+
+inbytefile Class InptFile(comn); ref(Common) comn;
+%      -----------------------------------------------------------------
+%      ---                                                           ---
+%      ---  COPYRIGHT 1989 by                                        ---
+%      ---  Simula a.s.                                              ---
+%      ---  Oslo, Norway                                             ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      ---                 P O R T A B L E     S I M U L A           ---
+%      ---                                                           ---
+%      ---              S I M U L E T T A    C O M P I L E R         ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      ---                  C l a s s    I n p t F i l e             ---
+%      ---                                                           ---
+%      ---                                                           ---
+%      --- Selection switches:                                       ---
+%      ---                                                           ---
+%      ---    'D' Included when dump is wanted                       ---
+%      ---    'I' Included to make compiler use inserted mnemonics   ---
+%      ---    'N' Included to produce ND-500 version                 ---
+%      ---    'U' Included to produce UNIVAC version                 ---
+%      ---    'X' Included to produce XENIX version                  ---
+%      ---                                                           ---
+%      -----------------------------------------------------------------
+begin
+
+%SPORT ON
+
+%BOUNDCHECK OFF
+%QUACHECK OFF
+%NONECHECK OFF
+
+ --   short integer tag_bias;
+      character hiBias,loBias;
+      text TRCBUFF; short integer input_trace;
+
+%+D   character procedure ininstr;
+%+D   begin character instr;
+%+D         ininstr:=instr:=char(inbyte);
+%+D         if input_trace > 0 then begin
+%+D            outcode;
+%+D            TRC("Ininstr",comn.symtab(0).val(rank(instr)).symbol)
+%+D         end;
+%+D   end;
+
+%+D   character procedure inbyt;
+%+D   begin character b;
+%+D         inbyt:=b:=char(inbyte);
+%+D         if input_trace > 0 then begin
+%+D            outcode; TRC("Inbyte",comn.leftint(rank(b))); end;
+%+D   end;
+
+%+D   integer procedure innumber;
+%+D   begin integer n;
+%+D         innumber:=n:=in2byte;
+%+D         if input_trace > 0
+%+D         then TRC("Innumber",comn.leftint(n));
+%+D   end;
+
+%REUSE OFF
+      text procedure instring;
+      begin text t;
+            t:-blanks(inbyte);
+            instring:-
+%+D                    t:-
+                           intext(t);
+%+D         if input_trace > 0
+%+D         then TRC("Instring","""" & t & """");
+      end;
+
+      text procedure inlongstring;
+      begin text t;
+            t:-blanks(in2byte);
+            inlongstring:-
+%+D                       t:-
+                              intext(t);
+%+D         if input_trace > 0
+%+D         then TRC("Instring","""" & t & """");
+      end;
+
+      procedure inident;
+      begin inspect comn do begin
+               simsymbol:-instring; DEFIDENT;
+%+D            if input_trace>0 then TRC("Inident",simsymbol);
+            end;
+      end;
+%REUSE ON
+
+%+D   procedure outcode;
+%+D   if TRCBUFF.pos > 1 then inspect sysout do begin
+%+D      outtext("Input:");
+%+D      setpos(15); outtext(TRCBUFF.strip);
+%+D      outimage; TRCBUFF:=notext; TRCBUFF.setpos(1);
+%+D   end;
+%+D
+%+D   procedure TRC(m,v); text m,v;
+%+D   begin short integer p,l;
+%+D      inspect sysout do begin
+%+D         if input_trace > 1 then begin
+%+D            outtext("Line"); outint(comn.curline,6);
+%+D            setpos(14); outtext(m);
+%+D            outchar(':'); setpos(25); outtext(v); outimage;
+%+D         end else begin
+%+D            p:=TRCBUFF.pos; l:=v.length;
+%+D            if p+l > TRCBUFF.length then begin outcode; p:=1 end;
+%+D            TRCBUFF.sub(p,l):=v;
+%+D            TRCBUFF.setpos(if p+l+1<14 then 14 else p+l+1);
+%+D   end end end;
+
+      if not open then comn.openerror(filename);
+%+D   TRCBUFF:-blanks(80);
+--    tag_bias:=tagno;
+      hiBias:=comn.ntaghi; loBias:=comn.ntaglo;
+end *** InptFile ***;

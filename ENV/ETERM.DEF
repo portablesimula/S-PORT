@@ -1,0 +1,1757 @@
+Module ETERM("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT,EPERI,EEDIT,EKNWN,EUTIL;
+%-D begin insert ECOMN,EBASE,      ECENT,EPERI,EEDIT,EKNWN,EUTIL;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1989 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---      C L A S S   T E R M I N A L   U T I L I T I E S      ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       -----------------------------------------------------------------
+
+    Define HGTLIM=43;          -- Max User  Screen Height which is Supported
+    Define WDTLIM=80;          -- Max User  Screen Width  which is Supported
+%+O Define WD2LIM=160;         -- WDTLIN*2
+%+X Define SCRTOT=6880;        -- HGTLIM*WDTLIM*2
+    Define HGTLMS=24; -- 25;   -- Max Simob Screen Height which is Supported
+    Define WDTLMS=80;          -- Max Simob Screen Width  which is Supported
+    Define TOTLMS=4000;        -- HGTLMS*WDTLMS*2
+    Define HGTLMC=10;          -- Max Control Screen Height which is Supported
+    Define WDTLMC=33;          -- Max Control Screen Width  which is Supported
+    Define TOTLMC=660;         -- HGTLMC*WDTLMC*2
+
+%+X Define BUFLIM=1000;
+%+X Define ESCLIM=24;
+%+X Define BUFTOT=1024;        -- BUFLIM+ESCLIM
+
+    range(0:MaxWord) SCRHGT;   -- User's Full Screen's Height
+    range(0:MaxWord) SCRWD2;   -- User's Full Screen's Double Width
+
+Record FRAME; info "TYPE";
+begin
+    Boolean FULLSCREEN;
+    Boolean WRAP;
+    range(0:MaxWord) CLIN;     -- Cursor Position -- Line (0..Height-1)
+    range(0:MaxWord) CPOS;     -- Cursor Position -- Pos  (0..Width-1)
+    range(0:MaxWord) MINPOS;   -- Left  Pos  of Current Region (0..Width-1)
+    range(0:MaxWord) MINLIN;   -- Upper line of Current Region (0..Height-1)
+    range(0:MaxWord) MAXPOS;   -- Right Pos  of Current Region (0..Width-1)
+    range(0:MaxWord) MAXLIN;   -- Lower line of Current Region (0..Height-1)
+    range(0:MaxWord) REGHGT;   -- Current Region's Height
+    range(0:MaxWord) REGWD2;   -- Current Region's Double Width
+    Boolean EDTEXP;            -- Editing in expand mode
+end;
+    infix(FRAME) CURFRM;       -- User's  FRAME
+    infix(FRAME) TRCFRM;       -- SIMOB's FRAME
+    infix(FRAME) CNTFRM;       -- CONTROL FRAME
+    Character CNTATR;
+    Character CNTEDT;
+    Character TRCATR;
+    Character TRCEDT;
+
+    range(0:MaxWord) OUTSM;    -- Current output Screen mode code
+    Character LSTATR;          -- Last Attribute Outputed
+%+M Infix(VIOPAK) VIOMOD;      -- Initial Video Screen Mode etc.
+%+M Range(0:MaxWord) PAGE;     -- Active Video Page #
+%+X range(0:MaxWord) BUFPOS;   -- Buffer Position -- Pos  (0..BUFTOT-1)
+%+X Infix(termio) USRPKT;
+%+X Infix(termio) TRMPKT;
+%+X Character SCREEN(SCRTOT);  -- Shadow  Screen Buffer
+    Infix(String) SSB;         -- Simob's Screen Buffer (TOTLMS)
+    Infix(String) CSB;         -- Control Panel's Screen Buffer (TOTLMC)
+%+X Character BUFF(BUFTOT);    -- Output Editing Buffer
+%+O Const Infix(VIOSTA:1) NoBlink = Record:VIOSTA(Lng=6,Type=2,Val=1);
+%+X Const Range(0:7) ColMap(8) = (0,4,2,6,1,5,3,7)
+
+    Macro JOIN(2); begin wOR(wSHL(%1,8),%2) endmacro;
+%title ***   D O S     I N T E R F A C E   ***
+-----------------------------------------------------------
+--- PC/MONITOR -- Int 21H(33) -- Function 0BH(11)       ---
+--- Check if input available from Standard Input        ---
+-----------------------------------------------------------
+%+M Sysroutine("M?RCHK") DOS_RDCHK;
+%+M export Boolean res;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   LOADC  AH,0BH       ; Function 0BH(11)                          --
+--   INT    21H          ; -- Int 21H(33) -- Function 0BH(11)        --
+--   PUSHR  AL           ; Result  0:False, 0FFH:True                --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/MONITOR -- Int 21H(33) -- Function 07H(7)        ---
+--- Direct input without echo from Standard Input       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?KEYI") DOS_KEYIN;
+%+M export Character res;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   LOADC  AH,07H       ; Function 07H(7)                           --
+--   INT    21H          ; -- Int 21H(33) -- Function 07H(7)         --
+--   PUSHR  AL           ; Result                                    --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 00H(0)           ---
+--- Set Video Display Mode                              ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?SVDM") DOS_SDMODE;
+%+M import range(0:MaxWord) code;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AL           ; Code                                      --
+--   LOADC  AH,00H       ; Function 00H(0)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 02H(2)           ---
+--- Move Cursor to given Position.                      ---
+-----------------------------------------------------------
+%+M Sysroutine("M?UPOS") DOS_UPDPOS;
+%+M import range(0:MaxWord) Page,LinPos;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   DX           ; DL:Pos, DH:Line                           --
+--   POPR   BH           ; Page                                      --
+--   LOADC  AH,02H       ; Function 02H(2)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 03H(3)           ---
+--- Get Current Cursor's Line and Position number       ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?CURS") DOS_CURSOR;
+%+M import range(0:MaxWord) Page;
+%+M export range(0:MaxWord) res;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   BH           ; Page                                      --
+--   LOADC  AH,03H       ; Function 03H(3)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+--   PUSHR  DX           ; Result:  DL:Pos, DH:Line                  --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 05H(5)           ---
+--- Select Display Page                                 ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?SDPG") DOS_SDPAGE;
+%+M import range(0:MaxWord) page;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AL           ; Page #                                    --
+--   LOADC  AH,05H       ; Function 05H(5)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 06H(6)           ---
+--- Scroll Region (n) characters up                     ---
+--- or blank entire Window (n=0).                       ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?SRUP") DOS_SROLUP;
+%+M import range(0:MaxWord) n; Character a;
+%+M        range(0:MaxWord) UL,LR;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   DX           ; Lower Right Corner of Region              --
+--   POPR   CX           ; Upper Left  Corner of Region              --
+--   POPR   BH           ; Attribute to be used for blanked area     --
+--   POPR   AL           ; Number of lines to scroll (n=0: All)      --
+--   LOADC  AH,06H       ; Function 06H(6)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 07H(7)           ---
+--- Scroll Region (n) characters down                   ---
+--- or blank entire Window (n=0).                       ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?SRDW") DOS_SROLDW;
+%+M import range(0:MaxWord) n; Character a;
+%+M        range(0:MaxWord) UL,LR;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   DX           ; Lower Right Corner of Region              --
+--   POPR   CX           ; Upper Left  Corner of Region              --
+--   POPR   BH           ; Attribute to be used for blanked area     --
+--   POPR   AL           ; Number of lines to scroll (n=0: All)      --
+--   LOADC  AH,07H       ; Function 07H(7)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 08H(8)           ---
+--- Read Character and Attribute at Cursor.             ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?GETC") DOS_GETCEL;
+%+M import range(0:MaxWord) Page;
+%+M export range(0:MaxWord) res;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   BH           ; Page                                      --
+--   LOADC  AH,08H       ; Function 08H(8)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+--   PUSHR  AX           ; Result:  AL:Character, AH:Attribute       --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 09H(9)           ---
+--- Write character (c) and attribute (a) in successive ---
+--- positions (n) starting at current cursor position.  ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?PUTC") DOS_PUTCHR;
+%+M import range(0:MaxWord) Page; character c,a; range(0:MaxWord) n;
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   CX           ; n -- Character Count                      --
+--   POPR   BL           ; a -- Attribute                            --
+--   POPR   AL           ; c -- Character                            --
+--   POPR   BH           ; Page                                      --
+--   LOADC  AH,09H       ; Function 09H(9)                           --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 0FH(15)          ---
+--- Get Current Video Display Mode                      ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?GVDM") DOS_GDMODE;
+%+M export infix(VIOPAK) res;
+%+M end;
+
+%+M Record VIOPAK; info "TYPE";
+%+M begin range(0:MaxByte) Mode;   -- Display Mode
+%+M       range(0:MaxByte) Width;  -- No.of Character Columns on Screen
+%+M       range(0:MaxByte) UNDEF;  -- Undefined
+%+M       range(0:MaxByte) Page;   -- Active Display Page #
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   LOADC  AH,0FH       ; Function 0FH(15)                          --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+--   PUSHR  BX           ; Result:  BL:????, BH:Active Page          --
+--   PUSHR  AX           ; Result:  AL:Mode, AH:Width                --
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------
+--- PC/BIOS -- Int 10H(16) -- Function 10H(16)          ---
+--- Set Palette Registers                               ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+%+M Sysroutine("M?SPAL") DOS_SETPAL;
+%+M import range(0:MaxWord) Subc;
+%+M        range(0:MaxWord) Val;   -- Subc Dependent !
+%+M        name(Character) List;   -- Subc Dependent !
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX    ; DX <- List.ofst + List.attr               --
+--   POPR   ES           ; ES <- List.seg                            --
+--   POPR   BX           ; BX <- Val                                 --
+--   POPR   AL           ; AL <- Subc                                --
+--   LOADC  AH,10H       ; Function 10H(16)                          --
+--   INT    10H          ; PC/BIOS -- Int 10H(16)                    --
+-----------------------------------------------------------------------
+%title ***   O S / 2     I N T E R F A C E   ***
+-----------------------------------------------------------------
+--- Move Cursor to given Position.                            ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOSETCURPOS") OS2_UPDPOS;
+%+O import range(0:MaxWord) Lin,Pos,Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Get Current Cursor's Line and Position number             ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOGETCURPOS") OS2_CURSOR;
+%+O import ref() Lin,Pos; range(0:MaxWord) Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Scroll Region (n) characters up or fill Region (n= -1).   ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOSCROLLUP") OS2_SROLUP;
+%+O import range(0:MaxWord) TopLin,MinPos,BotLin,MaxPos,n;
+%+O        ref() Cell; range(0:MaxWord) Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Scroll Region (n) characters down or fill Region (n= -1). ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOSCROLLDN") OS2_SROLDW;
+%+O import range(0:MaxWord) TopLin,MinPos,BotLin,MaxPos,n;
+%+O        ref() Cell; range(0:MaxWord) Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Read <Char,Attr> String starting at (Lin,Pos)             ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOREADCELLSTR") OS2_GETCEL;
+%+O import ref() Buff,Lng; range(0:MaxWord) Lin,Pos,Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Read Character String starting at (Lin,Pos)               ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOREADCHARSTR") OS2_GETSTR;
+%+O import ref() Buff,Lng; range(0:MaxWord) Lin,Pos,Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Write <Char,Attr> String starting at (Lin,Pos)             ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOWRTCELLSTR") OS2_PUTCEL;
+%+O import ref() Buff; range(0:MaxWord) Lng,Lin,Pos,Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Write Char String with Attribute starting at (Lin,Pos)    ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOWRTCHARSTRATT") OS2_PUTSTR;
+%+O import ref() Buff; range(0:MaxWord) Lng,Lin,Pos;
+%+O        ref() Attr; range(0:MaxWord) Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Write (n) successive Cells starting at (Lin,Pos)          ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOWRTNCELL") OS2_PUTCHR;
+%+O import ref() Cell; range(0:MaxWord) n,Lin,Pos,Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Set Video Display Mode                                    ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOSETMODE") OS2_SDMODE;
+%+O import ref(VIOPAK) pkt; range(0:MaxWord) Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Get Current Video Display Mode                            ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOGETMODE") OS2_GDMODE;
+%+O import ref(VIOPAK) pkt; range(0:MaxWord) Handle;
+%+O end;
+
+%+O Record VIOPAK;
+%+O begin range(0:MaxWord) Lng;    -- =12:Packet size including this field
+%+O       range(0:MaxByte) Mode;   -- Screen Mode Bit-Mask
+%+O       range(0:MaxByte) nColor; -- No.of Colors
+%+O       range(0:MaxWord) Width;  -- Alpha Screen Width
+%+O       range(0:MaxWord) Height; -- Alpha Screen Height
+%+O       range(0:MaxWord) Hres;   -- Horizontal Resolution
+%+O       range(0:MaxWord) Vres;   -- Vertical Resolution
+%+O end;
+
+
+-----------------------------------------------------------------
+--- Set Video Display State                                   ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOSETSTATE") OS2_SSTATE;
+%+O import ref(VIOSTA) pkt; range(0:MaxWord) Handle;
+%+O end;
+
+-----------------------------------------------------------------
+--- Get Current Video Display State                           ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOGETSTATE") OS2_GSTATE;
+%+O import ref(VIOSTA) pkt; range(0:MaxWord) Handle;
+%+O end;
+
+%+O Record VIOSTA;
+%+O begin range(0:MaxWord) Lng;    -- Packet size including this field
+%+O       range(0:MaxWord) Type;   -- Request type 0/1/2
+%+O       range(0:MaxWord) Val(0); -- Request type dependent
+%+O end;
+
+
+-----------------------------------------------------------------
+--- Get Current Video Configuration Data                      ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?VIOGETCONFIG") OS2_CONFIG;
+%+O import ref(VIOCON) pkt; range(0:MaxWord) Handle;
+%+O end;
+
+%+O Record VIOCON;
+%+O begin range(0:MaxWord) Lng;    -- =10:Packet size including this field
+%+O       range(0:MaxWord) Atype;  -- Adapter type
+%+O       range(0:MaxWord) Dtype;  -- Display type
+%+O       integer MemSize;         -- Adapter Memory Size
+%+O end;
+
+-----------------------------------------------------------------
+--- Read Character and ScanCode from Keyboard -- No Echo      ---
+--- NOTE: The cursor is NOT moved                             ---
+-----------------------------------------------------------------
+%+O Sysroutine("O?KBDCHARIN") OS2_KEYIN;
+%+O import ref(KEYPAK) pkt; range(0:MaxWord) Wait,Handle;
+%+O end;
+
+%+O Record KEYPAK;
+%+O begin range(0:MaxByte) Char;     -- ASCII Character Code
+%+O       range(0:MaxByte) Scan;     -- Scan Code 
+%+O       range(0:MaxByte) ScanStat; -- State of Scan Code
+%+O       range(0:MaxByte) nShft;    -- RESERVED -- Must be ZERO
+%+O       infix(Any2Byte)  State;    -- State of Shift Keys
+%+O       integer          Time;     -- Time stamp of Keystroke
+%+O end;
+%title ***   B a s i c    S c r e e n    U t i l i t i e s   ***
+
+--- External Library Procedure HEIGHT="E@HEIGHT" is
+--- Short Integer Procedure HEIGHT; ;
+-----------------------------------------------------------
+--- Get Full Screen's Height                            ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine HEIGHT;
+export range(0:MaxWord) res; begin res:=SCRHGT end;
+
+
+--- External Library Procedure DWIDTH="E@DWIDTH" is
+--- Short Integer Procedure DWIDTH; ;
+-----------------------------------------------------------
+--- Get Full Screen's Double Width                      ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine DWIDTH;
+export range(0:MaxWord) res; begin res:=SCRWD2 end;
+
+
+--- External Library Procedure CURLIN="E@CURLIN" is
+--- Short Integer Procedure CURLIN; ;
+-----------------------------------------------------------
+--- Get Current Cursor's Line number                    ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine CURLIN;
+export range(0:MaxWord) res;
+begin res:=CURFRM.CLIN-CURFRM.MINLIN end;
+
+
+--- External Library Procedure CURPOS="E@CURPOS" is
+--- Short Integer Procedure CURPOS; ;
+-----------------------------------------------------------
+--- Get Current Cursor's Position number                ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine CURPOS;
+export range(0:MaxWord) res;
+begin res:=CURFRM.CPOS-CURFRM.MINPOS end;
+%page
+--- External Library Procedure REGION="E@REGION" is
+--- Procedure REGION(MinP,MinL,MaxP,MaxL);
+--- Short Integer MinP,MinL,MaxP,MaxL;
+-----------------------------------------------------------
+--- Define Current Region of Screen                     ---
+--- MinP = Left  Pos  of Region (0..Width-1)            ---
+--- MinL = Upper line of Region (0..Height-1)           ---
+--- MaxP = Right Pos  of Region (0..Width-1)            ---
+--- MaxL = Lower line of Region (0..Height-1)           ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine REGION;
+import range(0:MaxWord) MinP,MinL,MaxP,MaxL;
+begin CURFRM.MINPOS:=MinP; CURFRM.MAXPOS:=MaxP;
+      CURFRM.MINLIN:=MinL; CURFRM.MAXLIN:=MaxL;
+      CURFRM.REGHGT:=CURFRM.MAXLIN-CURFRM.MINLIN+1;
+      CURFRM.REGWD2:=(CURFRM.MAXPOS-CURFRM.MINPOS+1)*2;
+      if    CURFRM.MINLIN <> 0 then CURFRM.FULLSCREEN:=false
+      elsif CURFRM.MINPOS <> 0 then CURFRM.FULLSCREEN:=false
+      elsif CURFRM.REGHGT <> SCRHGT then CURFRM.FULLSCREEN:=false
+      elsif CURFRM.REGWD2 <> SCRWD2 then CURFRM.FULLSCREEN:=false
+      else CURFRM.FULLSCREEN:=true endif;
+end;
+
+
+--- External Library Procedure UPDPOS="E@UPDPOS" is
+--- Procedure UPDPOS(Lin,Pos); short integer Lin,Pos;
+-----------------------------------------------------------
+--- Move Cursor to given Position.                      ---
+-----------------------------------------------------------
+Visible Routine UPDPOS; import range(0:MaxWord) Lin,Pos;
+begin Lin:=CURFRM.MINLIN+Lin; Pos:=CURFRM.MINPOS+Pos;
+      if    Lin<CURFRM.MINLIN then Lin:=CURFRM.MINLIN
+      elsif Lin>CURFRM.MAXLIN then Lin:=CURFRM.MAXLIN endif;
+      if    Pos<CURFRM.MINPOS then Pos:=CURFRM.MINPOS
+      elsif Pos>CURFRM.MAXPOS then Pos:=CURFRM.MAXPOS endif;
+%+M   DOS_UPDPOS(PAGE,JOIN(Lin,Pos)); CURFRM.CLIN:=Lin; CURFRM.CPOS:=Pos;
+%+O   OS2_UPDPOS(Lin,Pos,0); CURFRM.CLIN:=Lin; CURFRM.CPOS:=Pos;
+%+X   ABSPOS(Lin,Pos); OUTBUF;
+end;
+
+%+X Routine ABSPOS; import range(0:MaxWord) Lin,Pos;
+%+X begin if (Lin <> CURFRM.CLIN) or (Pos <> CURFRM.CPOS)
+%+X       then CURSOR(Lin,Pos) endif;
+%+X end;
+
+%+X Routine CURSOR; import range(0:MaxWord) Lin,Pos;
+%+X begin CURFRM.CLIN:=Lin; CURFRM.CPOS:=Pos;
+%+X       if BUFPOS > BUFLIM then OUTBUF endif;
+%+X       EEdText("!27!["); EEdInt(Lin+1); EEdChar(';');
+%+X       EEdInt(Pos+1); EEdChar('H');
+%+X end;
+%page
+
+--- External Library Procedure SCFONT="E@SCFONT" is
+--- Boolean Procedure SCFONT(code); short integer code; ;
+-----------------------------------------------------------
+--- Change font - cursor is not moved  (pje mar 91)     ---
+-----------------------------------------------------------
+Visible Routine SCFONT;
+import short integer code;
+begin if code=0 --- set primary font and no blink
+      then
+%+X        if OSID.sysname(0)='X'   -- I.e. XENIX
+%+X        then EEdText("!27![3;0m") endif;  -- Disable Blinking
+%+X        EEdText("!27![10m"); OUTBUF;
+      elsif code=1 --- set first alternate font and blink
+      then
+-- %+M        DOS_SETPAL(3,0,noname);
+-- %+O        OS2_SSTATE(name2ref(@NoBlink),0);
+%+X        if OSID.sysname(0)='X'   -- I.e. XENIX
+%+X        then EEdText("!27![3;1m") endif;  -- Enable Blinking
+%+X        EEdText("!27![11m!27![2J"); OUTBUF;
+      endif; --- else no action
+      OsStat:=0; --- ????????
+end;
+
+--- External Library Procedure SCROPN="E@SCROPN" is
+--- Boolean Procedure SCROPN(Hgt,Wdt); short integer Hgt,Wdt;
+-----------------------------------------------------------
+---                                                     ---
+-----------------------------------------------------------
+Visible Routine SCROPN;
+import range(0:MaxWord) Hgt,Wdt;
+export Boolean res;
+begin range(0:MaxWord) p;
+%+X   range(0:MaxWord) iMask,lMask;
+      if Hgt > HGTLIM then Hgt:= HGTLIM endif;
+      if Wdt > WDTLIM then Wdt:= WDTLIM endif;
+%+X   XNX_IOCTL(name2ref(@USRPKT),TCGETA,0); OsStat:=0;
+%+X   iMask:=832; -- 832 = 1500okt = IUCLC+ICRNL+INLCR
+%+X   lMask:=11;  --  11 = 0013okt = ISIG+ECHO+ICANON
+%+X   TRMPKT:=USRPKT; iMask:= -(iMask+1); lMask:= -(lMask+1);
+%+X   TRMPKT.cc(0):=255 qua character;  -- INTR character is FFH
+%+X   TRMPKT.cc(4):=1 qua character;  -- EOF/MIN = 1
+%+X   TRMPKT.iflag:=wAND(TRMPKT.iflag,iMask); 
+--  %+X   TRMPKT.lflag:=wAND(TRMPKT.lflag,lMask); 
+%+X   TRMPKT.lflag:=0; 
+%+X   TRMPKT.oflag:=0; 
+%+X   XNX_IOCTL(name2ref(@TRMPKT),TCSETA,0); OsStat:=0;
+      CURFRM.WRAP:=false; LSTATR:='!0!'; SCRWD2:=Wdt*2; SCRHGT:=Hgt;
+%+M   VIOMOD:=DOS_GDMODE; OUTSM:=VIOMOD.Mode; PAGE:=VIOMOD.Page;
+%+X   OUTSM:=0; BUFPOS:=0;
+      SCFONT(1); -- set first alternate font, enable blinking;
+%+X   CURSOR(0,0); OUTBUF;
+%+X   p:=SCRHGT*SCRWD2; repeat while p > 0
+%+X   do p:=p-1; SCREEN(p):='!0!'; p:=p-1; SCREEN(p):=' ' endrepeat;
+      REGION(0,0,Wdt-1,Hgt-1); res:=true;
+
+-- pj if SMBSW > 0 then
+           CNTFRM.FULLSCREEN:=false; CNTFRM.WRAP:=false;
+           CNTFRM.MINLIN:=5;  CNTFRM.CLIN:=5;
+           CNTFRM.MINPOS:=10; CNTFRM.CPOS:=10;
+           CNTFRM.MAXPOS:=CNTFRM.MINPOS+(WDTLMC-1);
+           CNTFRM.MAXLIN:=CNTFRM.MINLIN+(HGTLMC-1);
+           CNTFRM.REGHGT:=HGTLMC; CNTFRM.REGWD2:=WDTLMC*2;
+           CNTFRM.EDTEXP:=false; CNTATR:='!112!'; CNTEDT:='!7!';
+           CSB.chradr:=call Palloc(AllocObj)(TOTLMC,entry(UPDSOBJ));
+           CSB.chradr:=CSB.chradr; CSB.nchr:=TOTLMC;
+           p:=TOTLMC; repeat while p > 0
+           do p:=p-1; var(CSB.chradr)(p):=CNTATR;
+              p:=p-1; var(CSB.chradr)(p):=' ';
+           endrepeat;
+
+           TRCFRM.FULLSCREEN:=false;
+           TRCFRM.WRAP:=true;
+           TRCFRM.MINPOS:=0; -- 10;
+           TRCFRM.MINLIN:=10;
+           TRCFRM.MAXPOS:=79; -- 59;
+           TRCFRM.MAXLIN:=21;
+           TRCFRM.REGHGT:=12;
+           TRCFRM.REGWD2:=160;
+           TRCFRM.EDTEXP:=false;
+           TRCFRM.CLIN:=TRCFRM.MINLIN;
+           TRCFRM.CPOS:=TRCFRM.MINPOS;
+           TRCATR:='!78!'; --- '!112!';
+           TRCEDT:='!116!'; --- '!7!'; -- '!112!';
+
+           SSB.chradr:=call Palloc(AllocObj)(TOTLMS,entry(UPDSOBJ));
+           SSB.nchr:=TRCFRM.REGHGT*TRCFRM.REGWD2;
+           p:=TOTLMS; repeat while p > 0
+           do p:=p-1; var(SSB.chradr)(p):=TRCATR;
+              p:=p-1; var(SSB.chradr)(p):=' ';
+           endrepeat;
+           wSYSSWP:=entry(rSYSSWP);
+           wSYSPRI:=entry(rSYSPRI);
+           wSYSPRO:=entry(rSYSPRO);
+-- pj endif;
+end;
+
+Body(Pmovit) UPDSOBJ;     -- GC is about to move a Screen Buffer from 'old'
+-- import name() old,new; -- to 'new'. NOTE: called before the move.
+begin
+%+D   if TRCSW > 0
+%+D   then BegTrace("UPDSOBJ("); EdRef(TrcBuf,Name2Ref(old));
+%+D        Ed(TrcBuf,"==>"); EdRef(TrcBuf,Name2Ref(new));
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if    old=SSB.chradr then SSB.chradr:=new
+      elsif old=CSB.chradr then CSB.chradr:=new
+      else --- MEGET FEIL !!!!
+      endif;
+end;
+
+
+
+--- External Library Procedure SCRCLS="E@SCRCLS" is
+--- Boolean Procedure SCRCLS;
+-----------------------------------------------------------
+---                                                     ---
+-----------------------------------------------------------
+Visible Routine SCRCLS; export Boolean res;
+begin
+-- pj if SMBSW > 0 then
+           call Pfree(FreeObj)(SSB.chradr); SSB.chradr:=noname;
+           call Pfree(FreeObj)(CSB.chradr); CSB.chradr:=noname;
+           wSYSSWP:=NoBody; wSYSPRI:=NoBody; wSYSPRO:=NoBody;
+-- pj endif;
+      SCFONT(0); -- set primary font, disable blinking
+%     sysout.outtext("!27![=3l"); breakoutimage; !** Reset Screen Mode **;
+      res:=true;
+%+X   XNX_IOCTL(name2ref(@USRPKT),TCSETA,0); OsStat:=0;
+end;
+%page
+--- External Library Procedure SWPWIN="E@SWPWIN" is
+--- Procedure SWPWIN(t,down); Text t; Boolean down;
+-----------------------------------------------------------
+---                                                     ---
+-----------------------------------------------------------
+
+Visible Routine SWPWIN;
+import infix(txtqnt) t; Boolean down;
+begin SWPFRM(TXT2STR(t),down) end;
+
+Routine SWPFRM; import infix(String) s; Boolean down;
+begin range(0:MaxWord) i,j; short integer p,w;
+%+M   short integer Lin,dL; range(0:MaxWord) xx;
+%+O   short integer Lin,dL; character Buff(WD2LIM);
+%+X   short integer sp,sw; character c;
+%+X   if down
+%+X   then p:=0; w:=CURFRM.REGWD2;
+%+X        sp:=(CURFRM.MINLIN*SCRWD2)+(CURFRM.MINPOS*2); sw:=SCRWD2;
+%+X   else w:= -CURFRM.REGWD2; p:=((CURFRM.REGHGT-1)*CURFRM.REGWD2);
+%+X        sp:=(CURFRM.MAXLIN*SCRWD2)+(CURFRM.MINPOS*2); sw:= -SCRWD2;
+%+X   endif;
+%+X   i:=CURFRM.REGHGT; repeat while i > 0
+%+X   do j:=CURFRM.REGWD2; repeat while j > 0
+%+X      do j:=j-1;
+%+X         c:=SCREEN(sp+j); SCREEN(sp+j):=var(s.chradr)(p+j);
+%+X         var(s.chradr)(p+j):=c;
+%+X      endrepeat;
+%+X      i:=i-1; p:=p+w; sp:=sp+sw;
+%+X   endrepeat;
+%+X   REFRSH(down);
+
+%+O   if down then p:=0; w:=CURFRM.REGWD2; Lin:=CURFRM.MINLIN; dL:=1;
+%+O   else w:= -CURFRM.REGWD2; p:=((CURFRM.REGHGT-1)*CURFRM.REGWD2);
+%+O        Lin:=CURFRM.MAXLIN; dL:= -1;
+%+O   endif;
+%+O   i:=CURFRM.REGHGT; repeat while i > 0
+%+O   do j:=CURFRM.REGWD2;
+%+O      OS2_GETCEL(name2ref(@Buff),name2ref(@j),Lin,CURFRM.MINPOS,0);
+%+O      OS2_PUTCEL(name2ref(name(var(s.chradr)(p))),CURFRM.REGWD2,
+%+O                 Lin,CURFRM.MINPOS,0);
+%+O      APX_SMOVEI(CURFRM.REGWD2,name(var(s.chradr)(p)),@Buff);
+%+O      i:=i-1; p:=p+w; Lin:=Lin+dL;
+%+O   endrepeat;
+
+%+M   if down then p:=0; w:=CURFRM.REGWD2; Lin:=CURFRM.MINLIN; dL:=1;
+%+M   else w:= -CURFRM.REGWD2; p:=((CURFRM.REGHGT-1)*CURFRM.REGWD2);
+%+M        Lin:=CURFRM.MAXLIN; dL:= -1;
+%+M   endif;
+%+M   i:=CURFRM.REGHGT; repeat while i > 0
+%+M   do j:=CURFRM.REGWD2; repeat while j > 0
+%+M      do j:=j-2;
+%+M         DOS_UPDPOS(PAGE,JOIN(Lin,CURFRM.MINPOS+(j/2)));
+%+M         xx:=DOS_GETCEL(PAGE);
+%+M         DOS_PUTCHR(PAGE,var(s.chradr)(p+j),var(s.chradr)(p+j+1),1);
+%+M         var(s.chradr)(p+j):=wAND(xx,255) qua character;
+%+M         var(s.chradr)(p+j+1):=wAND(wSHR(xx,8),255) qua character;
+%+M      endrepeat;
+%+M      i:=i-1; p:=p+w; Lin:=Lin+dL;
+%+M   endrepeat;
+end;
+%page
+
+--- External Library Procedure PUTCTL="E@PUTCTL" is
+--- Procedure PUTCTL(c); character c;
+-----------------------------------------------------------
+--- Send Control-Character (c) to output device.        ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine PUTCTL; import character c;
+begin
+%+O   range(0:MaxWord) cnt;
+%+M   DOS_WRITE(K_sysout,1,@c);
+%+O   OS2_WRITE(K_sysout,name2ref(@c),1,name2ref(@cnt));
+%+X   XNX_WRITE(1,name2ref(@c),K_sysout);
+      OsStat:=0;
+end;
+
+
+--- External Library Procedure PUTCHR="E@PUTCHR" is
+--- Procedure PUTCHR(c,a,n); character c,a; short integer n;
+-----------------------------------------------------------
+--- Write character (c) and attribute (a) in successive ---
+--- positions (n) starting at current cursor position.  ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine PUTCHR;
+import character c,a; range(0:MaxWord) n;
+begin range(0:MaxWord) m;
+%+O   range(0:MaxWord) Cell;
+%+X   range(0:MaxWord) p; 
+      m:=CURFRM.MAXPOS-CURFRM.CPOS+1; if n > m then n:=m endif;
+%+M   DOS_PUTCHR(PAGE,c,a,n);
+%+O   Cell:=JOIN(a qua integer,c qua integer);
+%+O   OS2_PUTCHR(name2ref(@Cell),n,CURFRM.CLIN,CURFRM.CPOS,0);
+%+X   p:=(CURFRM.CLIN*SCRWD2)+(CURFRM.CPOS*2); StartGRM(a);
+%+X   if BUFPOS+(n*2) > BUFLIM then OUTBUF endif;
+%+X   repeat while n > 0
+%+X   do n:=n-1; EEdChar(c);
+%+X      SCREEN(p):=c; p:=p+1; SCREEN(p):=a; p:=p+1;
+%+X   endrepeat;
+%+X   CURSOR(CURFRM.CLIN,CURFRM.CPOS); OUTBUF;
+end;
+%page
+
+
+--- External Library Procedure GETCEL="E@GETCEL" is
+--- Short Integer Procedure GETCEL(AbsLin,AbsPos);
+--- Short Integer AbsLin,AbsPos;
+-----------------------------------------------------------
+--- Read Character and Attribute at given position.     ---
+--- NOTE: The cursor is LEFT UNDEFINED                  ---
+-----------------------------------------------------------
+Visible Routine GETCEL;
+import range(0:MaxWord) ALIN,APOS;
+export range(0:MaxWord) res;
+begin
+%+O   range(0:MaxWord) Lng;
+%+X   range(0:MaxWord) p;
+%+M   DOS_UPDPOS(PAGE,JOIN(ALIN,APOS)); res:=DOS_GETCEL(PAGE);
+%+O   Lng:=2; OS2_GETCEL(name2ref(@res),name2ref(@Lng),ALIN,APOS,0);
+%+X   p:=(ALIN*SCRWD2)+(APOS*2);
+%+X   res:=JOIN(%SCREEN(p+1) qua integer%,%SCREEN(p) qua integer%);
+end;
+
+
+--- External Library Procedure OUTCEL="E@OUTCEL" is
+--- Procedure OUTCEL(ALIN,APOS,Cel); Short Integer ALIN,APOS,Cel;
+-----------------------------------------------------------
+--- Write  single character (c) and attribute (a)       ---
+--- NOTE: The cursor is LEFT UNDEFINED                  ---
+-----------------------------------------------------------
+Visible Routine OUTCEL; import range(0:MaxWord) ALIN,APOS,Cel;
+begin
+%+X   range(0:MaxWord) p; character c,a;
+%+M   DOS_UPDPOS(PAGE,JOIN(ALIN,APOS));
+%+M   DOS_PUTCHR(PAGE,wAND(Cel,255) qua character,
+%+M         wAND(wSHR(Cel,8),255) qua character,1);
+%+O   OS2_PUTCEL(name2ref(@Cel),2,ALIN,APOS,0);
+%+X   ABSPOS(ALIN,APOS); p:=(CURFRM.CLIN*SCRWD2)+(CURFRM.CPOS*2);
+%+X   a:=wAND(wSHR(Cel,8),255) qua character;
+%+X   c:=wAND(Cel,255) qua character; StartGRM(a);
+%+X   if BUFPOS+2 > BUFLIM then OUTBUF endif;
+%+X   SCREEN(p):=c; SCREEN(p+1):=a; EEdChar(c); CURFRM.CPOS:=CURFRM.CPOS+1;
+end;
+%page
+
+--- External Library Procedure OUTCHR="E@OUTCHR" is
+--- Procedure OUTCHR(c,a); character c,a;
+-----------------------------------------------------------
+--- Write  single character (c) and attribute (a)       ---
+--- NOTE: The cursor is moved                           ---
+-----------------------------------------------------------
+Visible Routine OUTCHR; import character c,a;
+begin
+%+O   range(0:MaxWord) Cell;
+%+X   range(0:MaxWord) p;
+%+M   DOS_PUTCHR(PAGE,c,a,1);
+%+M   if CURFRM.CPOS<CURFRM.MAXPOS
+%+M   then CURFRM.CPOS:=CURFRM.CPOS+1;
+%+M        DOS_UPDPOS(PAGE,JOIN(CURFRM.CLIN,CURFRM.CPOS))
+%+M   elsif CURFRM.WRAP then NEWLIN(a) endif;
+
+%+O   Cell:=JOIN(a qua integer,c qua integer);
+%+O   OS2_PUTCEL(name2ref(@Cell),2,CURFRM.CLIN,CURFRM.CPOS,0);
+%+O   if CURFRM.CPOS<CURFRM.MAXPOS
+%+O   then CURFRM.CPOS:=CURFRM.CPOS+1; OS2_UPDPOS(CURFRM.CLIN,CURFRM.CPOS,0)
+%+O   elsif CURFRM.WRAP then NEWLIN(a) endif;
+
+%+X   p:=(CURFRM.CLIN*SCRWD2)+(CURFRM.CPOS*2); StartGRM(a);
+%+X   if BUFPOS+2 > BUFLIM then OUTBUF endif;
+%+X   if wAND(c qua integer,127) = 27 then EEdChar('!27!') endif;
+%+X   SCREEN(p):=c; SCREEN(p+1):=a; EEdChar(c);
+%+X   if CURFRM.CPOS<CURFRM.MAXPOS then CURFRM.CPOS:=CURFRM.CPOS+1
+%+X   elsif CURFRM.WRAP then NEWLIN(a)
+%+X   else CURSOR(CURFRM.CLIN,CURFRM.CPOS) endif;
+%+X   OUTBUF;
+end;
+%page
+
+
+--- External Library Procedure NEWLIN="E@NEWLIN" is
+--- Procedure NEWLIN(a); character a;
+-----------------------------------------------------------
+---                                                     ---
+--- NOTE: The cursor is moved                           ---
+-----------------------------------------------------------
+Visible Routine NEWLIN; import character a;
+begin range(0:MaxWord) Lin;
+      if CURFRM.CLIN<CURFRM.MAXLIN then Lin:=CURFRM.CLIN+1
+      elsif CURFRM.WRAP then SCROLL(1,a); Lin:=CURFRM.CLIN
+      else Lin:=CURFRM.CLIN endif; --- ??? pje
+%+M   CURFRM.CLIN:=Lin; CURFRM.CPOS:=CURFRM.MINPOS;
+%+M   DOS_UPDPOS(PAGE,JOIN(CURFRM.CLIN,CURFRM.CPOS));
+%+O   CURFRM.CLIN:=Lin; CURFRM.CPOS:=CURFRM.MINPOS;
+%+O   OS2_UPDPOS(CURFRM.CLIN,CURFRM.CPOS,0);
+%+X   ABSPOS(Lin,CURFRM.MINPOS); OUTBUF;
+end;
+
+
+--- External Library Procedure SETWRP="E@SETWRP" is
+--- Boolean Procedure SETWRP(on); Boolean on;
+-----------------------------------------------------------
+---                                                     ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine SETWRP; import Boolean on; export Boolean res;
+begin res:=CURFRM.WRAP; CURFRM.WRAP:=on end;
+%page
+--- External Library Procedure PUTTXT="E@PUTTXT" is
+--- Procedure PUTTXT(t,a); text t; character a;
+-----------------------------------------------------------
+--- Write text (t) with attribute (a) in successive     ---
+--- positions starting at current cursor position.      ---
+--- NOTE: The cursor is moved                           ---
+-----------------------------------------------------------
+Visible Routine PUTTXT;
+import infix(txtqnt) t; character a;
+begin infix(String) s; s:=TXT2STR(t); PUTSTR(s,a) end;
+
+-----------------------------------------------------------
+--- Write string (s) with attribute (a) in successive   ---
+--- positions starting at current cursor position.      ---
+--- NOTE: The cursor is moved                           ---
+-----------------------------------------------------------
+Routine PUTSTR; import infix(String) s; character a;
+begin 
+%+M   range(0:MaxWord) n; character c;
+%+O   range(0:MaxWord) Cell,n; character c;
+%+X   range(0:MaxWord) p,n; character c;
+%+M   n:=0; repeat while n < s.nchr
+%+M   do c:=var(s.chradr)(n); n:=n+1;
+%+M      DOS_PUTCHR(PAGE,c,a,1);
+%+M      if CURFRM.CPOS<CURFRM.MAXPOS
+%+M      then CURFRM.CPOS:=CURFRM.CPOS+1;
+%+M           DOS_UPDPOS(PAGE,JOIN(CURFRM.CLIN,CURFRM.CPOS));
+%+M      elsif CURFRM.WRAP then NEWLIN(a) endif;
+%+M   endrepeat;
+
+%+O   n:=0; repeat while n < s.nchr
+%+O   do c:=var(s.chradr)(n); n:=n+1;
+%+O      Cell:=JOIN(a qua integer,c qua integer);
+%+O      OS2_PUTCEL(name2ref(@Cell),2,CURFRM.CLIN,CURFRM.CPOS,0);
+%+O      if CURFRM.CPOS<CURFRM.MAXPOS then CURFRM.CPOS:=CURFRM.CPOS+1
+%+O      elsif CURFRM.WRAP then NEWLIN(a) endif;
+%+O   endrepeat;
+%+O   OS2_UPDPOS(CURFRM.CLIN,CURFRM.CPOS,0)
+
+%+X   StartGRM(a);
+%+X   n:=0; repeat while n < s.nchr
+%+X   do c:=var(s.chradr)(n); n:=n+1;
+%+X      p:=(CURFRM.CLIN*SCRWD2)+(CURFRM.CPOS*2);
+%+X      if BUFPOS+2 > BUFLIM then OUTBUF endif;
+%+X      SCREEN(p):=c; SCREEN(p+1):=a; EEdChar(c);
+%+X      if CURFRM.CPOS<CURFRM.MAXPOS then CURFRM.CPOS:=CURFRM.CPOS+1
+%+X      elsif CURFRM.WRAP then NEWLIN(a)
+%+X      else CURSOR(CURFRM.CLIN,CURFRM.CPOS) endif;
+%+X   endrepeat;
+%+X   OUTBUF;
+end;
+
+
+--- External Library Procedure GETTXT="E@GETTXT" is
+--- Procedure GETTXT(ALIN,APOS,t); Short Integer ALIN,APOS; text t;
+-----------------------------------------------------------
+--- Read text (t) from Screen start at cursor           ---
+--- NOTE: The cursor is LEFT UNDEFINED                  ---
+-----------------------------------------------------------
+
+Visible Routine GETTXT;
+import range(0:MaxWord) ALIN,APOS; infix(txtqnt) t;
+begin GETSTR(ALIN,APOS,TXT2STR(t)) end;
+
+Routine GETSTR; import range(0:MaxWord) ALIN,APOS; infix(String) s;
+begin
+%+M   range(0:MaxWord) n,p;
+%+X   range(0:MaxWord) n,p;
+%+M   n:=0; p:=JOIN(ALIN,APOS);
+%+M   repeat while n < s.nchr
+%+M   do DOS_UPDPOS(PAGE,p); p:=p+1;
+%+M      var(s.chradr)(n):=wAND(DOS_GETCEL(PAGE),255) qua character; n:=n+1;
+%+M   endrepeat;
+
+%+O   OS2_GETSTR(name2ref(s.chradr),name2ref(@s.nchr),ALIN,APOS,0);
+
+%+X   n:=0; p:=(ALIN*SCRWD2)+(APOS*2);
+%+X   repeat while n < s.nchr
+%+X   do var(s.chradr)(n):=SCREEN(p); n:=n+1; p:=p+2 endrepeat;
+end;
+%page
+
+--- External Library Procedure SCROL1="E@SCROLL" is
+--- Procedure SCROL1(n,a); Short Integer n; Character a;
+-----------------------------------------------------------
+--- Scroll Region (n) characters up (n>0) or down (n<0) ---
+--- or blank entire Window (n=0).                       ---
+---      n = Number of lines to scroll                  ---
+---      a = Attribute to be used for blanked area      ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine SCROLL;
+import range(0:MaxWord) n; Character a;
+begin
+%+M   range(0:MaxWord) i,j;
+%+O   range(0:MaxWord) Cell;
+%+X   range(0:MaxWord) i,j; short integer p,d,sw; Boolean Update;
+%+M   i:=JOIN(CURFRM.MINLIN,CURFRM.MINPOS);
+%+M   j:=JOIN(CURFRM.MAXLIN,CURFRM.MAXPOS);
+%+M   if n >= 0 then DOS_SROLUP(n,a,i,j) else DOS_SROLDW(-n,a,i,j) endif;
+%+O   Cell:=JOIN(a qua integer,' ' qua integer);
+%+O   if n >= 0
+%+O   then if n=0 then n:= -1 endif;
+%+O        OS2_SROLUP(CURFRM.MINLIN,CURFRM.MINPOS,
+%+O                   CURFRM.MAXLIN,CURFRM.MAXPOS,n,name2ref(@Cell),0)
+%+O   else OS2_SROLDW(CURFRM.MINLIN,CURFRM.MINPOS,
+%+O        CURFRM.MAXLIN,CURFRM.MAXPOS,-n,name2ref(@Cell),0) endif;
+%+X   i:=CURFRM.REGHGT; if n>i then n:=0 endif;
+%+X   p:=(CURFRM.MINLIN*SCRWD2)+(CURFRM.MINPOS*2);
+%+X   sw:=SCRWD2; d:=n*sw; Update:=true;
+%+X   if n=0
+%+X   then if (a='!0!') and CURFRM.FULLSCREEN
+%+X        then EEdText("!27![2J"); OUTBUF; Update:=false endif;
+%+X   else if n<0
+%+X        then n:=-n; sw:=-sw;
+%+X             p:=(CURFRM.MAXLIN*SCRWD2)+(CURFRM.MINPOS*2);
+%+X        endif;
+%+X        repeat while i > n
+%+X        do j:=CURFRM.REGWD2; repeat while j > 0
+%+X           do j:=j-1; SCREEN(p+j):=SCREEN(p+d+j) endrepeat;
+%+X           i:=i-1; p:=p+sw;
+%+X        endrepeat;
+%+X   endif;
+%+X   repeat while i > 0
+%+X   do j:=CURFRM.REGWD2; repeat while j > 0
+%+X      do j:=j-1; SCREEN(p+j):=a; j:=j-1; SCREEN(p+j):=' ' endrepeat;
+%+X      i:=i-1; p:=p+sw;
+%+X   endrepeat;
+%+X   if Update then REFRSH(sw>0) endif;
+end;
+%page
+
+--- External Library Procedure REFRSH="E@REFRSH" is
+--- Procedure REFRSH(Down); Boolean Down;
+-----------------------------------------------------------
+--- Refresh Current Region by sending all               ---
+--- characters and attributes to the Terminal.          ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+Visible Routine REFRSH; import Boolean Down;
+begin
+%+X   range(0:MaxWord) i,j,OldLin,OldPos;
+%+X   short integer p,sw,Lin,dL; character a;
+%+X   OldLin:=CURFRM.CLIN; OldPos:=CURFRM.CPOS;
+%+X   Lin:=CURFRM.MINLIN; dL:=1; sw:=SCRWD2;
+%+X   if not down then Lin:=CURFRM.MAXLIN; sw:= -sw; dL:= -1 endif;
+%+X   i:=CURFRM.REGHGT; p:=(Lin*SCRWD2)+(CURFRM.MINPOS*2);
+%+X   repeat while i > 0
+%+X   do j:=0; repeat while j < CURFRM.REGWD2
+%+X      do L: a:=SCREEN(p+j+1); ABSPOS(Lin,CURFRM.MINPOS+(j/2)); StartGRM(a);
+%+X         repeat while j < CURFRM.REGWD2
+%+X         do if SCREEN(p+j+1) <> a then goto L endif;
+%+X            if BUFPOS > BUFLIM then OUTBUF endif;
+%+X            EEdChar(SCREEN(p+j)); j:=j+2;
+%+X         endrepeat;
+%+X         j:=j+2;
+%+X      endrepeat;
+%+X      ABSPOS(Lin,CURFRM.MINPOS); OUTBUF;
+%+X      i:=i-1; p:=p+sw; Lin:=Lin+dL;
+%+X   endrepeat;
+%+X   CURSOR(OldLin,OldPos); OUTBUF;
+end;
+%page
+%+X -----------------------------------------------------------
+%+X ---                                                     ---
+%+X ---                                                     ---
+%+X -----------------------------------------------------------
+%+X Routine StartGRM; import character NewAtr;
+%+X begin range(0:MaxWord) a,Blnk,Bgr,Bold,Fgr;
+%+X       if LSTATR <> NewAtr
+%+X       then a:=NewAtr qua integer;
+%+X            if OSID.sysname(0)='X'   -- I.e. XENIX
+%+X            then if BUFPOS > BUFLIM then OUTBUF endif;
+%+X                 EEdText("!27![2;"); EEdInt(wAND(a,15)); EEdText(";");
+%+X                 EEdInt(wAND(wSHR(a,4),15)); EEdText("m");
+%+X            else Fgr:=wAND(a,7); a:=a/8; Bold:=wAND(a,1); a:=a/2;
+%+X                 Bgr:=wAND(a,7); a:=a/8; Blnk:=wAND(a,1);
+%+X                 if wAND(LSTATR qua integer,136)
+%+X                 <> wAND(NewAtr qua integer,136)  -- 136=88H
+%+X                 then if BUFPOS > BUFLIM then OUTBUF endif;
+%+X                      EEdText("!27![0m");     -- All attributes off;
+%+X                      if Blnk<>0 then EEdText("!27![5m") endif; -- Set Blink;
+%+X                      if Bold<>0 then EEdText("!27![1m") endif; -- Set Bold;
+%+X                 endif;
+%+X                 if BUFPOS > BUFLIM then OUTBUF endif;
+%+X                 EEdText("!27![4"); EEdInt(ColMap(Bgr)); EEdText("m");
+%+X                 EEdText("!27![3"); EEdInt(ColMap(Fgr)); EEdText("m");
+%+X            endif;
+%+X            LSTATR:=NewAtr;
+%+X       endif;
+%+X end;
+%page
+--- External Library Procedure SCMODE="E@SCMODE" is
+--- Short Integer Procedure SCMODE(code); short integer code;
+-----------------------------------------------------------
+---                                                     ---
+-----------------------------------------------------------
+Visible Routine SCMODE;
+import range(0:MaxWord) code;
+export range(0:MaxWord) res;
+begin
+%+M   Infix(VIOPAK) vp;
+%+X   integer dum;
+%+M   if code > 19 then code:=VIOMOD.Mode endif;
+%+M   vp:=DOS_GDMODE; res:=vp.Mode; DOS_SDMODE(code);
+-- %+M   DOS_SETPAL(3,0,noname);
+-- %+O   OS2_??????(??????);
+%+X   if BUFPOS > BUFLIM then OUTBUF endif;
+%+X   dum:=XNX_IOCTL(name2ref(@dum),30720+code,0); -- 30720 = 'x'00  **;
+%+X   if OsStat <> 0 then OsStat:=0
+%+X   else res:=OUTSM; OUTSM:=code endif;
+end;
+%title ***   B u f f e r   E d i t i n g   ***
+
+%+X Routine OUTBUF;
+%+X begin if BUFPOS > 0
+%+X       then XNX_WRITE(BUFPOS,name2ref(@BUFF),K_sysout)
+%+X            OsStat:=0; BUFPOS:=0;
+%+X       endif;
+%+X end;
+
+
+%+X Routine EEdChar; import character c;
+%+X begin BUFF(BUFPOS):=c; BUFPOS:=BUFPOS+1 end;
+
+%+X Routine EEdText; import infix(String) s;
+%+X begin range(0:MaxWord) n; n:=0;
+%+X       repeat while n < s.nchr
+%+X       do EEdChar(var(s.chradr)(n)); n:=n+1 endrepeat;
+%+X end;
+
+%+X Routine EEdInt; import range(0:MaxWord) w;
+%+X begin EdWrd(ref(EdtBuffer),w); EEdText(PickupEdtBuf) end;
+%page
+
+--- External Library Procedure GetInt="E@UUGINT" is
+--- Integer Procedure GetInt(txt); text txt; ;
+Visible Routine UUGINT;
+import infix(txtqnt) txt; export integer res;
+begin infix(string) s; s:=TXT2STR(txt); res:=GETINT(s);
+      if itemsize <> s.nchr then Status:=27 endif;
+      UUSTATUS:=Status; Status:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGINT: Result = "); EdInt(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure GetReal="E@UUGREA" is
+--- Integer Procedure GetReal(txt); text txt; ;
+Visible Routine UUGREA;
+import infix(txtqnt) txt; export long real res;
+begin infix(string) s; s:=TXT2STR(txt); res:=GTREAL(s);
+      if itemsize <> s.nchr then Status:=27 endif;
+      UUSTATUS:=Status; Status:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGREA: Result = "); EdHexLreal(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure GetFrac="E@UUGFRC" is
+--- Integer Procedure GetFrac(txt); text txt; ;
+Visible Routine UUGFRC;
+import infix(txtqnt) txt; export integer res;
+begin infix(string) s; s:=TXT2STR(txt); res:=GTFRAC(s);
+      if itemsize <> s.nchr then Status:=27 endif;
+      UUSTATUS:=Status; Status:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGFRC: Result = "); EdInt(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+%title ***   I n p u t    O p e r a t i o n s   ***
+Define FuncKey=1;      --  1: Ctrl-A
+--                     --  2: Ctrl-B
+Define InsKey=3;       --  3: Ctrl-C
+Define RightKey=4;     --  4: Ctrl-D
+Define LeftKey=5;      --  5: Ctrl-E
+--                     --  6: Ctrl-F
+--     Bell=7;         --  7: Ctrl-G
+Define RubOut=8;       --  8: Ctrl-H
+Define TabKey=9;       --  9: Ctrl-I
+Define LfKey=10;       -- 10: Ctrl-J
+--                     -- 11: Ctrl-K
+--     FormFeed=12;    -- 12: Ctrl-L
+Define CrKey=13;       -- 13: Ctrl-M
+Define DownKey=14;     -- 14: Ctrl-N
+Define HomeKey=15;     -- 15: Ctrl-O
+--                     -- 16: Ctrl-P
+--     XonKey=17;      -- 17: Ctrl-Q
+--                     -- 18: Ctrl-R
+--     XoffKey=19;     -- 19: Ctrl-S
+--                     -- 20: Ctrl-T
+--                     -- 21: Ctrl-U
+--                     -- 22: Ctrl-V
+--                     -- 23: Ctrl-W
+--                     -- 24: Ctrl-X
+--                     -- 25: Ctrl-Y
+Define EndKey=26;      -- 26: Crtl-Z
+Define EscKey=27;      -- 27: Crtl-[
+Define UpKey=28;       -- 28: Crtl-\
+Define BackTab=29;     -- 29: Crtl-]
+Define PgUpKey=30;     -- 30: Crtl-^
+Define PgDnKey=31;     -- 31: Crtl-_
+Define DelKey=127;
+
+Define FkHome=65, FkUp=66,   FkPgUp=67,  FkMinus=68,
+       FkLeft=69, FkNum5=70, FkRight=71, FkPlus=72,
+       FkEnd=73,  FkDown=74, FkPgDn=75, FkIns=76,   FkDel=77,  
+       FkBackTab=80,
+       FkUnknown=255;
+
+
+% ******** Function key's SanCodes under MS-DOS and OS/2 ********
+%-X Define ScMin=59,ScMax=132,ScBackTab=15;
+%-X Const range(0:MaxByte) FuncMap(74) = (
+%-X        1,   -- ScanCode  59 -- F1
+%-X        2,   -- ScanCode  60 -- F2
+%-X        3,   -- ScanCode  61 -- F3
+%-X        4,   -- ScanCode  62 -- F4
+%-X        5,   -- ScanCode  63 -- F5
+%-X        6,   -- ScanCode  64 -- F6
+%-X        7,   -- ScanCode  65 -- F7
+%-X        8,   -- ScanCode  66 -- F8
+%-X        9,   -- ScanCode  67 -- F9
+%-X        10,  -- ScanCode  68 -- F10
+%-X        255, -- ScanCode  69 -- Unknown
+%-X        255, -- ScanCode  70 -- Unknown
+%-X        65,  -- ScanCode  71 -- Home key
+%-X        66,  -- ScanCode  72 -- Arrow Up key
+%-X        67,  -- ScanCode  73 -- Page Up key
+%-X        255, -- ScanCode  74 -- Unknown key
+%-X        69,  -- ScanCode  75 -- Arrow Left key
+%-X        255, -- ScanCode  76 -- Unknown key
+%-X        71,  -- ScanCode  77 -- Arrow Right key
+%-X        255, -- ScanCode  78 -- Unknown key
+%-X        73,  -- ScanCode  79 -- End key
+%-X        74,  -- ScanCode  80 -- Arrow Down key
+%-X        75,  -- ScanCode  81 -- Page Down key
+%-X        76,  -- ScanCode  82 -- Insert key
+%-X        77,  -- ScanCode  83 -- Delete key
+%-X        17,  -- ScanCode  84 -- SHIFT+F1
+%-X        18,  -- ScanCode  85 -- SHIFT+F2
+%-X        19,  -- ScanCode  86 -- SHIFT+F3
+%-X        20,  -- ScanCode  87 -- SHIFT+F4
+%-X        21,  -- ScanCode  88 -- SHIFT+F5
+%-X        22,  -- ScanCode  89 -- SHIFT+F6
+%-X        23,  -- ScanCode  90 -- SHIFT+F7
+%-X        24,  -- ScanCode  91 -- SHIFT+F8
+%-X        25,  -- ScanCode  92 -- SHIFT+F9
+%-X        26,  -- ScanCode  93 -- SHIFT+F10
+%-X        33,  -- ScanCode  94 -- CONTROL+F1
+%-X        34,  -- ScanCode  95 -- CONTROL+F2
+%-X        35,  -- ScanCode  96 -- CONTROL+F3
+%-X        36,  -- ScanCode  97 -- CONTROL+F4
+%-X        37,  -- ScanCode  98 -- CONTROL+F5
+%-X        38,  -- ScanCode  99 -- CONTROL+F6
+%-X        39,  -- ScanCode 100 -- CONTROL+F7
+%-X        40,  -- ScanCode 101 -- CONTROL+F8
+%-X        41,  -- ScanCode 102 -- CONTROL+F9
+%-X        42,  -- ScanCode 103 -- CONTROL+F10
+%-X        49,  -- ScanCode 104 -- ALT+F1
+%-X        50,  -- ScanCode 105 -- ALT+F2
+%-X        51,  -- ScanCode 106 -- ALT+F3
+%-X        52,  -- ScanCode 107 -- ALT+F4
+%-X        53,  -- ScanCode 108 -- ALT+F5
+%-X        54,  -- ScanCode 109 -- ALT+F6
+%-X        55,  -- ScanCode 110 -- ALT+F7
+%-X        56,  -- ScanCode 111 -- ALT+F8
+%-X        57,  -- ScanCode 112 -- ALT+F9
+%-X        58,  -- ScanCode 113 -- ALT+F10
+%-X        255, -- ScanCode 114 -- Unknown
+%-X        87,  -- ScanCode 115 -- CONTROL+Arrow Left key
+%-X        89,  -- ScanCode 116 -- CONTROL+Arrow Right key
+%-X        84,  -- ScanCode 117 -- CONTROL+End key
+%-X        85,  -- ScanCode 118 -- CONTROL+Page Down key
+%-X        81,  -- ScanCode 119 -- CONTROL+Home key
+%-X        255, -- ScanCode 120 -- Unknown
+%-X        255, -- ScanCode 121 -- Unknown
+%-X        255, -- ScanCode 122 -- Unknown
+%-X        255, -- ScanCode 123 -- Unknown
+%-X        255, -- ScanCode 124 -- Unknown
+%-X        255, -- ScanCode 125 -- Unknown
+%-X        255, -- ScanCode 126 -- Unknown
+%-X        255, -- ScanCode 127 -- Unknown
+%-X        255, -- ScanCode 128 -- Unknown
+%-X        255, -- ScanCode 129 -- Unknown
+%-X        255, -- ScanCode 130 -- Unknown
+%-X        255, -- ScanCode 131 -- Unknown
+%-X        83   -- ScanCode 132 -- CONTROL+Page Up key
+%-X     );
+%page
+% ******** Function key's Terminator-Char under SCO-XENIX/UNIX ********
+%+X Define XfMin=64,XfMax=123;
+%+X Const range(0:MaxByte) FuncSCO(69) = (
+%+X        53,  -- TermChar @= 64 -- CONTROL+SHIFT+F5
+%+X        66,  -- TermChar A= 65 -- Arrow Up key
+%+X        74,  -- TermChar B= 66 -- Arrow Down key
+%+X        71,  -- TermChar C= 67 -- Arrow Right key
+%+X        69,  -- TermChar D= 68 -- Arrow Left key
+%+X        70,  -- TermChar E= 69 -- 5 key
+%+X        73,  -- TermChar F= 70 -- End key
+%+X        75,  -- TermChar G= 71 -- Page Down key
+%+X        65,  -- TermChar H= 72 -- Home key
+%+X        67,  -- TermChar I= 73 -- Page Up key
+%+X        255, -- TermChar J= 74 -- Unknown key
+%+X        255, -- TermChar K= 75 -- Unknown key
+%+X        76,  -- TermChar L= 76 -- Insert key
+%+X        1,   -- TermChar M= 77 -- F1
+%+X        2,   -- TermChar N= 78 -- F2
+%+X        3,   -- TermChar O= 79 -- F3
+%+X        4,   -- TermChar P= 80 -- F4
+%+X        5,   -- TermChar Q= 81 -- F5
+%+X        6,   -- TermChar R= 82 -- F6
+%+X        7,   -- TermChar S= 83 -- F7
+%+X        8,   -- TermChar T= 84 -- F8
+%+X        9,   -- TermChar U= 85 -- F9
+%+X        10,  -- TermChar V= 86 -- F10
+%+X        11,  -- TermChar W= 87 -- F11
+%+X        12,  -- TermChar X= 88 -- F12
+%+X        17,  -- TermChar Y= 89 -- SHIFT+F1
+%+X        18,  -- TermChar Z= 90 -- SHIFT+F2 and BackTab !!!!
+%+X ------ 80,  -- TermChar Z= 90 -- SHIFT+F2 and BackTab !!!!
+%+X        54,  -- TermChar [= 91 -- CONTROL+SHIFT+F6
+%+X        55,  -- TermChar \= 92 -- CONTROL+SHIFT+F7
+%+X        56,  -- TermChar ]= 93 -- CONTROL+SHIFT+F8
+%+X        57,  -- TermChar ^= 94 -- CONTROL+SHIFT+F9
+%+X        58,  -- TermChar _= 95 -- CONTROL+SHIFT+F10
+%+X        59,  -- TermChar '= 96 -- CONTROL+SHIFT+F10
+%+X        19,  -- TermChar a= 97 -- SHIFT+F3
+%+X        20,  -- TermChar b= 98 -- SHIFT+F4
+%+X        21,  -- TermChar c= 99 -- SHIFT+F5
+%+X        22,  -- TermChar d=100 -- SHIFT+F6
+%+X        23,  -- TermChar e=101 -- SHIFT+F7
+%+X        24,  -- TermChar f=102 -- SHIFT+F8
+%+X        25,  -- TermChar g=103 -- SHIFT+F9
+%+X        26,  -- TermChar h=104 -- SHIFT+F10
+%+X        27,  -- TermChar i=105 -- SHIFT+F11
+%+X        28,  -- TermChar j=106 -- SHIFT+F12
+%+X        33,  -- TermChar k=107 -- CONTROL+F1
+%+X        34,  -- TermChar l=108 -- CONTROL+F2
+%+X        35,  -- TermChar m=109 -- CONTROL+F3
+%+X        36,  -- TermChar n=110 -- CONTROL+F4
+%+X        37,  -- TermChar o=111 -- CONTROL+F5
+%+X        38,  -- TermChar p=112 -- CONTROL+F6
+%+X        39,  -- TermChar q=113 -- CONTROL+F7
+%+X        40,  -- TermChar r=114 -- CONTROL+F8
+%+X        41,  -- TermChar s=115 -- CONTROL+F9
+%+X        42,  -- TermChar t=116 -- CONTROL+F10
+%+X        43,  -- TermChar u=117 -- CONTROL+F11
+%+X        44,  -- TermChar v=118 -- CONTROL+F12
+%+X        49,  -- TermChar w=119 -- CONTROL+SHIFT+F1
+%+X        50,  -- TermChar x=120 -- CONTROL+SHIFT+F2
+%+X        51,  -- TermChar y=121 -- CONTROL+SHIFT+F3
+%+X        52,  -- TermChar z=122 -- CONTROL+SHIFT+F4
+%+X        60   -- TermChar {=123 -- CONTROL+SHIFT+F10
+%+X     );
+
+%page
+% ******** Numpad key's Terminator-Char under 386/ix UNIX ********
+%+X Define NxMin=64,NxMax=89;
+%+X Const range(0:MaxByte) NumpIx(26) = (
+%+X        76,  -- TermChar @= 64 -- Insert key
+%+X        66,  -- TermChar A= 65 -- Arrow Up key
+%+X        74,  -- TermChar B= 66 -- Arrow Down key
+%+X        71,  -- TermChar C= 67 -- Arrow Right key
+%+X        69,  -- TermChar D= 68 -- Arrow Left key
+%+X        255, -- TermChar E= 69 -- Unknown key
+%+X        255, -- TermChar F= 70 -- Unknown key
+%+X        70,  -- TermChar G= 71 -- 5 key
+%+X        65,  -- TermChar H= 72 -- Home key
+%+X        255, -- TermChar I= 73 -- Unknown key
+%+X        255, -- TermChar J= 74 -- Unknown key
+%+X        255, -- TermChar K= 75 -- Unknown key
+%+X        255, -- TermChar L= 76 -- Unknown key
+%+X        255, -- TermChar M= 77 -- Unknown key
+%+X        255, -- TermChar N= 78 -- Unknown key
+%+X        255, -- TermChar O= 79 -- Unknown key
+%+X        255, -- TermChar P= 80 -- Unknown key
+%+X        255, -- TermChar Q= 81 -- Unknown key
+%+X        255, -- TermChar R= 82 -- Unknown key
+%+X        68,  -- TermChar S= 83 -- - key
+%+X        72,  -- TermChar T= 84 -- + key
+%+X        75,  -- TermChar U= 85 -- Page Down key
+%+X        67,  -- TermChar V= 86 -- Page Up key
+%+X        255, -- TermChar W= 87 -- Unknown key
+%+X        255, -- TermChar X= 88 -- Unknown key
+%+X        73   -- TermChar Y= 89 -- End key
+%+X     );
+
+%page
+% ******** Function key's Terminator-Char under 386/ix UNIX ********
+%+X Define UfMin=65,UfMax=122;
+%+X Const range(0:MaxByte) FuncIx(67) = (
+%+X        12,  -- TermChar A= 65 -- F12
+%+X        255, -- TermChar B= 66 -- Unknown key
+%+X        255, -- TermChar C= 67 -- Unknown key
+%+X        255, -- TermChar D= 68 -- Unknown key
+%+X        255, -- TermChar E= 69 -- Unknown key
+%+X        255, -- TermChar F= 70 -- Unknown key
+%+X        255, -- TermChar G= 71 -- Unknown key
+%+X        255, -- TermChar H= 72 -- Unknown key
+%+X        255, -- TermChar I= 73 -- Unknown key
+%+X        255, -- TermChar J= 74 -- Unknown key
+%+X        255, -- TermChar K= 75 -- Unknown key
+%+X        255, -- TermChar L= 76 -- Unknown key
+%+X        255, -- TermChar M= 77 -- Unknown key
+%+X        255, -- TermChar N= 78 -- Unknown key
+%+X        255, -- TermChar O= 79 -- Unknown key
+%+X        1,   -- TermChar P= 80 -- F1
+%+X        2,   -- TermChar Q= 81 -- F2
+%+X        3,   -- TermChar R= 82 -- F3
+%+X        4,   -- TermChar S= 83 -- F4
+%+X        5,   -- TermChar T= 84 -- F5
+%+X        6,   -- TermChar U= 85 -- F6
+%+X        7,   -- TermChar V= 86 -- F7
+%+X        8,   -- TermChar W= 87 -- F8
+%+X        9,   -- TermChar X= 88 -- F9
+%+X        10,  -- TermChar Y= 89 -- F10
+%+X        11,  -- TermChar Z= 90 -- F11
+%+X        255, -- TermChar [= 91 -- Unknown key
+%+X        255, -- TermChar \= 92 -- Unknown key
+%+X        255, -- TermChar ]= 93 -- Unknown key
+%+X        255, -- TermChar ^= 94 -- Unknown key
+%+X        255, -- TermChar _= 95 -- Unknown key
+%+X        255, -- TermChar '= 96 -- Unknown key
+%+X        28,  -- TermChar a= 97 -- SHIFT+F12
+%+X        255, -- TermChar b= 98 -- Unknown key
+%+X        255, -- TermChar c= 99 -- Unknown key
+%+X        255, -- TermChar d=100 -- Unknown key
+%+X        255, -- TermChar e=101 -- Unknown key
+%+X        255, -- TermChar f=102 -- Unknown key
+%+X        255, -- TermChar g=103 -- Unknown key
+%+X        255, -- TermChar h=104 -- Unknown key
+%+X        255, -- TermChar i=105 -- Unknown key
+%+X        255, -- TermChar j=106 -- Unknown key
+%+X        255, -- TermChar k=107 -- Unknown key
+%+X        255, -- TermChar l=108 -- Unknown key
+%+X        255, -- TermChar m=109 -- Unknown key
+%+X        255, -- TermChar n=110 -- Unknown key
+%+X        255, -- TermChar o=111 -- Unknown key
+%+X        17,  -- TermChar p=112 -- SHIFT+F1
+%+X        18,  -- TermChar q=113 -- SHIFT+F2
+%+X        19,  -- TermChar r=114 -- SHIFT+F3
+%+X        20,  -- TermChar s=115 -- SHIFT+F4
+%+X        21,  -- TermChar t=116 -- SHIFT+F5
+%+X        22,  -- TermChar u=117 -- SHIFT+F6
+%+X        23,  -- TermChar v=118 -- SHIFT+F7
+%+X        24,  -- TermChar w=119 -- SHIFT+F8
+%+X        25,  -- TermChar x=120 -- SHIFT+F9
+%+X        26,  -- TermChar y=121 -- SHIFT+F10
+%+X        27   -- TermChar z=122 -- SHIFT+F11
+%+X     );
+%title ***   I n p u t    O p e r a t i o n s :   K E Y B R D   ***
+
+--- External Pascal Procedure KEYIN="E@KEYIN" is
+--- KEYIN(Wait,pkt); name pkt; Boolean Wait; Ref(KEYPKT) pkt;
+-----------------------------------------------------------
+--- Read Extended Character from Keyboard.              ---
+--- No echo to screen.                                  ---
+--- NOTE: The cursor is NOT moved                       ---
+-----------------------------------------------------------
+
+Record KEYPKT;
+begin range(0:MaxByte) mch;      -- Mapped input character
+      range(0:MaxByte) chr;      -- Unmapped input character
+      range(0:MaxWord) fkey;     -- Function key number (1...)
+      range(0:MaxByte) c0,c1,c2; -- OS-Dependent
+                                 --    DOS,OS/2:   c0=ScanCode
+                                 --    XENIX/UNIX: c0:c1:c2=ESC-Sequence
+end;
+
+Visible Routine KEYIN;
+import Boolean Wait; ref(KEYPKT) pkt;
+begin range(0:MaxByte) mk,fk,k,c0,c1,c2;
+%+O   infix(KEYPAK) kPkt;
+%+X   range(0:MaxByte) x;
+
+---   DOS   ---
+%+M   fk:=0; c0:=0; c1:=0; c2:=0;
+%+M   if not Wait
+%+M   then if not DOS_RDCHK then k:=0; goto E1 endif endif;
+%+M   k:=DOS_KEYIN qua integer;
+%+M   if k = 0
+%+M   then c0:=DOS_KEYIN qua integer;
+%+M        if c0=ScBackTab then fk:=FkBackTab;
+%+M        elsif c0<ScMin  then fk:=FkUnknown
+%+M        elsif c0>SCMax  then fk:=FkUnknown
+%+M        else fk:=FuncMap(c0-ScMin) endif;
+%+M   endif;
+
+---   OS/2   ---
+%+O   fk:=0; c0:=0; c1:=0; c2:=0;
+%+O   kPkt.nShft:=0;  -- RESERVED -- Must be ZERO
+%+O   if Wait then OS2_KEYIN(name2ref(@kPkt),0,0); k:=kPkt.Char;
+%+O   else OS2_KEYIN(name2ref(@kPkt),1,0); k:=kPkt.Char;
+%+O        if kPkt.ScanStat=0 then k:=0; goto E1 endif;
+%+O   endif;
+%+O   c0:=kPkt.Scan;
+%+O   c1:=kPkt.State.AsByte(1);
+%+O   c2:=kPkt.State.AsByte(0);
+%+O   if (k = 0) or ((k=224) and (c0<>0))
+%+O   then if c0=ScBackTab then fk:=FkBackTab;
+%+O        elsif c0<ScMin  then fk:=FkUnknown
+%+O        elsif c0>ScMax  then fk:=FkUnknown
+%+O        else fk:=FuncMap(c0-ScMin) endif;
+%+O   endif;
+
+---   XENIX/UNIX   ---
+
+%+X   fk:=0; c0:=0; c1:=0; c2:=0;
+%+X   if not Wait
+%+X   then k:=XNX_RDCHK(0); OsStat:=0; if k=0 then goto E1 endif;
+%+X   endif
+%+X   k:=0; XNX_READ(1,name2ref(@k),0); OsStat:=0;
+%+X   if k = ESCKey
+%+X   then x:=XNX_RDCHK(0); OsStat:=0; if x=0 then goto XL1 endif;
+%+X        c0:=k; k:=0; c1:=0; XNX_READ(1,name2ref(@c1),0); OsStat:=0;
+%+X        if c1 = 79
+%+X        then x:=XNX_RDCHK(0); OsStat:=0; if x=0 then goto XL2 endif;
+%+X             XNX_READ(1,name2ref(@c2),0); OsStat:=0;
+%+X             if    c2<UfMin then fk:=FkUnknown
+%+X             elsif c2>UfMax then fk:=FkUnknown
+%+X             else fk:=FuncIx(c2-UfMin) endif;
+%+X        elsif c1 = 91
+%+X        then x:=XNX_RDCHK(0); OsStat:=0; if x=0 then goto XL3 endif;
+%+X             XNX_READ(1,name2ref(@c2),0); OsStat:=0;
+%+X             if OSID.sysname(0)='X'   -- I.e. XENIX
+%+X             then if    c2<XfMin then fk:=FkUnknown
+%+X                  elsif c2>XfMax then fk:=FkUnknown
+%+X                  else fk:=FuncSCO(c2-XfMin) endif;
+%+X             else if    c2<NxMin then fk:=FkUnknown
+%+X                  elsif c2>NxMax then fk:=FkUnknown
+%+X                  else fk:=NumpIx(c2-NxMin) endif;
+%+X             endif
+%+X        endif;
+%+X   endif;
+%+X XL1:XL2:XL3:
+
+E1:   mk:=k;
+      if fk <> 0
+      then
+           if    fk=FkHome    then mk:=HomeKey
+           elsif fk=FkLeft    then mk:=LeftKey
+           elsif fk=FkRight   then mk:=RightKey
+           elsif fk=FkUp      then mk:=UpKey
+           elsif fk=FkDown    then mk:=DownKey
+           elsif fk=FkIns     then mk:=InsKey
+           elsif fk=FkEnd     then mk:=EndKey
+           elsif fk=FkDel     then mk:=DelKey
+           elsif fk=FkPgDn    then mk:=PgDnKey
+           elsif fk=FkPgUp    then mk:=PgUpKey
+           elsif fk=FkBackTab then mk:=BackTab
+           else                    mk:=FuncKey endif;
+      endif;
+
+      pkt.mch:=mk; pkt.chr:=k;  pkt.fkey:=fk;
+      pkt.c0:=c0;  pkt.c1:=c1;  pkt.c2:=c2;
+
+--       BegTrace("KEYIN: "); EdWrd(TrcBuf,k); OutTrace;
+--       EdWrd(EdtBuf,mk); EdWrd(EdtBuf,fk); EdWrd(EdtBuf,k);
+--       EdWrd(EdtBuf,c0); EdWrd(EdtBuf,c1); EdWrd(EdtBuf,c2);
+end;
+%title ***   I n p u t    O p e r a t i o n s :   E D T T X T   ***
+
+--- External library Procedure EDTTXT="E@EDTTXT" is
+--- Procedure EDTTXT(Fld,EdtAtr,OldAtr,pkt);
+--- Text Fld; character EdtAtr,OldAtr; ref(KEYPKT) pkt;
+--- - NOTE: if pascal proc => fld.length must be transferred as well
+-----------------------------------------------------------
+--- Edit field on screen into text 'Fld'.               ---
+--- NOTE: The cursor is left UNDEFINED                  ---
+-----------------------------------------------------------
+
+Visible Routine EDTTXT;
+import infix(txtqnt) t;
+       Character EdtAtr,OldAtr; ref() ins;
+begin ref(KEYPKT) kpt; kpt:=ins+size(instance);  -- see note  -- TEMP !!
+      EDTSTR(TXT2STR(t),EdtAtr,OldAtr,kpt);
+end;
+
+Routine EDTSTR;
+import infix(String) s; Character EdtAtr,OldAtr; ref(KEYPKT) kpt;
+begin range(0:MaxWord) Lin,Pos,w,p,pmax; infix(String) ss; Boolean cont;
+      Lin:=CURFRM.CLIN-CURFRM.MINLIN; Pos:=CURFRM.CPOS-CURFRM.MINPOS;
+      GETSTR(CURFRM.CLIN,CURFRM.CPOS,s);
+      UPDPOS(Lin,Pos); PUTSTR(s,EdtAtr);
+      cont:=true; pmax:=s.nchr-1; w:=s.nchr; p:=0;
+      repeat while cont
+      do UPDPOS(Lin,Pos+p); KEYIN(true,kpt);
+         if kpt.mch=RubOut
+         then if p>0 then p:=p-1 endif; UPDPOS(Lin,Pos+p); goto LL;
+         elsif kpt.mch=DelKey
+         then LL: if p <> pmax
+              then APX_SMOVEI(pmax-p,name(var(s.chradr)(p)),
+                                  name(var(s.chradr)(p+1)));
+              endif;
+              var(s.chradr)(pmax):=' ';
+              ss.chradr:=name(var(s.chradr)(p));
+              ss.nchr:=APX_STRIP(' ',w-p,ss.chradr);
+              if ss.nchr <> 0 then PUTSTR(ss,EdtAtr) endif;
+         elsif kpt.mch >= 32
+         then if CURFRM.EDTEXP and (p <> pmax)
+              then APX_SMOVED(pmax-p,name(var(s.chradr)(pmax)),
+                                  name(var(s.chradr)(pmax-1)));
+                   var(s.chradr)(p):=kpt.mch qua character;
+                   ss.chradr:=name(var(s.chradr)(p));
+                   ss.nchr:=APX_STRIP(' ',w-p,ss.chradr);
+                   if ss.nchr <> 0 then PUTSTR(ss,EdtAtr) endif;
+               else var(s.chradr)(p):=kpt.mch qua character;
+                    OUTCHR(kpt.mch qua character,EdtAtr);
+               endif;
+               if p < pmax then p:=p+1 endif;
+         elsif kpt.mch=LeftKey  then if p>0 then p:=p-1 endif;
+         elsif kpt.mch=RightKey then if p < pmax then p:=p+1 endif;
+         elsif kpt.mch=InsKey   then CURFRM.EDTEXP:= not CURFRM.EDTEXP
+         else cont:=false endif;
+      endrepeat;
+      if OldAtr <> EdtAtr then UPDPOS(Lin,Pos); PUTSTR(s,OldAtr) endif;
+      UPDPOS(Lin,Pos+w);
+end;
+%title ***   S I M O B    I n t e r f a c e   ***
+
+Body(pSYSSWP) rSYSSWP;
+-- import range(0:4) code;
+begin range(0:MaxWord) Lin,Pos,p; infix(FRAME) frm;
+      case 0:4 (code)
+      when 1: --- Begin SIMOB Session ---
+           frm:=CURFRM; CURFRM:=TRCFRM; TRCFRM:=frm;
+           Lin:=CURFRM.CLIN-CURFRM.MINLIN; Pos:=CURFRM.CPOS-CURFRM.MINPOS;
+%+X        CURFRM.CLIN:=HGTLIM; -- To Ensure Sending of ESC-Sequence
+           p:=TOTLMS; repeat while p > 0
+           do p:=p-1; var(SSB.chradr)(p):=TRCATR;
+              p:=p-1; var(SSB.chradr)(p):=' ';
+           endrepeat;
+           SWPFRM(SSB,true);
+           UPDPOS(0,0);
+      when 2: --- End   SIMOB Session ---
+           SWPFRM(SSB,false);
+           frm:=CURFRM; CURFRM:=TRCFRM; TRCFRM:=frm;
+           Lin:=CURFRM.CLIN-CURFRM.MINLIN; Pos:=CURFRM.CPOS-CURFRM.MINPOS;
+%+X        CURFRM.CLIN:=HGTLIM; -- To Ensure Sending of ESC-Sequence
+           UPDPOS(Lin,Pos);
+      endcase
+end;
+
+Body(pSYSPRI) rSYSPRI;
+-- import infix(String) img;
+begin
+--    Boolean User; User:=not InSimob;
+--    if User then Call pSYSSWP(wSYSSWP)(1) endif;
+      PUTSTR(img,TRCATR); NEWLIN(TRCATR);
+--    if User then Call pSYSSWP(wSYSSWP)(2) endif;
+end;
+
+Body(pSYSPRO) rSYSPRO;
+-- import infix(String) msg,img;
+-- export integer res;
+begin range(0:MaxWord) Lin,p; infix(KEYPKT) kpt; Character TRCIMG(WDTLMS);
+      Lin:=CURFRM.CLIN-CURFRM.MINLIN; PUTSTR(msg,TRCATR);
+      if img.nchr >= (WDTLMS-msg.nchr)
+      then img.nchr:=WDTLMS-msg.nchr-1 endif;
+      APX_SMOVEI(img.nchr,@TRCIMG,img.chradr);
+L:    UPDPOS(Lin,msg.nchr); EDTSTR(img,TRCEDT,TRCATR,name2ref(@kpt));
+      if kpt.mch=27
+      then SWPFRM(SSB,false); KEYIN(true,name2ref(@kpt));
+           if kpt.mch=27
+           then
+                Control; -- ControlPanel
+           endif;
+           p:=TOTLMS; repeat while p > 0
+           do p:=p-1; var(SSB.chradr)(p):=TRCATR; p:=p-1 endrepeat;
+           SWPFRM(SSB,true);
+           goto L;
+      endif;
+      NEWLIN(TRCATR);
+
+--    Ed(Trcbuf,"SYSPRO-1   img.nchr:"); EdInt(Trcbuf,img.nchr);
+--    PUTSTR(pickup(trcbuf),TRCATR); NEWLIN(TRCATR);
+
+      res:=APX_STRIP(' ',img.nchr,name(var(img.chradr)(img.nchr-1)));
+
+--    Ed(Trcbuf,"SYSPRO-3   filled:"); EdInt(Trcbuf,res);
+--    PUTSTR(pickup(trcbuf),TRCATR); NEWLIN(TRCATR);
+
+      if res=0 then APX_SMOVEI(img.nchr,img.chradr,@TRCIMG) endif;
+end;
+%page
+Routine Control;
+begin range(0:MaxWord) Lin,Pos,p,n,Bgr,Fgr; character cc(8);
+      infix(FRAME) frm; infix(String) Fld; infix(KEYPKT) kpt;
+      --- Begin CONTROL Session ---
+      frm:=CURFRM; CURFRM:=CNTFRM; CNTFRM:=frm;
+      Lin:=CURFRM.CLIN-CURFRM.MINLIN; Pos:=CURFRM.CPOS-CURFRM.MINPOS;
+%+X   CURFRM.CLIN:=HGTLIM; -- To Ensure Sending of ESC-Sequence
+      p:=TOTLMC; repeat while p > 0
+      do p:=p-1; var(CSB.chradr)(p):=CNTATR;
+         p:=p-1; var(CSB.chradr)(p):=' ';
+      endrepeat;
+      SWPFRM(CSB,true);
+      UPDPOS(0,0);
+
+      UPDPOS(0,4); PUTSTR("S I M O B   C O N T R O L",CNTATR);
+      UPDPOS(2,2); PUTSTR("Foreground/Background:",CNTATR);
+      UPDPOS(2,25); PUTSTR(" Text ",TRCATR);
+      UPDPOS(4,2); PUTSTR("Foreground/Background:",CNTATR);
+      UPDPOS(4,25); PUTSTR(" Edit ",TRCEDT);
+      UPDPOS(6,2); PUTSTR("Upper Line: xxx  Height: xxx",CNTATR);
+      Fld.chradr:=@cc; Fld.nchr:=3;
+      PUTINT(Fld,CNTFRM.MINLIN+1); UPDPOS(6,14); PUTSTR(Fld,CNTATR);
+      PUTINT(Fld,CNTFRM.REGHGT); UPDPOS(6,27); PUTSTR(Fld,CNTATR);
+
+M12:M14: Fgr:=wAND(TRCATR qua integer,15); Bgr:=wAND(TRCATR qua integer,112);
+      repeat UPDPOS(2,26); KEYIN(true,name2ref(@kpt));
+      while kpt.mch <> CrKey
+      do if    kpt.mch=RightKey then Fgr:=wAND(Fgr+1,15)
+         elsif kpt.mch=LeftKey  then Bgr:=wAND(Bgr+16,112)
+         elsif kpt.mch=UpKey    then goto M41
+         elsif kpt.mch=DownKey  then goto M21
+         elsif kpt.mch=EscKey   then goto Mx1 endif;
+         TRCATR:=wOR(Bgr,Fgr) qua character;
+         UPDPOS(2,25); PUTSTR(" Text ",TRCATR);
+      endrepeat;
+
+M21:M23: Fgr:=wAND(TRCEDT qua integer,15); Bgr:=wAND(TRCEDT qua integer,112);
+      repeat UPDPOS(4,26); KEYIN(true,name2ref(@kpt));
+      while kpt.mch <> CrKey
+      do if    kpt.mch=RightKey then Fgr:=wAND(Fgr+1,15)
+         elsif kpt.mch=LeftKey  then Bgr:=wAND(Bgr+16,112)
+         elsif kpt.mch=UpKey    then goto M12
+         elsif kpt.mch=DownKey  then goto M32
+         elsif kpt.mch=EscKey   then goto Mx2 endif;
+         TRCEDT:=wOR(Bgr,Fgr) qua character;
+         UPDPOS(4,25); PUTSTR(" Edit ",TRCEDT);
+      endrepeat;
+
+M32:M34: PUTINT(Fld,CNTFRM.MINLIN+1); UPDPOS(6,14); PUTSTR(Fld,CNTATR);
+      UPDPOS(6,14); EDTSTR(Fld,CNTEDT,CNTATR,name2ref(@kpt));
+      p:=itemsize; n:=GETINT(Fld); itemsize:=p;
+      if Status=0 then CNTFRM.MINLIN:=n-1 endif; Status:=0;
+      if kpt.mch=UpKey then goto M23 elsif kpt.mch=EscKey then goto Mx3 endif;
+
+M41:  PUTINT(Fld,CNTFRM.REGHGT); UPDPOS(6,27); PUTSTR(Fld,CNTATR);
+      UPDPOS(6,27); EDTSTR(Fld,CNTEDT,CNTATR,name2ref(@kpt));
+      p:=itemsize; n:=GETINT(Fld); itemsize:=p;
+      if Status=0 then CNTFRM.REGHGT:=n endif; Status:=0;
+      if CNTFRM.REGHGT > HGTLMS then CNTFRM.REGHGT:=HGTLMS endif;
+      if kpt.mch=UpKey then goto M34 elsif kpt.mch=DownKey then goto M14 endif;
+
+Mx1:Mx2:Mx3:
+      if kpt.mch <> HomeKey
+      then n:=HGTLMS-CNTFRM.REGHGT;
+           if CNTFRM.MINLIN > n then CNTFRM.MINLIN:=n endif;
+      endif;
+      CNTFRM.MAXLIN:=CNTFRM.MINLIN+CNTFRM.REGHGT-1;
+
+      --- End   CONTROL Session ---
+      SWPFRM(CSB,false);
+      frm:=CURFRM; CURFRM:=CNTFRM; CNTFRM:=frm;
+      Lin:=CURFRM.CLIN-CURFRM.MINLIN; Pos:=CURFRM.CPOS-CURFRM.MINPOS;
+%+X   CURFRM.CLIN:=HGTLIM; -- To Ensure Sending of ESC-Sequence
+      UPDPOS(Lin,Pos);
+end;
+
+
+end;

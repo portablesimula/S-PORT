@@ -1,0 +1,38 @@
+%REUSE on
+begin short integer gr;
+   external class drawing;
+%INSERT grmmenue.def
+   gr:= inint;
+   drawing (gr) begin
+      short integer i,j,ant,att,st;
+      short integer array a, b(1:12);
+      a(1):=         20;
+      a(2):= a(12):= 20 + (Maxline-40) / 16;
+      a(3):= a(11):= 20 + (Maxline-40) *  7 / 32;
+      a(4):= a(10):= Maxline / 2;
+      a(5):=  a(9):= 20 + (Maxline-40) * 25 / 32;
+      a(6):=  a(8):= 20 + (Maxline-40) * 15 / 16;
+      a(7):=         Maxline-20;
+      b(1):=  b(7):= Maxpos / 2;
+      b(2):=  b(6):= 20 + (Maxpos-40) *  7 / 25;
+      b(3):=  b(5):= 20 + (Maxpos-40) *  2 / 25;
+      b(4):=         20;
+      b(8):= b(12):= 20 + (Maxpos-40) * 18 / 25;
+      b(9):= b(11):= 20 + (Maxpos-40) * 23 / 25;
+      b(10):=        Maxpos - 20;
+      ant:= 1;
+      while att < 16 do begin
+         while ant < 16 do begin
+            SetColour(att*16+ant);
+            for j:= 1 step 1 until 12 do
+            for i:= j+1 step 1 until 12 do
+               Drawline(a(j),b(j),a(i)-a(j),b(i)-b(j));
+            st:= rank(Ifchar); if st <> 0 then goto Slutt;
+            ant:= ant + 1;
+         end;
+         att:= att + 1; ant:= 1;
+      end;
+Slutt:inchar;
+   end;
+end;
+

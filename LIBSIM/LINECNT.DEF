@@ -1,0 +1,18 @@
+Module linecnt_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("linecount")linecount;
+       import ref(prtEnt) pfil; export integer res;
+       ---  return current linesperpage setting
+       begin if pfil=none then res:=-1
+             elsif pfil.key=0 then res:=-2
+             else res:=pfil.lpp endif;
+       end;
+
+end;

@@ -1,0 +1,2 @@
+    external library procedure dayno is
+    short integer procedure dayno; ;

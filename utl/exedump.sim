@@ -1,0 +1,193 @@
+begin
+%     -----------------------------------------------------------------------
+%     ---                                                                 ---
+%     ---  COPYRIGHT 1986 by                                              ---
+%     ---  Simula a.s.                                                    ---
+%     ---  Postboks 150 Refstad                                           ---
+%     ---  N-0513 Oslo 5, Norway                                          ---
+%     ---                                                                 ---
+%     ---                                                                 ---
+%     ---                 P O R T A B L E     S I M U L A                 ---
+%     ---                                                                 ---
+%     ---                      F O R    I B M    P C                      ---
+%     ---                                                                 ---
+%     ---                                                                 ---
+%     ---                 U T I L I T Y   P R O G R A M S                 ---
+%     ---                                                                 ---
+%     ---                         E X E D U M P                           ---
+%     ---                                                                 ---
+%     -----------------------------------------------------------------------
+
+      Boolean NORD;         ! True when xqt on ND-500 ;
+      Boolean Listing;      ! Output Listing Indicator ;
+      Ref(InByteFile) Inpt; ! Input File ;
+      Ref(OutFile) Oupt;    ! Created Output File ;
+      Ref(Header) Head;     ! EXE_File Header ;
+
+      Integer Sequ;         ! Input byte number ;
+      Integer Start;        ! Start byte number ;
+      Integer Count;        ! Count byte number ;
+      Integer Code;         ! Current Record Code ;
+      Text PrtPart;         !                     ;
+%page
+
+      Text Procedure Prompt(ms,meny); value ms,meny; text ms,meny;
+      begin text R; L: OutText(Cat(ms,": ")); BreakOutImage; inimage;
+            R:-SysIn.image.strip; R.SetPos(R.length);
+            if if R==notext then true else R.GetChar='?' then
+            begin OutText("Input Format: "); OutText(meny);
+                  OutImage; goto L;
+            end;  Prompt:-copy(R); SysIn.SetPos(SysIn.length+1);
+            OutText(R); OutImage;
+      end *** Prompt ***;
+
+      Procedure InputFile;
+      begin text F; S: F:-Prompt("Input File","Standard File Name");
+            F:-Cat(F,":EXE"); Inpt:-new InByteFile(F);
+            if not Inpt.Open then
+            begin OutImage; OutText("The File """); OutText(F);
+                  OutText(""" does not exist or is not accessible");
+                  OutImage; OutImage; goto S;
+            end;
+      end;
+
+      Procedure OutputFile;
+      begin text F; S: F:-Prompt("Output File","Standard File Name");
+            if F="TERM" then Oupt:-SysOut else
+            begin F:-Cat(F,":SYMB"); Oupt:-new OutFile(F);
+                  if not Oupt.Open(Blanks(100)) then
+                  begin OutImage; OutText("The File """); OutText(F);
+                        OutText(""" does not exist or is not accessible");
+                        OutImage; OutImage; goto S;
+                  end;
+            end;
+      end;
+
+      Text Procedure Cat(t1,t2); value t1,t2; text t1,t2;
+      begin text t; Cat:-t:-Blanks(t1.length+t2.length);
+            t:=t1; t.Sub(t1.length+1,t2.length):=t2;
+      end *** Cat ***;
+
+      Integer Procedure InByte;
+      begin InByte:=Inpt.InByte; Sequ:=Sequ+1 end;
+
+      Procedure PrtHex(i,n); integer i,n;
+      begin text t; integer h; t:-Blanks(n);
+            if i < 0 then
+            begin i:= 32767 - i;
+                  while n > 1 do
+                  begin h:=mod(i,16)+48;
+                        i:=i//16; if h > 57 then h:=h+7;
+                        t.SetPos(n); t.PutChar(Char(h)); n:=n-1;
+                  end;
+                  h:= mod(i,16)+56; if h > 57 then h:= h + 7;
+                  t.SetPos(n); t.PutChar(Char(h)); n:=n-1;
+            end else
+            while n > 0 do
+            begin h:=mod(i,16)+48;
+                  i:=i//16; if h > 57 then h:=h+7;
+                  t.SetPos(n); t.PutChar(Char(h)); n:=n-1;
+            end;
+            Oupt.OutText(t);
+      end;
+
+      Character Procedure PrtChar(n); integer n;
+      PrtChar:=if n>31 and n<128 then Char(n) else '.';
+
+%title ***    H E A D E R    ***
+      Class Header;
+      begin integer EXElab;   ! EXE-File label = 4DH 5AH             ;
+            integer Nbyte;    ! No.of.bytes in last page             ;
+            integer Fsize;    ! File size in 512-byte pages          ;
+            integer Nrel;     ! No.of reloc entries in table         ;
+            integer Hsize;    ! Size of header in 16-byte paragraphs ;
+            integer Minalc;   ! Min Alloc                            ;
+            integer Maxalc;   ! Max Alloc                            ;
+            integer SS;       ! SS initial value (- reloc)           ;
+            integer SP;       ! SP initial value                     ;
+            integer ChkSum;   ! Check-Sum                            ;
+            integer IP;       ! IP initial value                     ;
+            integer CS;       ! CS initial value (- reloc)           ;
+            integer RelTab;   ! Rel. byte offset of reloc-table      ;
+            integer OverLay;  ! Overlay number                       ;
+
+            Procedure Show;
+            begin Procedure Prt(n,ms); integer n; text ms;
+                  begin Oupt.OutText(ms); PrtHex(n,4);
+                        Oupt.OutText("H = "); Oupt.OutInt(n,6);
+                        Oupt.OutImage;
+                  end;
+                  Prt(EXElab, "EXE-File label = 4DH 5AH ........... ");
+                  Prt(Nbyte,  "No.of.bytes in last page ........... ");
+                  Prt(Fsize,  "File size in 512-byte pages ........ ");
+                  Prt(Nrel,   "No.of reloc entries in table ....... ");
+                  Prt(Hsize,  "Size of header in 16-byte paragraphs ");
+                  Prt(Minalc, "Min Alloc .......................... ");
+                  Prt(Maxalc, "Max Alloc .......................... ");
+                  Prt(SS,     "SS initial value (- reloc) ......... ");
+                  Prt(SP,     "SP initial value ................... ");
+                  Prt(ChkSum, "Check-Sum  ......................... ");
+                  Prt(IP,     "IP initial value ................... ");
+                  Prt(CS,     "CS initial value (- reloc) ......... ");
+                  Prt(RelTab, "Rel. byte offset of reloc-table .... ");
+                  Prt(OverLay,"Overlay number ..................... ");
+            end;
+
+            EXElab:=  Inbyte+(256*Inbyte);
+            Nbyte:=   Inbyte+(256*Inbyte);
+            Fsize:=   Inbyte+(256*Inbyte);
+            Nrel:=    Inbyte+(256*Inbyte);
+            Hsize:=   Inbyte+(256*Inbyte);
+            Minalc:=  Inbyte+(256*Inbyte);
+            Maxalc:=  Inbyte+(256*Inbyte);
+            SS:=      Inbyte+(256*Inbyte);
+            SP:=      Inbyte+(256*Inbyte);
+            ChkSum:=  Inbyte+(256*Inbyte);
+            IP:=      Inbyte+(256*Inbyte);
+            CS:=      Inbyte+(256*Inbyte);
+            RelTab:=  Inbyte+(256*Inbyte);
+            OverLay:= Inbyte+(256*Inbyte);
+      end;
+%title ***    M O N I T O R    ***
+
+      OutText("SIMULA (R) EXE-File Dump   Version 0.00"); OutImage;
+      OutText("Copyright (C) Simula a.s. 1986.  All rights reserved.");
+      OutImage; OutImage; InputFile; OutputFile;
+      Start:=Prompt("Start Byte","0,1, ...").GetInt;
+      Count:=Prompt("Item Count","1,2, ...").GetInt;
+      PrtPart:-Blanks(20);
+      Head:-new Header; Head.Show;
+
+NEXT:
+      if Listing
+ then begin Oupt.SetPos(60); Oupt.OutText(PrtPart); Oupt.OutImage end
+ else begin Oupt.SetPos(1); Oupt.image:=notext end;
+
+      if Inpt.EndFile then goto FERDIG;
+      Code:=InByte; if Inpt.EndFile then goto FERDIG;
+      PrtPart.SetPos(1); PrtPart:=notext;
+      if Listing then
+      begin Count:=Count-1;
+            if Count < 1 then
+            begin Count:=Prompt("Item Count","0,1,2, ...").GetInt;
+                  if Count <= 0 then goto FERDIG;
+            end;
+      end else Listing := Sequ >= Start;
+      Oupt.OutInt(Sequ-1,6); Oupt.OutText(": ");
+
+      PrtHex(code,2); PrtPart.PutChar(PrtChar(code));
+      while Oupt.Pos < 56 do
+      begin Code:=InByte; if Inpt.EndFile then goto NEXT;
+            Oupt.OutChar(' '); PrtHex(code,2);
+            PrtPart.PutChar(PrtChar(code));
+      end;
+      goto NEXT;
+
+FERDIG:
+
+      if Oupt =/= SysOut then Oupt.Close;
+      Inpt.Close;
+      OutImage; OutImage;
+      OutText("END  --  Input Bytes"); OutInt(Sequ-1,6);
+      OutImage; OutImage;
+end;

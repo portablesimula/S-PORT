@@ -1,0 +1,35 @@
+Module checkfra_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+       insert frontstr_;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("checkfrac")checkfrac;
+       import name(infix(txtqnt)) tt; export short integer res;
+       ---  see if getfrac is legal on tt.
+       ---  return: +1: getfrac is legal, POS after item
+       ---           0: rem of tt is blank, pos=lp
+       ---          -1: getfrac results in RTS-error, POS=first illegal
+       begin infix(string) str; infix(txtqnt) txt;
+             txt:=var(tt); txt:=FRONTSTRIP(txt);
+             if txt.cp < txt.lp
+             then str.chradr:=name(txt.ent.cha(txt.cp));
+                  str.nchr:=txt.lp-txt.cp;
+                  GTFRAC(str);
+                  if status <> 0
+                  then res:=-1;
+                       repeat str.nchr:=str.nchr-1 while status<>0
+                       do status:=0;
+                          if str.nchr=0
+                          then itsize:=0 else GTFRAC(str) endif
+                       endrepeat;
+                       itsize:=itsize+1; -- pos AFTER first illegal
+                  else res:=1 endif;
+                  var(tt).cp:=txt.cp+itsize;
+             else res:=0; var(tt).cp:=var(tt).lp endif;
+       end;
+end;

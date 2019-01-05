@@ -1,0 +1,2 @@
+    external library procedure maketext is
+    text procedure maketext(c,i); character c; short integer i; ;

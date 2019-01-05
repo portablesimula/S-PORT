@@ -1,0 +1,19 @@
+Module scanchar_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("scanchar")scanchar; -- safe getchar
+       import name(infix(txtqnt)) tt;
+       export character res;
+       begin infix(txtqnt) txt;
+             txt:=var(tt);
+             if txt.lp = txt.cp then res:='!0!' -- not t.more, or notext
+             else res:=txt.ent.cha(txt.cp);
+                  var(tt).cp:=txt.cp+1 endif;
+       end;
+end;

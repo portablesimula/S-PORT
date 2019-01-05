@@ -1,0 +1,2 @@
+    external library procedure initem is
+    text procedure initem(f); ref(file) f; ;
