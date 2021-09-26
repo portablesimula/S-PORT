@@ -1,0 +1,59 @@
+BEGIN
+
+procedure trace(t); value t; text t; begin
+   outtext(t); outimage;  end trace;
+
+ref(Y) yy;  ref(X) xx;
+
+class Y; begin
+   trace("new Y");        detach;
+   trace("resume Y");     resume(xx);
+   trace("terminate Y");  end Y;
+
+class X; begin
+   class A;;
+   trace("new X");        detach;
+   trace("resume X");
+
+   A begin 
+      procedure B(E);  procedure E; begin
+         ref(C) cc;   real pi;
+         class C; begin
+            trace("new C");         detach;
+            trace("resume C");      E;
+            outreal(pi,1,5);  outimage;  
+            trace("terminate C");  end C;
+         trace("enter B");
+         pi := 3.14;
+         cc :- new C;
+         resume(cc);
+         pi := 2.71;
+         trace("exit B");  end B;
+      class D;;
+      trace("enter A-block");
+      D begin
+         procedure E; begin
+            ref(F) ff;
+            class F; begin
+               trace("new F");     detach;
+               trace("resume and exit F");  end F;
+            trace("enter E");
+            ff :- new F;
+            resume(ff);  
+            trace("exit E");  end E;
+         trace("enter D-block");
+         B(E);
+         resume(yy);  
+         trace("terminate D-block");  end D;
+
+      trace("terminate A-block"); end A;
+
+   trace("terminate X");  end X;
+
+yy :- new Y;   xx :- new X;
+
+trace("resume(xx)"); resume(xx);
+
+%RTSOPTIONS="BDEFQ"
+END of program;
+

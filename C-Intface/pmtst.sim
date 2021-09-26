@@ -1,0 +1,386 @@
+%                                                      D R A F T    C O P Y
+%
+%                                                       as of current date 
+% 
+% 
+% 
+% 
+%                     S I M U L A    I N T E R F A C E
+%                                
+%                      T O   C -  L I B R A R I E S
+% 
+% 
+% 
+% 
+% 
+% 
+%                 S A M P L E    I N T E R F A C E   T O
+%                                
+%                P R E S E N T A T I O N    M A N A G E R
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+% 
+% 
+% 
+% 
+% 
+%                         Simula a.s., Oslo, Norway
+%title ***   O S / 2    P M    I N T E R F A C E   ***
+begin
+
+      Class PM; begin end;  !** Common Prefix for all PM-Classes **;
+      PM Class ANCHOR; ;
+      PM Class MSGQUE; ;
+      PM Class PresentationSpace; ;
+      PM Class PMWINDOW; ;
+
+
+      External PASCAL Procedure WinInitialize is
+      ref(ANCHOR) Procedure WinInitialize(fsOptions);
+      value fsOptions; short integer fsOptions; ;
+
+      External PASCAL Procedure WinTerminate is
+      Boolean Procedure WinTerminate(hab); ref(ANCHOR) hab; ;
+
+      External PASCAL Procedure WinRegisterClass is Boolean Procedure
+      WinRegisterClass(hab,pszClassName,pfnWndProc,flStyle,cbWindowData);
+      value pszClassName,flStyle,cbWindowData;
+% --  ref(ANCHOR) hab; text pszClassName; procedure pfnWndProc;
+      ref(ANCHOR) hab; text pszClassName; ref(PM) procedure pfnWndProc;
+      integer flStyle; short integer cbWindowData; ;
+
+%     ------   Class styles   ------
+      integer CS_MOVENOTIFY       = 16R00000001;
+      integer CS_SIZEREDRAW       = 16R00000004;
+      integer CS_HITTEST          = 16R00000008;
+      integer CS_PUBLIC           = 16R00000010;
+      integer CS_FRAME            = 16R00000020;
+      integer CS_CLIPCHILDREN     = 16R20000000;
+      integer CS_CLIPSIBLINGS     = 16R10000000;
+      integer CS_PARENTCLIP       = 16R08000000;
+      integer CS_SAVEBITS         = 16R04000000;
+      integer CS_SYNCPAINT        = 16R02000000;
+  
+      External PASCAL Procedure WinDestroyWindow is
+      Boolean Procedure WinDestroyWindow(hwnd); ref(PMWINDOW) hwnd; ;
+
+      External PASCAL Procedure WinCreateStdWindow is
+      ref(PMWINDOW) Procedure WinCreateStdWindow
+      ( hwndParent,flStyle,pflCreateFlags,pszClientClass,pszTitle,
+        flClientStyle,hmod,idResources,phwndClient );
+      name pflCreateFlags,phwndClient;
+      value flStyle,pszClientClass,pszTitle,flClientStyle,hmod,idResources;
+        ref(PMWINDOW) hwndParent;
+        integer flStyle;
+        integer pflCreateFlags;
+        text pszClientClass;
+        text pszTitle;
+        integer flClientStyle;
+        short integer hmod;
+        short integer idResources;
+        ref(PMWINDOW) phwndClient; ;
+%page
+%     ------   Standard Window Styles   ------
+      integer WS_VISIBLE          = 16R80000000;
+      integer WS_DISABLED         = 16R40000000;
+      integer WS_CLIPCHILDREN     = 16R20000000;
+      integer WS_CLIPSIBLINGS     = 16R10000000;
+      integer WS_PARENTCLIP       = 16R08000000;
+      integer WS_SAVEBITS         = 16R04000000;
+      integer WS_SYNCPAINT        = 16R02000000;
+      integer WS_MINIMIZED        = 16R01000000;
+      integer WS_MAXIMIZED        = 16R00800000;
+
+%     ------   Dialog manager styles   ------
+      integer WS_GROUP            = 16R00010000;
+      integer WS_TABSTOP          = 16R00020000;
+
+%     ------   Frame window styles   ------
+      integer FCF_TITLEBAR        = 16R00000001;
+      integer FCF_SYSMENU         = 16R00000002;
+      integer FCF_MENU            = 16R00000004;
+      integer FCF_SIZEBORDER      = 16R00000008;
+      integer FCF_MINBUTTON       = 16R00000010;
+      integer FCF_MAXBUTTON       = 16R00000020;
+      integer FCF_MINMAX          = 16R00000030; ! minmax means BOTH buttons ;
+      integer FCF_VERTSCROLL      = 16R00000040;
+      integer FCF_HORZSCROLL      = 16R00000080;
+      integer FCF_DLGBORDER       = 16R00000100;
+      integer FCF_BORDER          = 16R00000200;
+      integer FCF_SHELLPOSITION   = 16R00000400;
+      integer FCF_TASKLIST        = 16R00000800;
+      integer FCF_NOBYTEALIGN     = 16R00001000;
+      integer FCF_NOMOVEWITHOWNER = 16R00002000;
+      integer FCF_ICON            = 16R00004000;
+      integer FCF_ACCELTABLE      = 16R00008000;
+      integer FCF_SYSMODAL        = 16R00010000;
+      integer FCF_SCREENALIGN     = 16R00020000;
+      integer FCF_MOUSEALIGN      = 16R00040000;
+
+      integer FCF_STANDARD        = FCF_TITLEBAR + FCF_SYSMENU + FCF_MENU
+                                  + FCF_SIZEBORDER + FCF_MINMAX + FCF_ICON
+                                  + FCF_ACCELTABLE + FCF_SHELLPOSITION
+                                  + FCF_TASKLIST;
+
+      integer FCF_STAND2          = FCF_TITLEBAR + FCF_SYSMENU + FCF_MENU
+                                  + FCF_SIZEBORDER + FCF_MINMAX + FCF_ICON
+                                  + FCF_TASKLIST;
+%title ***   OS/2  PM-INTERFACE  MESSAGE HANDLING   ***
+      PM Class QUEMSG;
+      begin ref(PMWINDOW) hwnd;
+            short integer msg;
+            ref(PM) mp1,mp2;
+            integer time;
+            ref(PM) pt1;
+      end;
+
+      External PASCAL Procedure WinCreateMsgQueue is
+      ref(MSGQUE) Procedure WinCreateMsgQueue(hab,cmsg);
+      value cmsg; ref(ANCHOR) hab; short integer cmsg; ;
+
+      integer DEFAULT_QUEUE_SIZE=0; ! WinCreateMsgQueue default size ;
+
+      External PASCAL Procedure WinDestroyMsgQueue is
+      Boolean Procedure WinDestroyMsgQueue(hmq); ref(MSGQUE) hmq; ;
+
+      External PASCAL Procedure WinGetMsg is
+      Boolean Procedure WinGetMsg
+      (hab,pqmsg,hwndFilter,msgFilterFirst,msgFilterLast);
+       value msgFilterFirst,msgFilterLast;
+       ref(ANCHOR) hab; ref(QUEMSG) pqmsg; ref(PMWINDOW) hwndFilter;
+       short integer msgFilterFirst; short integer msgFilterLast; ;
+
+      External PASCAL Procedure WinDispatchMsg is
+      ref(PM) Procedure WinDispatchMsg(hab,pqmsg);
+      ref(ANCHOR) hab; ref(QUEMSG) pqmsg; ;
+
+      External PASCAL Procedure WinDefWindowProc is
+      ref(PM) Procedure WinDefWindowProc(hwnd,msg,mp1,mp2);
+      value msg; ref(PMWINDOW) hwnd; short integer msg; ref(PM) mp1,mp2; ;
+%page
+%     ------   Standard Window Messages   ------
+      integer WM_NULL             = 16R0000;
+      integer WM_CREATE           = 16R0001;
+      integer WM_DESTROY          = 16R0002;
+      integer WM_OTHERWINDOWDESTROYED = 16R0003;
+      integer WM_ENABLE           = 16R0004;
+      integer WM_SHOW             = 16R0005;
+      integer WM_MOVE             = 16R0006;
+      integer WM_SIZE             = 16R0007;
+      integer WM_ADJUSTWINDOWPOS  = 16R0008;
+      integer WM_CALCVALIDRECTS   = 16R0009;
+      integer WM_SETWINDOWPARAMS  = 16R000a;
+      integer WM_QUERYWINDOWPARAMS = 16R000b;
+      integer WM_HITTEST          = 16R000c;
+      integer WM_ACTIVATE         = 16R000d;
+      integer WM_SETFOCUS         = 16R000f;
+      integer WM_SETSELECTION     = 16R0010;
+      integer WM_COMMAND          = 16R0020;
+      integer WM_SYSCOMMAND       = 16R0021;
+      integer WM_HELP             = 16R0022;
+      integer WM_PAINT            = 16R0023;
+      integer WM_TIMER            = 16R0024;
+      integer WM_SEM1             = 16R0025;
+      integer WM_SEM2             = 16R0026;
+      integer WM_SEM3             = 16R0027;
+      integer WM_SEM4             = 16R0028;
+      integer WM_CLOSE            = 16R0029;
+      integer WM_QUIT             = 16R002a;
+      integer WM_SYSCOLORCHANGE   = 16R002b;
+      integer WM_SYSVALUECHANGED  = 16R002d;
+
+% ------   Control notification messages   ------
+      integer WM_CONTROL          = 16R0030;
+      integer WM_VSCROLL          = 16R0031;
+      integer WM_HSCROLL          = 16R0032;
+      integer WM_INITMENU         = 16R0033;
+      integer WM_MENUSELECT       = 16R0034;
+      integer WM_MENUEND          = 16R0035;
+      integer WM_DRAWITEM         = 16R0036;
+      integer WM_MEASUREITEM      = 16R0037;
+      integer WM_CONTROLPOINTER   = 16R0038;
+      integer WM_CONTROLHEAP      = 16R0039;
+      integer WM_QUERYDLGCODE     = 16R003a;
+      integer WM_INITDLG          = 16R003b;
+      integer WM_SUBSTITUTESTRING = 16R003c;
+      integer WM_MATCHMNEMONIC    = 16R003d;
+      integer WM_USER             = 16R1000;
+%title ***   OS/2  PM-INTERFACE  WINDOW PAINTING   ***
+      PM Class POINT; begin integer Pos,Lin; end;
+
+      PM Class RECTANGLE;
+      begin integer MinPos,MaxLin;
+            integer MaxPos,MinLin;
+      end;
+
+      External PASCAL Procedure WinBeginPaint is
+      ref(PresentationSpace) Procedure WinBeginPaint(hwnd,hps,prclPaint);
+      ref(PMWINDOW) hwnd;
+      ref(PresentationSpace) hps;
+      ref(RECTANGLE) prclPaint; ;
+
+      External PASCAL Procedure WinQueryWindowRect is
+      Boolean Procedure WinQueryWindowRect(hwnd,prcl);
+      ref(PMWINDOW) hwnd; ref(RECTANGLE) prcl; ;
+
+      External PASCAL Procedure WinFillRect is
+      Boolean Procedure WinFillRect(hps,prcl,clr);
+      value clr; ref(PresentationSpace) hps; ref(RECTANGLE) prcl; integer clr; ;
+
+      External PASCAL Procedure WinEndPaint is
+      Boolean Procedure WinEndPaint(hps); ref(PresentationSpace) hps; ;
+
+      External PASCAL Procedure GpiMove is
+      Boolean Procedure GpiMove(hps,ptl);
+      ref(PresentationSpace) hps; ref(POINT) ptl; ;
+
+      External PASCAL Procedure GpiCharString is
+      Integer Procedure GpiCharString(hps,lng,str);
+      value lng; name str;
+      ref(PresentationSpace) hps;
+      integer lng;
+      text str; ;
+
+%     ------   default color table indices   ------
+      integer CLR_FALSE       = -5;
+      integer CLR_TRUE        = -4;
+      integer CLR_ERROR       = -255;
+      integer CLR_DEFAULT     = -3;
+      integer CLR_WHITE       = -2;
+      integer CLR_BLACK       = -1;
+      integer CLR_BACKGROUND  =  0;
+      integer CLR_BLUE        =  1;
+      integer CLR_RED         =  2;
+      integer CLR_PINK        =  3;
+      integer CLR_GREEN       =  4;
+      integer CLR_CYAN        =  5;
+      integer CLR_YELLOW      =  6;
+      integer CLR_NEUTRAL     =  7;
+      integer CLR_DARKGRAY    =  8;
+      integer CLR_DARKBLUE    =  9;
+      integer CLR_DARKRED     = 10;
+      integer CLR_DARKPINK    = 11;
+      integer CLR_DARKGREEN   = 12;
+      integer CLR_DARKCYAN    = 13;
+      integer CLR_BROWN       = 14;
+      integer CLR_PALEGRAY    = 15;
+%title ***   U t i l i t y    P r o c e d u r e s   ***
+
+      External Simuletta Procedure wNOT="E@UUWNOT" is
+      Short Integer Procedure wNOT(i); short integer i; ;
+  
+      External Simuletta Procedure wAND="E@UUWAND" is
+      Short Integer Procedure wAND(i,j); short integer i,j; ;
+
+      External Simuletta Procedure wOR="E@UUWOR" is
+      Short Integer Procedure wOR(i,j); short integer i,j; ;
+
+      External Simuletta Procedure wXOR="E@UUWXOR" is
+      Short Integer Procedure wXOR(i,j); short integer i,j; ;
+
+      External Simuletta Procedure wSHL="E@UUWSHL" is
+      Short Integer Procedure wSHL(i,j); short integer i,j; ;
+
+      External Simuletta Procedure wSHR="E@UUWSHR" is
+      Short Integer Procedure wSHR(i,j); short integer i,j; ;
+%title ***   S a m p l e    P M    C l i e n t   ***
+
+      ref(PMWINDOW) hwndFrame;  ! FrameWindow Handle ;
+      ref(PMWINDOW) hwndClient; ! ClientWindow Handle ;
+      ref(ANCHOR) hab;          ! AnchorBlock Handle ;
+      ref(MSGQUE) hmq;          ! MessageQueue Handle ;
+      ref(QUEMSG) qmsg;         ! MessageQueue Entry ;
+      text WCls="ClassName";    ! Window Class Name ;
+      text Titl="**Title**";    ! Window TitleBar Text ;
+   
+      integer pflCreateFlags;
+
+      ref(PM) Procedure WINPROC(hwnd,msg,mp1,mp2);
+      ref(PMWINDOW) hwnd; short integer msg; ref(PM) mp1,mp2;
+      begin ref(PresentationSpace) hps;
+            ref(RECTANGLE) rcl;
+            ref(POINT) ptl;
+            text s;
+            rcl:-new RECTANGLE;
+            ptl:-new POINT;
+            s:-Copy("Hello Word");
+            if msg=WM_PAINT then
+            begin hps:-WinBeginPaint(hwnd,none,none);
+                 WinQueryWindowRect(hwnd,rcl);
+                 WinFillRect(hps,rcl,CLR_WHITE);
+                 ptl.Pos:=(rcl.MaxPos-rcl.MinPos)/2;
+                 ptl.Lin:=(rcl.MaxLin-rcl.MinLin)/2;
+                 GpiMove(hps,ptl);
+                 GpiCharString(hps,s.length,s);
+                 WinEndPaint(hps);
+                 WINPROC:-none;
+            end else WINPROC:-WinDefWindowProc(hwnd,msg,mp1,mp2);
+      end;
+
+      hab:-WinInitialize(0);
+      hmq:-WinCreateMsgQueue(hab,DEFAULT_QUEUE_SIZE);
+      WinRegisterClass(
+            hab,              ! AnchorBlock ;
+            WCls,             ! Window Class Name ;
+            WINPROC,          ! WindowProcedure EntryPoint ;
+            CS_SIZEREDRAW,    ! Window Style Flag ;
+            0                 ! Size of Application Data ;
+      );
+
+      pflCreateFlags:=FCF_STAND2;
+
+      hwndFrame:-WinCreateStdWindow(
+            none,             ! ParentWindow Handle ;
+            WS_VISIBLE,       ! FrameWindow Style ;
+            pflCreateFlags,   ! Window Creation Flags ;
+            WCls,             ! ClientWindow Class Name ;
+            Titl,             ! Window TitleBar Text ;
+            0,                ! ClientWindow Style ;
+            0,                ! ResourceModule Handle ;
+            0,                ! FrameWindow Identifier ;
+            hwndClient        ! Client Window Handle ;
+      );
+      if hwndFrame == none then ERROR("Win.2");
+
+      qmsg:-new QUEMSG;     ! MessageQueue Entry ;
+      while true do
+      begin WinGetMsg(hab,qmsg,none,0,0);
+            WinDispatchMsg(hab,qmsg);
+      end;
+
+      WinDestroyWindow(hwndFrame);
+      WinDestroyMsgQueue(hmq);
+      WinTerminate(hab);
+
+end;
+% 
+% -----------------------------------------------------------------------
+% 
+% Result of Compilation:
+% 
+% ERROR: 'wininitialize' is ext.bound proc with illegal type REF
+% ERROR: (l. 63) 'pfnwndproc' is illegal parameter to ext.bound.proc
+% ERROR: 'wincreatestdwindow' is ext.bound proc with illegal type REF
+% ERROR: 'wincreatemsgqueue' is ext.bound proc with illegal type REF
+% ERROR: 'windispatchmsg' is ext.bound proc with illegal type REF
+% ERROR: 'windefwindowproc' is ext.bound proc with illegal type REF
+% ERROR: 'winbeginpaint' is ext.bound proc with illegal type REF
+% 
+%    NUMBER OF ERRORS:   7

@@ -1,0 +1,5990 @@
+<HTML>
+<HEAD>
+<META NAME="Generator" CONTENT="Corel WordPerfect 8">
+<TITLE></TITLE>
+</HEAD>
+<BODY TEXT="#000000" LINK="#0000ff" VLINK="#551a8b" ALINK="#ff0000" BGCOLOR="#c0c0c0">
+
+<MULTICOL COLS="2" WIDTH="1236" GUTTER="83">
+<!--Merk: Endring av tegn per tomme (13*) og skrifttype (7) m&aring; gj&oslash;res manuelt.-->
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<P><CENTER><STRONG>S - P O R T:</CENTER>
+</STRONG></P>
+
+<P><STRONG><CENTER></CENTER>
+</STRONG></P>
+
+<P><STRONG><CENTER></CENTER>
+</STRONG></P>
+
+<P><STRONG><CENTER>The Environment Interface</CENTER>
+</STRONG></P>
+
+<P><STRONG><CENTER></CENTER>
+</STRONG></P>
+
+<P><STRONG><CENTER></CENTER>
+</STRONG></P>
+
+<P><STRONG><CENTER></CENTER>
+</STRONG></P>
+
+<P><STRONG><CENTER>(Version 3.0)</CENTER>
+</STRONG></P>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<P><CENTER>By Geoffrey E. Millard, Program Library Unit, Edinburgh</CENTER>
+</P>
+
+<P><CENTER>&Oslash;ystein Myhre, Simula a.s.</CENTER>
+</P>
+
+<P><CENTER>Gunnar Syrrist, Simula a.s.</CENTER>
+</P>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<P>	This document is under supervision of the Standards Group for the Portable
+SIMULA System (SG/PSS). The statutes of the Standards Group are found in
+appendix D.</P>
+
+<br>
+<P>	The document contains all decisions taken by the SG/PSS, whose last meeting was
+held in Edinburgh 1st and 2rd March 1983.</P>
+
+<br>
+<br>
+<P>								Simula a.s.,</P>
+
+<P>								21st June 1985</P>
+
+<P>The Environment Interface	<A HREF="#N_1_"><SUP>(1)</SUP></A>      </P>
+
+<br>
+<br>
+<P>1  <STRONG>PREFACE</STRONG></P>
+
+<br>
+<P>In 1979 the Norwegian Computing Center (Oslo) and the Program Library Unit
+(Edinburgh) initiated the "S-PORT" project: implementation of a portable SIMULA system.
+The system consists of three parts: a portable front-end compiler, a portable run time
+support system, and a machine dependent code generator; the latter includes the
+interfaces to the compile and run time environment. The present report gives the
+specifications of what the Portable SIMULA System will demand from the system
+environment.</P>
+
+<br>
+<P>Both the front-end compiler and the run-time system will be distributed in S-code. In order
+to implement SIMULA it will be necessary to program the code generator (the S-compiler)
+for the machine in question. This compiler will take care of two tasks:</P>
+
+<br>
+<P>  -	it will produce code for the target machine corresponding to the S-program, and</P>
+
+<br>
+<P>  -	it will insert the necessary links to the operating system.</P>
+
+<br>
+<P>The document is a revision of earlier documents, dated September 26th 1980, January
+23rd 1981 and November 23rd 1981. These revisions are done after meetings in
+Edinburgh 3rd and 4th March 1981, in Oslo 21st and 22nd May 1981, in Geneva 7th
+September 1981 and a meeting held in Paris 2nd and 3rd March 1982.</P>
+
+<br>
+<P>This definition is based on a reworking of the previous ones due to the experience gained
+in the process of implementing the first S-code compilers. We believe that the document
+should now define a sufficient basis to supply what the system demands from the the
+environment in a convenient way. The implementations which have given us this experience are the ones for the HB level 66, VAX11/780 systems, Nord-500 and the UNIVAC
+1100.</P>
+
+<P>The Environment Interface	<A HREF="#N_2_"><SUP>(2)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Any comments for the improvement of the definition will be welcome. Proposals to
+revisions of the document will be subject to discussions in the Standards Group for the
+Portable SIMULA System.</P>
+
+<br>
+<br>
+<P>2  <STRONG>INTRODUCTION</STRONG></P>
+
+<br>
+<P>The demands from the system to the environment are divided into two classes, those that
+must be provided for the system to function, and those which are candidates for efficiency
+improvements.</P>
+
+<br>
+<P>In the syntax of the routine profiles, routines are specified to be "peculiar", either as
+"system" or "known" routines. The specification implies:</P>
+
+<br>
+<P>	System:	These routines provide the necessarry links to the operating system
+environment. These routines must be provided for the system to
+function.</P>
+
+<br>
+<P>	Known:	These routines could be provided for efficiency reasons, although
+their definitions will be given in S-code. In most cases this would be
+done for services that can usually be done more efficiently at the
+implementor's level.</P>
+
+<br>
+<P>The classification above is more thoroughly described in the document "Definition of
+S-code". The present document cannot be read without extensive knowledge of this
+document. Other related literature is listed in the mentioned document.</P>
+
+<P>The Environment Interface	<A HREF="#N_3_"><SUP>(3)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The routines listed as system routines in the portable system environment are to provide
+those services which are machine or operating system dependent. These include:</P>
+
+<br>
+<P>            - provision of workspace,</P>
+
+<P>            - the processing of control data,</P>
+
+<P>            - all input/output,</P>
+
+<P>            - the initial interpretation of exception conditions, and</P>
+
+<P>            - the processing of diagnostic records.</P>
+
+<br>
+<P>We describe here how the S-code assumes that the necessary information is organised,
+according to S-code standards.</P>
+
+<P>The Environment Interface	<A HREF="#N_4_"><SUP>(4)</SUP></A>      </P>
+
+<br>
+<br>
+<P>3  <STRONG>THE ENVIRONMENT INTERFACE MODULE</STRONG></P>
+
+<br>
+<P>In this document we give the profiles for the routines in question. The profiles will give an
+implicit definition of the calling sequence of a routine, i.e. the sequence of instructions
+encountered in connection with a call on the routine. The contents of the compile time
+stack when the S-compiler sees a call on a routine is implicitly defined through the routine
+profile. The contents of the stack when the compiler is finished processing the call is also
+defined by the profile.</P>
+
+<br>
+<P>For each routine we specify the profile and which actions the environment must perform
+on the basis of a call on the given routine. When a profile is specified "peculiar", we also
+give the tag of the only routine body that can be connected to the profile.</P>
+
+<P>The Environment Interface	<A HREF="#N_5_"><SUP>(5)</SUP></A>      </P>
+
+<br>
+<P>The definition of the profiles for the environment routines will all be specified within one
+module, the "interface module". A sketch of this module follows:</P>
+
+<br>
+<P>	<U>global</U> <U>module</U> "enviro" "update-no"</P>
+
+<P>		<U>global</U> <U>status</U>     INT <U>range</U> 0 36 <U>system</U> "status"</P>
+
+<P>		<U>global</U> itemsize   INT range 0 72 <U>system</U> "itsize"</P>
+
+<P>		<U>global</U> curins   OADDR                 <U>system</U> "curins"</P>
+
+<P>		<U>global</U> bioref   OADDR                 <U>system</U> "bioref"</P>
+
+<P>		<U>global</U> tmpqnt   QUANT                 <U>system</U> "tmpqnt"</P>
+
+<P>		<U>const</U>  maxrank  INT   c-int   "0"     <U>system</U> "maxrnk"</P>
+
+<P>		<U>const</U>  maxint   INT   c-int   "0"     <U>system</U> "maxint"</P>
+
+<P>		<U>const</U>  minint   INT   c-int   "0"     <U>system</U> "minint"</P>
+
+<P>		<U>const</U>  maxreal  REAL  c-real  "0"     <U>system</U> "maxrea"</P>
+
+<P>		<U>const</U>  minreal  REAL  c-real  "0"     <U>system</U> "minrea"</P>
+
+<P>		<U>const</U>  maxlreal LREAL c-lreal "0"     <U>system</U> "maxlrl"</P>
+
+<P>		<U>const</U>  minlreal LREAL c-lreal "0"     <U>system</U> "minlrl"</P>
+
+<P>		<U>record</U> STRING</P>
+
+<P>			<U>attr</U> chradr GADDR</P>
+
+<P>			<U>attr</U> nchr   INT</P>
+
+<P>		<U>endrecord</U></P>
+
+<P>		<U>const</U> maxlen SIZE <U>system</U> "maxlen"</P>
+
+<P>		<U>profile</U> initialisep .....</P>
+
+<P>		<U>profile</U> terminatep .....</P>
+
+<P>		......</P>
+
+<P>		<U>global</U> encdrv     OADDR</P>
+
+<P>		<U>global</U> curdrv     OADDR</P>
+
+<P>		......</P>
+
+<P>		<U>tag</U> Status    0</P>
+
+<P>		<U>tag</U> Itemsize  1</P>
+
+<P>		<U>tag</U> STRING    2</P>
+
+<P>		<U>tag</U> maxlen    3</P>
+
+<P>		.....</P>
+
+<P>	<U>body</U></P>
+
+<P>		.....</P>
+
+<P>	<U>endmodule</U></P>
+
+<P>The Environment Interface	<A HREF="#N_6_"><SUP>(6)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The interface module specifies the assumptions that are made about the environment.
+The module also serves as a global area for variables.</P>
+
+<br>
+<P>All global variables and system variables and constants are declared within this module.</P>
+
+<br>
+<P>The global system variables status and itemsize have been given a name by which they
+can be referenced externally, in the same way as the system profiles will be given a name.</P>
+
+<br>
+<P>The rest of the global system variables are variables that have been given external names
+for optimization purposes. An implementation may gain considerable if these variables are
+kept in register storage. "curins" is the OADDR of the current instance, "bioref" is the
+OADDR of the BasicIO instance, and "tmpqnt" is a variable used widely to communicate
+evaluation results.</P>
+
+<br>
+<P>Note that the type QUANT is also defined in the interface module.</P>
+
+<br>
+<P>The constants have been included to give access to their system dependent values. The
+default values given in their definitions are, of course, not meaningful, they are included
+only for syntactic reasons and must always be replaced by an implementation.</P>
+
+<br>
+<P>All type declarations that are used in communication with the environment profiles are
+defined in this module.</P>
+
+<br>
+<P>All profiles to system routines are given in this module.</P>
+
+<br>
+<P>All tags that are visible from outside the module are given an external reference number
+through the tag instruction. The complete listing of the module is given in appendix A.</P>
+
+<P>The Environment Interface	<A HREF="#N_7_"><SUP>(7)</SUP></A>      </P>
+
+<br>
+<br>
+<P>None of the routines in the environment will be recursive. None of the routines will be able
+to modify their return point, since none of them have exit specified in their profile.</P>
+
+<br>
+<P>The necessary initialisation of global variables may only be done once.</P>
+
+<br>
+<br>
+<P>	3.1  Initialisation of the environment</P>
+
+<br>
+<P>	<U>profile</U> initialisep:newtag</P>
+
+<P>		<U>system</U> initialise:newtag "initia"</P>
+
+<P>		<U>import</U> ii_erhandl  RADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>A call will be made to this routine in the initialisation code of the run-time system. This will
+give the S-compiler writer the possibility to ensure that the run time environment, the RTE,
+is initialised in implementations which allow direct entry to the user program from the
+operating system environment. Any system dependent actions that should be done, would
+then naturally be defined in this routine.</P>
+
+<br>
+<P>The import parameter to the routine will be the RADDR of the routine that is to be called if
+the environment gets control after an interrupt. This routine will be the exception handler.
+This routine and its profile are described in detail in section 10.2. We want a controlled
+way of returning to the user, giving a problem relevant description of what has gone
+wrong.</P>
+
+<P>The Environment Interface	<A HREF="#N_8_"><SUP>(8)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 3.2  <U>Terminate program</U></P>
+
+<br>
+<P>	<U>profile</U>  terminatep:newtag</P>
+
+<P>		<U>system</U>  terminate:newtag  "termin"</P>
+
+<P>		<U>import</U>  t_code     INT  <U>range</U>  0  3</P>
+
+<P>		<U>import</U>  t_message  STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>Code:	Completion code:</P>
+
+<br>
+<P>		0 - normal termination</P>
+
+<P>		1 - user requested termination</P>
+
+<P>		2 - termination after error in user program</P>
+
+<P>		3 - termination after Simula system error</P>
+
+<br>
+<P>Message: Possible message to the user, see below.</P>
+
+<br>
+<br>
+<P>Execution of a Simula program will be concluded by a call on terminate. The routine must
+ensure a consistent state of the environment interface, i.e.</P>
+
+<br>
+<P>  -	all files still open must be closed by terminate, and</P>
+
+<br>
+<P>  -	resources acquired for the program should be released (this action may be left to
+the environment if possible).</P>
+
+<P>The Environment Interface	<A HREF="#N_9_"><SUP>(9)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The completion code returned from the run time system indicates whether the program is
+terminated under controlled conditions (codes 0-2) or whether an irrecoverable error was
+discovered by the internal run time system consistency checks (code 3). In the former
+case all files should have been closed explicitly before terminate is activated, thus open
+files indicates a Simula system error which should be reported through a suitable
+diagnostic given by this routine. On the other hand it is to be expected that files are left
+open in case the completion code is 3 since the internal data structures probably are
+invalidated, so in this case no such diagnostic should be given.</P>
+
+<br>
+<P>A message from the run time system may be pending, either because all files have been
+closed by the Simula program thus there's nowhere to give a termination message, or
+because an error has invalidated the internal data structures of the runtime system. The
+message parameter provides for such situations: if non-empty it should be given on the
+standard output connected to the program (irrespective of the value of the completion
+code).</P>
+
+<br>
+<P>Finally control is returned to the environment. The manner in which this is done is
+completely implementation dependent.</P>
+
+<br>
+<P>This routine cannot change the value of status.</P>
+
+<br>
+<P>If status &lt;&gt; 0 on a call to the routine 'termin', the routine should report this as a system
+error.</P>
+
+<br>
+<P>Note:	This routine should never attempt to return to where it was called.</P>
+
+<P>The Environment Interface	<A HREF="#N_10_"><SUP>(10)</SUP></A>      </P>
+
+<br>
+<br>
+<P>4  <STRONG>INFORMATION FROM THE USER OR THE ENVIRONMENT</STRONG></P>
+
+<br>
+<P>The central run-time system and the diagnostic package require information about the
+options selected by the user, the current mode of operation and the environmental
+conditions applicable to the particular implementation.</P>
+
+<br>
+<P>The front-end requires information about the compile time options selected by the user,
+and some information which is only known in each implemented system, such as default
+file names.</P>
+
+<br>
+<P>Seen from the environment the front-end is just another program, heavily using the
+general environment routines. Like other programs it needs input for its work. This input
+can be of two types:</P>
+
+<br>
+<P>            - options or parameters for the compilation, and</P>
+
+<P>            - the program to be compiled.</P>
+
+<br>
+<P>Information typically seen as parameters to the front-end compiler would be where to find
+the source program, where should the generated S-code go, should a source listing be
+produced etc. In addition, capacity parameters used to dimension e.g. arrays internal to
+the front-end are also desirable to retreive from the environment so that a compilation to
+some extent may be adjusted to the needs of the source program.</P>
+
+<br>
+<P>The compilation may also be controlled by means of compiler directives. The general
+format of such directives is given in the SIMULA Standard, a list of directives particular to
+the S-port implementations is included in the release description for the system. This list
+may be extended as needed by the implementors (but such extensions will of course not
+affect the front end compiler).</P>
+
+<br>
+<P>Similarly, both the run time system and the symbolic debugger SIMOB will require
+information from the environment.</P>
+
+<P>The Environment Interface	<A HREF="#N_11_"><SUP>(11)</SUP></A>      </P>
+
+<br>
+<br>
+<P>In some cases it will be convenient to use some of the parameters to the front-end for only
+parts of the compilation. This will be possible through the use of source input control
+statements. They must be included in the source text file, to specify for which part of the
+compilation they shall be in effect. A description of the control statements can also be
+found in the installation guide for the S-PORT system.</P>
+
+<br>
+<P>The run-time system will, similar to the compiler, make several requests for functions to be
+provided in the environment. The run-time system also has a number of parameters for an
+execution of a program. When the environment has specified that it wants to control
+transmission of parameters, they will be also asked for through the routines in this section.</P>
+
+<br>
+<P>The environment is responsible for processing the external representation of user options
+and providing the information in response to a call on any of the routines in this section.
+The routines have been defined in this way to give the system maximum flexibility in
+retrieving the information from the environment. The implementor is free to have the
+options presented from the user in any way convenient.</P>
+
+<br>
+<P>We have found it convenient to define the following routines to handle this. Some options
+need only return an integer, but some need to return a text string. For each routine we
+have specified the possible input parameters and what are the relevant return values.</P>
+
+<br>
+<P>The list of index interpretations under each routine may not be complete, seen from the
+users point of view. We are here only concerned with those options that must be known to
+the front-end or the run-time system.</P>
+
+<P>The Environment Interface	<A HREF="#N_12_"><SUP>(12)</SUP></A>      </P>
+
+<br>
+<br>
+<P>If the front-end requests information that the user has not provided, the environment
+should respond with what has been chosen as default in this particular implementation.</P>
+
+<br>
+<P>Each of the routines described in this chapter has as its first parameter an "index". This
+document describes the indices valid at the time of printing. As the S-port system is under
+continuous development, new indices may be added as needed. A list of all indices valid
+for a particular S-port release is enclosed in the release description.</P>
+
+<br>
+<br>
+<P>	4.1  <U>Integer valued information from the environment</U></P>
+
+<br>
+<P>The routine get_intinfo is defined to get all information from the environment that can be
+coded as an integer.</P>
+
+<br>
+<P>	<U>profile</U> get_intinfop:newtag</P>
+
+<P>		<U>system</U> get_intinfo:newtag "gintin"</P>
+
+<P>		<U>import</U> gi_index  INT range 0 127</P>
+
+<P>		<U>export</U> gi_result INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The parameter index is an integer specifying what information is requested. The result will
+be an integer whose interpretation gives the specified information. The result is given for
+each value of index as follows:</P>
+
+<br>
+<P>	Index:	Interpretation:</P>
+
+<br>
+<P>	1		NOT USED</P>
+
+<P>The Environment Interface	<A HREF="#N_13_"><SUP>(13)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 2		Is a source listing wanted?</P>
+
+<br>
+<P>			Result:	0 -	No.</P>
+
+<P>				    &gt;0 -	Yes. The listing will be a copy of the source text,
+where each line is prefixed by its number.</P>
+
+<br>
+<P>	3 *)		Should begin/end counters be included in the source listing?</P>
+
+<P>			Result=0 means no, otherwise yes.</P>
+
+<br>
+<P>	4		What is the maximum number of error messages to be given?</P>
+
+<P>			Result will be the number of messages.</P>
+
+<br>
+<P>	5		Should warning messages be suppressed?</P>
+
+<P>			Result=0 means no, otherwise yes.</P>
+
+<br>
+<P>	6		Should a cross-reference listing be produced?</P>
+
+<P>			Result=0 means no, otherwise yes.</P>
+
+<br>
+<P>	7 *)		What is the image length for the listing file?</P>
+
+<P>			Result will be the number of characters in the image.</P>
+
+<br>
+<P>	  *)		These calls are only made after get_textinfo(2) (asking for name of
+the listing file) is called, and only if listing is wanted.</P>
+
+<br>
+<P>	8		What is the line length of the source file?</P>
+
+<P>			Result will be the number of characters in the image.</P>
+
+<br>
+<P>	9		Should test for none be ommitted at remote access?</P>
+
+<P>			Result=0 means no, otherwise yes.</P>
+
+<P>The Environment Interface	<A HREF="#N_14_"><SUP>(14)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   10		Should checking of indices be ommitted at array access?</P>
+
+<P>			Result: 0 - Complete checking of array indices</P>
+
+<P>				1 - Partial checking of indices</P>
+
+<P>				2 - No checking will be done.</P>
+
+<br>
+<P>   11		What is the level of information wanted from the symbolic dump routine?</P>
+
+<P>			Result:	0 -	The symbolic dump module is not to be included</P>
+
+<P>					1 -	The symbolic dump routine is included</P>
+
+<P>					2 -	Individual instances of an object shall carry a
+count for identification</P>
+
+<P>					3 -	Objects shall carry information of all identifier
+names.</P>
+
+<br>
+<P>   12		Should inclusion be made for production of a dynamic profile of the program
+execution?</P>
+
+<P>			Result=0 means no inclusion, otherwise assignment counts are to be
+included</P>
+
+<br>
+<P>   13		Should inclusion be made for full tracing of control flow at run-time?</P>
+
+<P>			Result=0 means no inclusion, otherwise full inclusion.</P>
+
+<br>
+<P>   14		Should inclusion be made for interactive debugging of the program?</P>
+
+<P>			Result=0 means no inclusion, otherwise full inclusion.</P>
+
+<P>   15		What is the level of debug information wanted in case of a run time error?</P>
+
+<P>			Result:	0 -	no debugging information is wanted</P>
+
+<P>					1 -	a diagnostic message and the source program
+line number where the error occurred are wanted</P>
+
+<P>					2 -	in addition to the above the static link and the
+dynamic link at the point of error are wanted</P>
+
+<P>					3 -	in addition to the above the sequencing sets of all
+SIMULATION blocks and the local sequence
+controls of all scheduled processes are wanted</P>
+
+<P>					4 -	in addition to the above the local sequence
+controls of all non-terminated objects are wanted</P>
+
+<P>					5 -	in addition to the above all referable
+datastructures are wanted.</P>
+
+<br>
+<P>   16		Is tracing of control flow wanted?</P>
+
+<P>			Result:	0 -	no tracing is wanted</P>
+
+<P>				    &gt;0 -	the number of messages wanted is given</P>
+
+<P>				    &lt;0 -	tracing messages are printed to a buffer of size
+-(result), and only listed in case of a run-time
+error</P>
+
+<br>
+<P>   17		Is tracing of data flow wanted?</P>
+
+<P>			Result:	0 -	no tracing is wanted</P>
+
+<P>				    &gt;0 -	the number of messages wanted is given</P>
+
+<P>				    &lt;0 -	tracing messages are printed to a buffer of size
+-(result), and only listed in case of a run-time
+error</P>
+
+<P>			Comment:	If both control and data flow tracing are specified, they
+will go to the same destination.</P>
+
+<P>The Environment Interface	<A HREF="#N_15_"><SUP>(15)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   18		What is the maximum amount of time (cpu-time) to be used for the
+execution?</P>
+
+<P>			Result will give the time, specified in 1/100 sec.</P>
+
+<br>
+<P>   19		Should the symbolic debugger SIMOB  be entered prior to the execution of
+the program, and at program termination? An answer greater than zero will
+give this effect.</P>
+
+<br>
+<P>   20		What is the significant linelength of the source file image?</P>
+
+<br>
+<P>   21		What is the maximum index to <U>setobj</U>, <U>getobj</U>, and <U>access</U> instructions
+allowed in this implementation. A response of 0 will give the limit 255.</P>
+
+<br>
+<P>   22		Mode of separate compilation ?</P>
+
+<br>
+<P>			0:	normal separate compilation</P>
+
+<P>			1:	recompilation.</P>
+
+<br>
+<P>   23		Amount of pass information from FEC on listing or message file ?</P>
+
+<br>
+<P>			0:	No information.</P>
+
+<P>			1:	Minimum.</P>
+
+<P>			2:	Medium.</P>
+
+<P>			3:	Maximum.</P>
+
+<br>
+<P>   24		How many work areas may be requested (see chapter 5)?</P>
+
+<P>The Environment Interface	<A HREF="#N_16_"><SUP>(16)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   30		What is the level of data information which must be produced at
+compile-time, in order to observe the execution at run-time?</P>
+
+<br>
+<P>			Result:	0 -	minimal information for error reporting.</P>
+
+<P>					1 -	information at the module and block level, but no
+information about the attributes.</P>
+
+<P>					2 -	complete information generated, including
+information about all attributes.</P>
+
+<P>			SIMOB can always be used for observation, but the available
+information will depend on this response.</P>
+
+<br>
+<P>   31		Should inclusion be made at compile-time for statement execution counts?</P>
+
+<br>
+<P>			Result:	0 -	no, statement execution counts not wanted</P>
+
+<P>					1 -	yes, statement execution counts wanted</P>
+
+<br>
+<P>   32		Should inclusion be made at compile-time for processor usage
+measurements?</P>
+
+<P>			Result:	0 -	no, measuring of processor usage not wanted</P>
+
+<P>					1 -	yes, measuring of processor usage wanted</P>
+
+<P>The Environment Interface	<A HREF="#N_17_"><SUP>(17)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   33		Is interaction with the user possible in the current execution?</P>
+
+<br>
+<P>			Result:	0 -	no, this is not an interactive execution</P>
+
+<P>					1 -	yes, this is an interactive execution</P>
+
+<br>
+<P>			Note that SIMOB uses this.</P>
+
+<br>
+<P>   34		Should inclusion for the possibility of statement start exceptions be made at
+compile-time by the S-Code Compiler?</P>
+
+<P>			Result:	0 -	no, no start of statement exceptions will ever
+occur</P>
+
+<P>					1 -	yes, start of statement exceptions may occur</P>
+
+<br>
+<P>   35		Should inclusion be made at compile-time for storage usage measurements?</P>
+
+<P>			Result:	0 -	no, measuring of storage usage not wanted</P>
+
+<P>					1 -	yes, measuring of storage usage wanted</P>
+
+<br>
+<P>   36		What is the maximum number of identifiers allowed in this program
+compilation. Result will be the number allowed.</P>
+
+<br>
+<P>   37		What is the maximum number of constants allowed for this compilation.
+Result will define the number.</P>
+
+<P>The Environment Interface	<A HREF="#N_18_"><SUP>(18)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   38		What is the maximum number of textual blocks allowed for this compilation.
+Result will define the number.</P>
+
+<br>
+<P>   39		What is the maximum number of block levels allowed for this compilation.
+Result will define the number.</P>
+
+<br>
+<P>   40		What is the maximum source depth allowed for this compilation. Result will
+define the maximum.</P>
+
+<br>
+<P>   41		What is the maximum dynamic depth in this program compilation. Result will
+define the maximum.</P>
+
+<br>
+<P>   42		What is the maximum number of parameters in a procedure call for this
+compilation. Result will define the maximum.</P>
+
+<br>
+<P>   43-127	As defined in the current Release Description.</P>
+
+<br>
+<P>If the environment returns a value of zero for any of these indices, some default value will
+be chosen by the system.</P>
+
+<P>The Environment Interface	<A HREF="#N_19_"><SUP>(19)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 4.2  <U>Text valued information from the environment</U></P>
+
+<br>
+<P>The routine get_textinfo is defined to get all information from the environment to the
+front-end that must be given as a text.</P>
+
+<br>
+<P>	<U>profile</U> get_textinfop:newtag</P>
+
+<P>		<U>system</U> get_textinfo:newtag "gtexin"</P>
+
+<P>		<U>import</U> gt_index  INT <U>range</U> 0 127</P>
+
+<P>		<U>import</U> gt_result STRING</P>
+
+<P>		<U>export</U> gt_filled INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The parameter index is an integer that specifies what information we request. The result
+will be a string which is filled into result. The export parameter filled gives the number of
+characters in the string.</P>
+
+<br>
+<P>	Index:	Interpretation:</P>
+
+<br>
+<P>	1		What is the name of the source input file?</P>
+
+<P>			Result will give the name.</P>
+
+<br>
+<P>    2		What is the name of the listing file?</P>
+
+<P>			Result will give the file name. If no such output is to be produced,
+then the string will be empty.</P>
+
+<br>
+<P>	3		What is the name of the file for separate output of diagnostics
+messages?</P>
+
+<P>			Result will give the file name. If no such output is to be produced,
+then the string will be empty.</P>
+
+<br>
+<P>	4		What is the name of the file for storing the normal (byte packed)
+S-code?</P>
+
+<P>			Result will give the file name. If no such output is to be produced,
+then the string will be empty.</P>
+
+<P>The Environment Interface	<A HREF="#N_20_"><SUP>(20)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 5		What is the name of the file for storing decimally coded S-code?</P>
+
+<P>			Result will give the file name. If no such output is to be produced,
+then the string will be empty.</P>
+
+<br>
+<P>	6		What is the name of the file for storing textually coded S-code?</P>
+
+<P>			Result will give the file name. If no such output is to be produced,
+then the string will be empty.</P>
+
+<br>
+<P>	7		What is the name of the scratch file to be used for storing the
+intermediate code between the passes in the front-end?</P>
+
+<P>			Result will give the name of the file.</P>
+
+<br>
+<P>	8		What is the name of the scratch file to be used for storing the
+declaration structures between the passes in the front-end?</P>
+
+<P>			Result will give the name of the file.</P>
+
+<br>
+<P>	9		Reserved for further scratch file requests.</P>
+
+<P>			Result will give the name of the file.</P>
+
+<P>   10		Reserved for further scratch file requests.</P>
+
+<P>			Result will give the name of the file.</P>
+
+<br>
+<P>   11		What is the name of the attribute file for the current compilation? This will
+only be necessary for a separate compilation. This file will be used as the
+front-end's attribute file. (Cf. section 4.6)</P>
+
+<P>			Result will give the name of the file.</P>
+
+<P>The Environment Interface	<A HREF="#N_21_"><SUP>(21)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   12		What is the name of the attribute file for an external declaration?</P>
+
+<P>			Before this request is issued, the environment will have received the
+identifier and the external identifier for the external declaration
+through the routine give_textinfo described below. (Cf. section 4.6)</P>
+
+<P>			Result will give the name of the file.</P>
+
+<br>
+<P>   13		What is the environment part of the program head? (See below)</P>
+
+<P>			Result will give the text string.</P>
+
+<br>
+<P>   14		What is the module identifier to be used for the current compilation? (Cf.
+section 4.6)</P>
+
+<P>			This call will only be made for a separate compilation.</P>
+
+<P>			Result will give the text string.</P>
+
+<br>
+<P>   15		What is the check code to be used for the current compilation? (Cf. section
+4.6)</P>
+
+<P>			This call will only be made for a separate compilation.</P>
+
+<P>			Result will give the text string.</P>
+
+<P>			If the empty string is delivered then the date_and_time string identifying this compilation will be used.</P>
+
+<br>
+<P>   16		What is the system debugging option string?</P>
+
+<P>			The default answer here should be the empty string.</P>
+
+<br>
+<P>   17		Not used.</P>
+
+<br>
+<P>   18		Not used.</P>
+
+<br>
+<P>   19		What is the file name of the attribute file for the predefined classes and
+procedures (the class PREDEF)?</P>
+
+<P>The Environment Interface	<A HREF="#N_22_"><SUP>(22)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   20		What is the file name for the attribute file for the class SIMSET?</P>
+
+<br>
+<P>   21		What is the file name for the attribute file for the class SIMULATION?</P>
+
+<br>
+<P>   22		What is the file name of a file containing seldom used information for the
+front end compiler, such as extended error messages.</P>
+
+<br>
+<P>   23		What is the file name of a file containing seldom used information for the run
+time system, such as extended error messages.</P>
+
+<br>
+<P>   24		What is the identification string of the current execution? The answer should
+be as defined for procedure "simulaid" in the SIMULA Standard, section 9.6.
+If the answer is the empty string, RTS will fill out the first field (SIMULA
+system name) with an identification of the current S-port release, and leave
+the remainding fields empty (i.e. the release info will be terminated by 21
+exclamation marks).</P>
+
+<br>
+<P>A short comment is necessary on the program head string.</P>
+
+<br>
+<P>According to the definition an S-program should start with the keyword <U>program</U> followed
+by a string. This string is used to identify the compilation. The string will be given
+according to the following syntax: </P>
+
+<P>            "&lt; a &gt;'&lt; b &gt;'&lt; c &gt;"</P>
+
+<P>The Environment Interface	<A HREF="#N_23_"><SUP>(23)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The three parts of the string are:</P>
+
+<br>
+<P>	&lt; a &gt;	This is the date and time of compilation given through the result from a call
+on the routine date_and_time.</P>
+
+<br>
+<P>	&lt; b &gt;	This is an identifiaction of the front-end compiler chosen by itself to identify
+the version of the compiler.</P>
+
+<br>
+<P>	&lt; c &gt;	This is an identification of the S-code compiler supplied to the front-end
+compiler when get_textinfo is called with index 13 (see page 15).</P>
+
+<P>The Environment Interface	<A HREF="#N_24_"><SUP>(24)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 4.3  <U>Information to the environment</U></P>
+
+<br>
+<P>The routine give intinfo is defined to submit information from the front-end compiler or the
+run-time system to the environment. This information is gathered from the source input
+under compilation.</P>
+
+<br>
+<P>	<U>profile</U>  give_intinfop:newtag</P>
+
+<P>		<U>system</U>  give_intinfo:newtag "gviinf"</P>
+
+<P>		<U>import</U>  gii_index   INT  <U>range</U> 0 127</P>
+
+<P>		<U>import</U>  gii_info    INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The parameter index is an integer that specifies what information follows. Info will be an
+integer carrying the following interpretation:</P>
+
+<br>
+<P>	Index:	Interpretation:</P>
+
+<br>
+<br>
+<P>	1		A call with this index is done immediately before the termination of
+each pass, and the value of info signals the situation after this pass,
+by the following coding:</P>
+
+<br>
+<P>			0 -	No user errors found. Go on with next pass.</P>
+
+<P>			1 -	User errors are found, but go on with next pass.</P>
+
+<P>			2 -	Reserved for fututre use, continuation is possible.</P>
+
+<P>			3 -	No user errors found, but because of options etc. (e.g. that
+S-code should not be produced), the next pass should not be
+started.</P>
+
+<P>			4 -	User errors found, therefore do not start next pass.</P>
+
+<P>The Environment Interface	<A HREF="#N_25_"><SUP>(25)</SUP></A>      </P>
+
+<br>
+<br>
+<P>			5 -	Too many or too difficult user errors encountered. Therefore
+the current pass is terminated, and the next pass should not be
+started.</P>
+
+<P>			6 -	An internal error in the compiler has occurred. Therefore the
+current pass is terminated, and the next pass should not be
+started.</P>
+
+<br>
+<P>	2		Info is the highest tag used in the S-code for this program.</P>
+
+<br>
+<P>	3		Info is the number of source lines in the Simula program being
+compiled.</P>
+
+<br>
+<P>	4		Info is the number of errors for this compilation.</P>
+
+<br>
+<P>	5		Info is the number of warnings for this compilation.</P>
+
+<br>
+<P>	6		Garbage collection information. Info=0 signals the start of a garbage
+collection, Info=1 signals termination of g.c. (see 5.2).</P>
+
+<br>
+<P>The routine give_textinfo is defined to submit information from the front-end compiler or
+the run-time system to the environment. This information is gathered from the source input
+under compilation.</P>
+
+<br>
+<P>	<U>profile</U>  give_textinfop:newtag</P>
+
+<P>		<U>system</U>  give_textinfo:newtag "givinf"</P>
+
+<P>		<U>import</U>  give_index  INT <U>range</U> 0 3</P>
+
+<P>		<U>import</U>  give_info   STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<P>The Environment Interface	<A HREF="#N_26_"><SUP>(26)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The parameter index is an integer that specifies what information follows. Info will be the
+string reference with the specific information as follows:</P>
+
+<br>
+<P>	Index:	Interpretation:</P>
+
+<br>
+<P>	1		The string info is the identifier of a class or procedure being
+separately compiled.</P>
+
+<br>
+<P>	2		The string info is the identifier given in an external declaration that is
+being processed.</P>
+
+<br>
+<P>	3		The string info is the external identification given in an external
+declaration that is being processed.</P>
+
+<br>
+<br>
+<P>	4.4  <U>Information passed for an external compilation/declaration</U></P>
+
+<br>
+<P>When the front end compiler starts reading the source program, it will syntactically find out
+if we have a separate compilation of a class or procedure. The following will then be
+performed:</P>
+
+<br>
+<P>	-	The identifier of the class or procedure will be sent to the environment
+through give_textinfo (index=1).</P>
+
+<br>
+<P>	-	The front-end will ask the environment what module identifier is to be used
+through get_textinfo (index=14).</P>
+
+<br>
+<P>	-	The front-end will ask the environment which check-code to use through
+get_textinfo (index=15).</P>
+
+<br>
+<P>	-	The front-end will ask the environment the file name of the attribute file for
+this separate compilation through get_textinfo (index=11).</P>
+
+<P>The Environment Interface	<A HREF="#N_27_"><SUP>(27)</SUP></A>      </P>
+
+<br>
+<br>
+<P>When the front-end compiler meets an external declaration, another sequence of
+operations will be performed. An external class declaration is given in one of the following
+ways:</P>
+
+<br>
+<P>	<U>external</U> <U>class</U> &lt;class-id&gt;;</P>
+
+<P>	<U>external</U> <U>class</U> &lt;class-id&gt; = &lt;external-id&gt;;</P>
+
+<br>
+<P>An external procedure declaration will be given in a similar way. The following will now be
+done:</P>
+
+<br>
+<P>	-	The front-end will give the environment the identifier (&lt;class-id&gt;) given in
+the external declaration through give_textinfo (index=2).</P>
+
+<br>
+<P>	-	The front-end will give the environment the external identification
+(&lt;external-id&gt;) given in the external declaration, or the empty string if no
+such identifier is given. The information is given through give_textinfo
+(index=3).</P>
+
+<br>
+<P>	-	The front-end will ask the environment the name of the attribute file for this
+external declaration through get_textinfo (index=12).</P>
+
+<P>The Environment Interface	<A HREF="#N_28_"><SUP>(28)</SUP></A>      </P>
+
+<br>
+<br>
+<P>5  <STRONG>Dynamic Storage Administration</STRONG></P>
+
+<br>
+<P>One of the most important components of the SIMULA run time system is the storage
+administrator. It will dynamically allocate storage to objects generated during program
+execution, and it will perform storage regeneration (also known as garbage collection)
+when needed. All dynamic allocations are done within a work space supplied by the
+environment, and this chapter describes those interfaces between the garbage collector
+and the environment that</P>
+
+<br>
+<P>  -	gives the garbage collector access to the work space</P>
+
+<P>  -	permits a dynamic extension or contraction of the work space.</P>
+
+<br>
+<br>
+<P>	5.1  <U>Work Space Administration</U></P>
+
+<br>
+<P>The work space will be divided into one or more work areas. A work area is a contiguous
+memory area. It is identified by a number, and these numbers order the work areas into a
+sequence. One work area is called the current work area, it is always the last in the
+sequence of work areas provided by the environment.</P>
+
+<br>
+<P>Initially, the storage administrator will ask the environment to provide the allowed number
+of work areas for this execution, through a call to the</P>
+
+<P>routine get_intinfo(24).</P>
+
+<br>
+<P>Objects are always allocated within one work area, so the size of a work area determines
+the maximum size of an object that can be allocated within it. Object allocation is done
+after the following algorithm:</P>
+
+<br>
+<P>	1.	If there is enough room in some work area, the object is allocated (and the
+available space within the work area in question is decreased accordingly).</P>
+
+<P>The Environment Interface	<A HREF="#N_29_"><SUP>(29)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	2.	If space cannot be found for the object, the environment is asked whether a
+garbage collection should be performed, through a call to the known routine
+ExtendOrGC. If the answer given is false (meaning "perform garbage
+collection"), proceed with step 5.</P>
+
+<br>
+<P>	3.	The environment is asked to extend the current work area, through def work
+area(WantedSize,CurArea). If the call is successful (status=0) the object is
+allocated (and the algorithm stops).</P>
+
+<br>
+<P>	4.	The environment is asked to provide a new work area, through def work
+area(WantedSize,CurArea+1). If the call is successful (status=0) the object
+is allocated (and the algorithm stops). If unsuccessful (status&lt;&gt;0) and a
+garbage collection already has been performed, execution is terminated.</P>
+
+<br>
+<P>	5.	A garbage collection is performed. If that leaves enough room the object is
+allocated (and the algorithm stops).</P>
+
+<br>
+<P>	6.	If extension of the current work area wasn't attempted earlier (i.e. the
+algortihm passed directly from step 2 to step 5), proceed from step 3.
+Otherwise execution is terminated.</P>
+
+<br>
+<br>
+<P>	5.2  <U>Garbage Collection</U></P>
+
+<br>
+<P>When a garbage collection is initiated, the environment is informed through
+give_intinfo(6,0). After the garbage collection is terminated, the environment is informed
+through give_intinfo(6,1). This provides the environment with the opportunity to inform the
+user (e.g. by means of a displayed "busy bee") that the system is working at the moment
+although it may not respond.</P>
+
+<P>The Environment Interface	<A HREF="#N_30_"><SUP>(30)</SUP></A>      </P>
+
+<br>
+<br>
+<P>A garbage collection will traverse the work space (i.e. all work areas provided by the
+environment) and delete all objects that are no longer connected to the program
+execution. The surviving objects will then be moved so that each work area is divided into
+two parts: one part containing active objects, and one part (the "gap") which is available
+for object allocation. During this compaction objects may be moved from one work area to
+another, in an attempt to leave the largest gap at the end of the current work area.</P>
+
+<br>
+<P>Following some ad-hoc rules the garbage collector will contract or even delete the current
+work area, through an appropriate call on def work area. If an area is deleted, the
+preceding work area becomes the current work area.</P>
+
+<P>The Environment Interface	<A HREF="#N_31_"><SUP>(31)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 5.3  <U>Define Work Area</U></P>
+
+<br>
+<P>	<U>profile</U> def_work_areap:newtag</P>
+
+<P>		<U>system</U> def_work_area:newtag "dwarea"</P>
+
+<P>		<U>import</U> dwa_lng    SIZE</P>
+
+<P>		<U>import</U> dwa_warea  INT <U>range</U> 0 255</P>
+
+<P>		<U>export</U> dwa_top    OADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>	Lng:			The wanted size of the work area. If nosize the work area is
+deleted. Lng will always be either nosize, or the initial size of
+the work area in question plus a multiplum of the extension to
+that area (see routine get_sizeinfo below).</P>
+
+<br>
+<P>	Warea:		Identification of the work area in question.</P>
+
+<br>
+<P>	Top:			If Lng&lt;&gt;nosize, the result is the object address of the first
+allocation point within the reserved area. If Lng=nosize, the
+result is nowhere.</P>
+
+<br>
+<br>
+<P>The routine def work area must return a reference to a contiguous area. If the identified
+work area has already been defined (and not deleted) the environment is asked to either
+extend or contract the current area.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C. Return of status 19 will indicate, on a request of redefinition, that the
+environment is not able to support this.</P>
+
+<P>The Environment Interface	<A HREF="#N_32_"><SUP>(32)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 5.4  <U>Size valued information from the environment</U></P>
+
+<br>
+<P>The routine get_sizeinfo is defined to get information from the environment that must be
+presented as a SIZE.</P>
+
+<br>
+<P>	<U>profile</U> get_sizeinfop:newtag</P>
+
+<P>		<U>system</U> get_sizeinfo:newtag "sizein"</P>
+
+<P>		<U>import</U> gs_index   INT <U>range</U> 0 2</P>
+
+<P>		<U>import</U> gs_warea   INT <U>range</U> 0 255</P>
+
+<P>		<U>export</U> gs_result  SIZE</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Index:		Specifies the information requested (se below).</P>
+
+<br>
+<P>	Warea:		Identifies the work area in question.</P>
+
+<br>
+<P>	Result:		The wanted SIZE, according to the value of Index:</P>
+
+<br>
+<P>				Index	Result</P>
+
+<br>
+<P>				1		The minimum size of this work area.</P>
+
+<br>
+<P>				2		The extension/contraction step size.</P>
+
+<br>
+<P>				3		The minimum gap left in this work area after a
+garbage collection, if the area is the current work
+area.</P>
+
+<br>
+<P>If the work space is found to be full even after garbage collection, then the current work
+area must be extended. The garbage collector may also decide that the available work
+space is too large for the current needs of the execution, consequently it will contract the
+current work area.</P>
+
+<P>The Environment Interface	<A HREF="#N_33_"><SUP>(33)</SUP></A>      </P>
+
+<br>
+<br>
+<P>In both cases, the results according to index 1 and 2 for the current work area are used to
+determine the new size of the current work area, as explained earlier in this chapter.</P>
+
+<br>
+<P>It is possible to get into a situation where time is spent almost exclusively in the garbage
+collector, because the gap left after garbage collection is too small (allthough sufficient for
+the immediate need). In an ad-hoc attempt to avoid this, the environment is asked to
+provide a minimum gap size for each work area. If the current work area does not contain
+a gap of at least that size after a garbage collection, more work space will be requisitioned
+from the environment, either by extending the current area, or in the form of a new work
+area. In the event that the current area is the highest possible area (as identified by the
+result of get_intinfo(24)) and cannot be extended, the execution is terminated.</P>
+
+<br>
+<P>Note that a work area may have a gap smaller than that area's minimum gap, as a
+consequence of storage compaction or object allocation (see step 1 in the allocation
+algorithm).</P>
+
+<P>The Environment Interface	<A HREF="#N_34_"><SUP>(34)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 5.5  <U>Known routine ExtendOrGC.</U></P>
+
+<br>
+<br>
+<P>	<U>profile</U>  extend_or_GCp:newtag</P>
+
+<P>		<U>known</U>   extend_or_GC:newtag  "xorgc"</P>
+
+<P>		<U>import</U>  ext_obj    SIZE</P>
+
+<P>		<U>export</U>  ext_result BOOL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>	Obj:			The size of the object under attempted allocation</P>
+
+<br>
+<P>	Result:		true if storage extension shall be attempted first, false if
+garbage collection shall be attempted immediately.</P>
+
+<br>
+<br>
+<P>This routine allows the environment to guide the sequence of the allocation algorithm, see
+section 5.1.</P>
+
+<P>The Environment Interface	<A HREF="#N_35_"><SUP>(35)</SUP></A>      </P>
+
+<br>
+<br>
+<P>6  <STRONG>MOVE INFORMATION</STRONG></P>
+
+<br>
+<P>	<U>profile</U>  movep:newtag</P>
+
+<P>		<U>system</U>  move:newtag  "movein"</P>
+
+<P>		<U>import</U>  mo_from    OADDR</P>
+
+<P>		<U>import</U>  mo_to      OADDR</P>
+
+<P>		<U>import</U>  mo_length  SIZE</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	From:	The "lowest" object address of the area to be moved.</P>
+
+<br>
+<P>	To:		The "lowest" object address of the destination area.</P>
+
+<br>
+<P>	Length:	The size of the area to be moved.</P>
+
+<br>
+<br>
+<P>The garbage collector (in the run time system) needs to move areas during the
+compactifying phase. In order to be able to take advantage of possible block transfer
+instructions, and because such moves otherwise might be rather time consuming, this
+routine is defined.</P>
+
+<br>
+<P>Two types of moves are employed. The first type will always move an area towards the
+high end of work area, and the involved areas will never overlap. The second type will
+always move towards the first allocation point of the work area, the involved areas may in
+this case overlap.</P>
+
+<br>
+<P>In both the case an implementation will be safe (with regards to overlap) if the area is
+moved sequentially starting with the object unit identified by "from" (this unit must be
+moved to the unit identified by "to").</P>
+
+<P>The Environment Interface	<A HREF="#N_36_"><SUP>(36)</SUP></A>      </P>
+
+<br>
+<br>
+<P>7  <STRONG>FILE HANDLING</STRONG></P>
+
+<br>
+<P>In order to avoid confusing the Simula file concept with the files of the file system we will
+call the latter data sets; a data set may be an actual file or it may be an I/O device.</P>
+
+<br>
+<P>The current chapter defines all routines necessary to implement the input/output interface
+of Simula programs.</P>
+
+<br>
+<P>Some general problems still exist. Some of these are not covered by the current text, and
+they will have to be solved at a later point:</P>
+
+<br>
+<P>	-	What if a file is "busy"? The file exists, but is not available.</P>
+
+<P>	-	What if there is not enough space for creating a data set as specified?</P>
+
+<P>	-	What about file hierarchies?</P>
+
+<br>
+<P>	7.1  <U>Identification of data sets</U></P>
+
+<br>
+<P>Whenever a Simula file object is generated (through new) the parameter to the file class
+must be a text containing a data set specification, intended to identify a data set on the
+target system. The link between such a data set specification and a data set is to be
+established when the data set is opened (through a call to routine open, see 7.4). How
+this link is established is completely system dependent: the data set specification may
+simply be the data set name, or it may identify a data set descriptor which contains the
+true data set name etc.</P>
+
+<P>The Environment Interface	<A HREF="#N_37_"><SUP>(37)</SUP></A>      </P>
+
+<br>
+<br>
+<P>When the file is opened, the corresponding data set is opened, and for efficiency reasons
+it is no longer referred to by the data set speci-fication; actually the environment need not
+remember this specification at any time. The data set is referred to by means of a (data
+set) key. The key is an integer in the range 1..255 returned from the open routine and is
+used in all accesses to the open data set (including close).</P>
+
+<br>
+<P>Initially all keys are invalid, i.e. no data sets are open. A given key is valid only from the
+time it is exported from routine open until it is imported to routine close. Thus the keys
+must satisfy the following invariants:</P>
+
+<br>
+<P>  -	a key is either invalid, or it identifies precisely one open data set, and</P>
+
+<P>  -	an open data set is associated with precisely one key.</P>
+
+<br>
+<br>
+<P>	7.2  <U>File types</U></P>
+
+<br>
+<P>The files may be of the following types:</P>
+
+<br>
+<P>	1 -	infile      (record oriented sequential read access)</P>
+
+<P>	2 -	outfile     (record oriented sequential write access)</P>
+
+<P>	3 -	printfile   (printer formatted outfile)</P>
+
+<P>	4 -	directfile  (record oriented random read/write access)</P>
+
+<P>	5 -	inbytefile  (stream oriented sequential read access)</P>
+
+<P>	6 -	outbytefile (stream oriented sequential write access)</P>
+
+<P>    7 - directbytefile (byte oriented random read/write access)</P>
+
+<br>
+<P>Note that the types are properties of the files and not necessarily of the data sets. Data
+sets may usually be organised and accessed in different manners depending upon the
+target system thus it is only possible to give some general rules for the kind of data set
+that should be connected to a given file type.</P>
+
+<P>The Environment Interface	<A HREF="#N_38_"><SUP>(38)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		7.2.1  <U>Infile and outfile</U></P>
+
+<br>
+<P>The corresponding data sets should be record-oriented sequential; it is implementation
+dependent whether the record size must be fixed. Mechanisms should exist for opening a
+closed "outfile data set" as an "infile data set" and vice versa.</P>
+
+<br>
+<br>
+<P>		7.2.2  <U>Directfile</U></P>
+
+<br>
+<P>The corresponding data set should be record-oriented random access; it is
+implementation dependent whether the record size should be fixed. Some systems may
+allow the opening of a closed "directfile data set" as an "infile data set", this may however
+impose an intolerable loss in efficiency in the implementation of either or both types, so
+this is not demanded as a part of the standard.</P>
+
+<br>
+<P>		7.2.3  <U>Printfile</U></P>
+
+<br>
+<P>Seen from Simula a printfile is a subclass of outfile; the implementation need not follow
+that philosophy. The corresponding (record-oriented) data set should be able to accept
+printer control information such as eject (see 7.12) etc. Normally one record will
+correspond to one printer line, but note the allowance made in the definitions of outimage
+(7.7) and printoutimage (7.13) for overprint and partial printing.</P>
+
+<br>
+<P>If possible the output to SYSOUT should be printed immediately, since interactive
+programs normally will expect SYSIN and SYSOUT to be connected to the terminal
+device. If several printfiles are open simultaneously at most one (SYSOUT) should be
+printed continuosly so as not to get the output mixed.</P>
+
+<P>The Environment Interface	<A HREF="#N_39_"><SUP>(39)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		7.2.4  <U>Inbytefile and outbytefile</U></P>
+
+<br>
+<P>The corresponding data sets should support stream-oriented sequential access and it
+must be possible to reopen a closed "outbytefile data set" as an "inbytefile data set".</P>
+
+<br>
+<br>
+<P>		7.2.5  <U>Directbytefile</U></P>
+
+<br>
+<P>The corresponding data sets should support byte-oriented random access. In case the
+underlying system does not support this, the environment interface should provide the
+necessary buffering etc. to emulate the concept. Although desirable, it is not demanded
+that a closed "directbytefile data set" may be opened as an "infile data set", or that a
+closed "outbytefile data set" may be opened as a "directbytefile data set".</P>
+
+<br>
+<br>
+<P>	7.3  <U>Look up data set</U></P>
+
+<br>
+<P>	<U>profile</U>  look_upp:newtag</P>
+
+<P>		<U>system</U>  look_up:newtag "lookup"</P>
+
+<P>		<U>import</U>  lu_dsetspec     STRING</P>
+
+<P>		<U>import</U>  lu_filetype     INT  <U>range</U>  1  7</P>
+
+<P>		<U>import</U>  lu_imagelength  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Dsetspec:		Identification of a data set.</P>
+
+<br>
+<P>	Filetype:		The type code of the corresponding file.</P>
+
+<br>
+<P>	Imagelength:	The length of the images in the file.</P>
+
+<P>The Environment Interface	<A HREF="#N_40_"><SUP>(40)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The specified data set is searched for (in the file system), following some implementation
+defined search rules. When found, the permitted access is checked against the accesses
+implied by the file type parameter.</P>
+
+<br>
+<P>The imagelength parameter may be necessary for some systems, on other system it may
+be ignored.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_41_"><SUP>(41)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.4  <U>Open data set</U></P>
+
+<br>
+<P>	<U>profile</U>  open_dsp:newtag</P>
+
+<P>		<U>system</U>  open_ds:newtag  "opfile"</P>
+
+<P>		<U>import</U>  ods_dsetspec     STRING</P>
+
+<P>		<U>import</U>  ods_dsettype     INT  <U>range</U>  1  7</P>
+
+<P>		<U>import</U>  ods_action       STRING</P>
+
+<P>		<U>import</U>  ods_imagelength  INT</P>
+
+<P>		<U>export</U>  ods_key          INT  <U>range</U>  0  255</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Dsetspec:		Identification of a data set.</P>
+
+<br>
+<P>	Dsettype:		The type code of the corresponding file.</P>
+
+<br>
+<P>	Action:		A copy of the second parameter to the Simula open procedure,
+see below.</P>
+
+<br>
+<P>	Imagelength:	The length of the images in the file.</P>
+
+<br>
+<P>	Key:			The key associated with the data set, or zero.</P>
+
+<br>
+<P>The data set specified by the given dsetspec and filetype is searched for after
+implementation dependent rules, see 7.1.</P>
+
+<br>
+<P>If the data set does not exist, a new data set is created, compatible with the given file
+type. If the type is 1 or 5 this is impossible and status error 19 is set. The created data set
+must survive close.</P>
+
+<br>
+<P>The data set is opened and positioned at the first record (or byte). The interpretation of
+the action parameter is completely implementation dependent and may thus modify this
+default action (such as open for write append).</P>
+
+<P>The Environment Interface	<A HREF="#N_42_"><SUP>(42)</SUP></A>      </P>
+
+<br>
+<br>
+<P>A unique key is associated with the data set and exported from the routine. The key will
+normally be a hitherto invalid key, but if the data set has been opened already the key
+returned will be the one already validated; status error 6 is set in this case. In all other
+abnormal situations the key returned must be zero.</P>
+
+<br>
+<P>Imagelength is the length of the first parameter to Simula procedure open; the
+implementation may choose to ignore it. For a bytefile, the imagelength will be 0.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<br>
+<P>For the specification of the standard defined action strings, see section 7.16.</P>
+
+<P>The Environment Interface	<A HREF="#N_43_"><SUP>(43)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.5  <U>Close data set</U></P>
+
+<br>
+<P>	<U>profile</U>  close_dsetp:newtag</P>
+
+<P>		<U>system</U>  close_dset:newtag  "clfile"</P>
+
+<P>		<U>import</U>  cds_key     INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  cds_action  STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<P>	Action:		A copy of the second parameter to the Simula close procedure,
+see below.</P>
+
+<br>
+<br>
+<P>The associated data set is closed, and the link between the data set and the file object is
+broken, i.e. the key is invalidated. Thus the key cannot be used vis-a-vis the environment
+unless it is again validated (via open).</P>
+
+<br>
+<P>Interpretation of the action parameter is implementation dependent in the sense that it
+may specify actions to be taken in addition to the above mentioned, such as rewind of a
+tape etc.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<br>
+<P>The standard action strings are defined in section 7.16.</P>
+
+<P>The Environment Interface	<A HREF="#N_44_"><SUP>(44)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.6  <U>Inimage</U></P>
+
+<br>
+<P>	<U>profile</U>  inimagep:newtag</P>
+
+<P>		<U>system</U>  inimage:newtag  "inimag"</P>
+
+<P>		<U>import</U>  ini_key     INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  ini_image   STRING</P>
+
+<P>		<U>export</U>  ini_filled  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>	Image:		Input buffer.</P>
+
+<P>	Filled:		The number of characters placed in image.</P>
+
+<br>
+<P>A record is read from the current position of the data set into the image. If the number of
+characters in the record exceeds the image length, the action taken is system dependent:</P>
+
+<br>
+<P>  -	If the system permits partial record read, image.length characters are read, filled :=
+image.length, and status 34 is returned. In this case the next inimage (on this data
+set) should continue reading from the next position in the partially read record.</P>
+
+<br>
+<P>  -	If partial record reading is not possible, status error 12 is set and filled is set to
+zero; the remainder of the record is in this case skipped.</P>
+
+<br>
+<P>Except for the case of partial record reading the data set will be positioned at the
+sequentially next record.</P>
+
+<br>
+<P>Inimage is legal on infiles and directfiles only.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_45_"><SUP>(45)</SUP></A>      </P>
+
+<br>
+<br>
+<P>If the status returned is non-zero, filled must be zero, except for the partial read case
+discussed above (status 12).</P>
+
+<br>
+<br>
+<P>	7.7  Outimage</P>
+
+<br>
+<P>	<U>profile</U>  outimagep:newtag</P>
+
+<P>		<U>system</U>  outimage:newtag  "outima"</P>
+
+<P>		<U>import</U>  oti_key    INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  oti_image  STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>	Image:		Output buffer.</P>
+
+<br>
+<br>
+<P>If the file is of type 2 or 4, image is copied into the record at the current position of the
+data set, and the data set is positioned at the sequentially next record. On printfiles the
+image is printed from the current print position, without vertical spacing (i.e. the next print
+position is the next position on the same line); this is utilised by the Simula breakoutimage
+procedure.</P>
+
+<br>
+<P>Outimage is legal on outfiles, printfiles and directfiles only.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_46_"><SUP>(46)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 <U>profile</U> breakoutp:newtag</P>
+
+<P>		<U>system</U> breakout:newtag "breako"</P>
+
+<P>		<U>import</U> br_key  INT  <U>range</U>  1 255</P>
+
+<P>		<U>import</U> br_img  STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	key:			The key associated with the data set</P>
+
+<br>
+<P>	img:			A string to be output</P>
+
+<br>
+<P>The routine Breako will output the string img to the current record of the data set,
+beginning at the current position. The record should not be "closed" i.e. the next Breako
+(or Outima) will output to the same record, beginning at the new position. If this is not
+possible, Breako shall perform as Outima.</P>
+
+<br>
+<P>On display terminals, Breako will output the string from the current cursor position, and
+leave the cursor positioned after the last charcter of img. Note that trailing blanks (of img)
+shall be output.</P>
+
+<br>
+<P>On other external data sets, it may be necessary for the environment to buffer the output
+internally.</P>
+
+<br>
+<P>The routine is legal for outfiles and printfiles only.</P>
+
+<P>The Environment Interface	<A HREF="#N_47_"><SUP>(47)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.8  <U>Locate record</U></P>
+
+<br>
+<P>	<U>profile</U>  locatep:newtag</P>
+
+<P>		<U>system</U>  locate:newtag  "locate"</P>
+
+<P>		<U>import</U>  lo_key  INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  lo_loc  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<P>	Loc:			Indicates the next record (directfile) or byte (directbytefile)
+position to be accessed.</P>
+
+<br>
+<br>
+<P>The position of the data set is changed so that the next record read or written will be
+record number loc of the data set (the first record is numbered 1). Locate is legal on
+directfiles and directbytefiles only.</P>
+
+<br>
+<P>In case loc is out of range (i.e. greater than the maximum allowable record number), the
+implementation may choose to defer the error reporting to the first following in/outimage
+instead; in that case it is possible to position outside the data set without consequences
+as long as no actual I/O is requested.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_48_"><SUP>(48)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.9  <U>Deleteimage</U></P>
+
+<br>
+<P>	<U>profile</U>  deletep:newtag</P>
+
+<P>		<U>system</U>  delete:newtag  "delete"</P>
+
+<P>		<U>import</U>  del_key    INT <U>range</U> 1 255</P>
+
+<P>		<U>export</U>  del_result BOOL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set</P>
+
+<br>
+<P>	Result:		true if record has been succesfully deleted, false otherwise.</P>
+
+<br>
+<br>
+<P>The record at the current position of the data set is deleted. Note that SIMULA does not
+distinguish between deleted records, and records that never were written. Consequently,
+the value of Lstloc may change after the deletion.</P>
+
+<br>
+<P>If Result is true, the data set is positioned at the sequentially next record, otherwise the
+position is unchanged (this can happen only if the current position of the data set is out of
+range).</P>
+
+<br>
+<P>Delete is legal on directfiles only.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C. Note, however, that end of file conditions (status 15 and 16) shall be reported
+through the value of Result.</P>
+
+<P>The Environment Interface	<A HREF="#N_49_"><SUP>(49)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.10  <U>Get data set name</U></P>
+
+<br>
+<P>	<U>profile</U>  get_dsetnamep:newtag</P>
+
+<P>		<U>system</U>  get_dsetname:newtag  "gdsnam"</P>
+
+<P>		<U>import</U>  gdn_key       INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  gdn_dsetname  STRING</P>
+
+<P>		<U>export</U>  gdn_filled    INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<P>	Dsetname:		Filled by the routine, see below.</P>
+
+<br>
+<P>	Filled:		The number of characters in dsetname.</P>
+
+<br>
+<br>
+<P>The name of the data set associated with the key is returned in the dsetname parameter,
+and filled is set according to the length. If an error occurs filled is set to zero. The
+generated name cannot be longer than 80 characters.</P>
+
+<br>
+<P>Note that the routine returns the actual data set name, which may be different from the
+data set specification under which the data set was opened.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_50_"><SUP>(50)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.11  <U>Get data set specification</U></P>
+
+<br>
+<P>	<U>profile</U>  get_dsetspecp:newtag</P>
+
+<P>		<U>system</U>  get_dsetspec:newtag  "gdspec"</P>
+
+<P>		<U>import</U>  gds_code      INT  <U>range</U>  1  3</P>
+
+<P>		<U>import</U>  gds_dsetpec   STRING</P>
+
+<P>		<U>export</U>  gds_filled    INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Code:		Indicates the kind of data set searched, see explanation below.</P>
+
+<br>
+<P>	Dsetspec:		A data set specification returned here.</P>
+
+<br>
+<P>	Filled:		The length of Dsetspec, or zero.</P>
+
+<br>
+<br>
+<P>The following file names carry predefined meanings at the Simula level, thus it must be
+possible to connect to the corresponding data sets:</P>
+
+<br>
+<P>	SYSIN	identifies the standard input data set (type infile)</P>
+
+<P>	SYSOUT	identifies the standard output data set (type printfile).</P>
+
+<br>
+<P>Furthermore some tracing output data set must be connected if needed; it will be identified
+by the name "SYSTRACE". The data set is a printfile, but it could well be organized with a
+circular buffer to avoid extensive output of unwanted information.</P>
+
+<br>
+<P>This routine is called in order to get a specification of one of these data sets. The resulting
+data set specification will later be used in calls to routine open.</P>
+
+<P>The Environment Interface	<A HREF="#N_51_"><SUP>(51)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The interpretation of what dsetspec represents for the different values of code is as
+follows:</P>
+
+<br>
+<P>	Code		Dsetspec</P>
+
+<br>
+<P>	1		What is the data set specification for SYSIN, the file will be opened as
+infile.</P>
+
+<P>	2		What is the data set specification for SYSOUT, the file will be opened
+as printfile.</P>
+
+<P>	3		What is the data set specification for SYSTRACE, the file will be
+opened as printfile.</P>
+
+<br>
+<P>The algorithm used to generate the specification will be highly implementation dependent.
+The generated data set specification cannot be longer than 72 characters.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_52_"><SUP>(52)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.12  <U>Get lines per page</U></P>
+
+<br>
+<P>	<U>profile</U>  get_lppp:newtag</P>
+
+<P>		<U>system</U>  get_lpp:newtag  "getlpp"</P>
+
+<P>		<U>import</U>  gl_key  INT  <U>range</U>  0  255</P>
+
+<P>		<U>export</U>  gl_lpp  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>	Lpp:			The number of lines per page defined for the indicated data
+set, or zero.</P>
+
+<br>
+<P>Printfiles have a (system or user defined) default number of printable lines per page. A
+call on this routine should result in this value being exported. Note that the number of
+lines skipped at page top and bottom must be excluded. If an error occurs the value
+returned should be zero. A negative value indicates no page formatting.</P>
+
+<br>
+<P>When the routine is called with parameter key=0, the result should be the standard 'lines
+per page' for this installation.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_53_"><SUP>(53)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.13  <U>New page</U></P>
+
+<br>
+<P>	<U>profile</U>  newpagep:newtag</P>
+
+<P>		<U>system</U>  newpage:newtag  "newpag"</P>
+
+<P>		<U>import</U>  np_key  INT  <U>range</U>  1  255</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<br>
+<P>The top-of-form action is performed on the data set, so that the next image will be printed
+on the first printable line of the following page. This is legal on printfiles only.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_54_"><SUP>(54)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.14  <U>Printoutimage</U></P>
+
+<br>
+<P>	<U>profile</U>  print_outimagep:newtag</P>
+
+<P>		<U>system</U>  print_outimage:newtag  "printo"</P>
+
+<P>		<U>import</U>  po_key    INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  po_image  STRING</P>
+
+<P>		<U>import</U>  po_spc    INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<P>	Image:		The image to be printed.</P>
+
+<br>
+<P>	Spc:			Vertical spacing, see below.</P>
+
+<br>
+<br>
+<P>The image is printed from the current line position, and the data set is positioned
+according to the value of spc as follows:</P>
+
+<br>
+<P>	spc&lt;0	The data set is backspaced -spc lines; if this is not possible the position is
+not changed (i.e. as if spc=0) and status 19 is returned.</P>
+
+<br>
+<P>	spc=0	Indicates that the next image should overprint this; if this is not possible the
+action is as for spc=1 and status 19 is returned.</P>
+
+<br>
+<P>	spc=1	The normal case: the next image is printed on the following line.</P>
+
+<br>
+<P>	spc&gt;1	spc-1 empty lines are printed before the next image.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_55_"><SUP>(55)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.15  <U>Byte input</U></P>
+
+<br>
+<P>	<U>profile</U>  inbytep:newtag</P>
+
+<P>		<U>system</U>  inbyte:newtag  "inbyte"</P>
+
+<P>		<U>import</U>  ib_key   INT  <U>range</U>  1  255</P>
+
+<P>		<U>export</U>  ib_byte  INT  <U>range</U>  0  255</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<P>	Byte:		Value input.</P>
+
+<br>
+<br>
+<P>One byte is input from the current position of the data set, and the data set is positioned at
+the following byte.</P>
+
+<br>
+<br>
+<P>	<U>profile</U>  in2bytep:newtag</P>
+
+<P>		<U>known</U>   in2byte:newtag  "in2byt"</P>
+
+<P>		<U>import</U>  i2b_key     INT  <U>range</U>  1  255</P>
+
+<P>		<U>export</U>  i2b_double  INT  <U>range</U>  0  65535</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>	Double:		Value input.</P>
+
+<br>
+<P>The body of the routine may be described as</P>
+
+<br>
+<P>		double:= inbyte(key);</P>
+
+<P>		double:= double*256 + inbyte(key);</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<br>
+<P>Inbyte and In2byte are legal on inbytefiles and directbytefiles only.</P>
+
+<P>The Environment Interface	<A HREF="#N_56_"><SUP>(56)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.16  <U>Byte output</U></P>
+
+<br>
+<P>	<U>profile</U>  outbytep:newtag</P>
+
+<P>		<U>system</U>  outbyte:newtag  "outbyt"</P>
+
+<P>		<U>import</U>  ob_key   INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  ob_byte  INT  <U>range</U>  0  255</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>	Byte:		Value to be output.</P>
+
+<br>
+<br>
+<P>Byte is output to the current data set position and the data set is positioned at the
+following byte.</P>
+
+<br>
+<br>
+<P>	<U>profile</U>  out2bytep:newtag</P>
+
+<P>		<U>known</U>   out2byte:newtag  "out2by"</P>
+
+<P>		<U>import</U>  o2b_key     INT  <U>range</U>  1  255</P>
+
+<P>		<U>import</U>  o2b_double  INT  <U>range</U>  0  65535</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>	Double:		Value to be output.</P>
+
+<br>
+<br>
+<P>Double is output to the data set as two bytes; the body of the routine may be described as</P>
+
+<br>
+<P>		single := double//256;</P>
+
+<P>		outbyte(key, single);</P>
+
+<P>		outbyte(key, double-single*256);</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_57_"><SUP>(57)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Outbyte and Out2byte are legal on outbytefiles and directbytefiles only.</P>
+
+<br>
+<br>
+<P>	7.17  <U>Lastloc and Maxloc</U></P>
+
+<br>
+<P>	<U>profile</U> lastlocp:newtag</P>
+
+<P>		<U>system</U> lastloc:newtag "lstloc"</P>
+
+<P>		<U>import</U> ll_key  INT  <U>range</U> 1 255</P>
+
+<P>		<U>export</U> ll_val  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	<U>profile</U> maxlocp:newtag</P>
+
+<P>		<U>system</U> maxloc:newtag "maxloc"</P>
+
+<P>		<U>import</U> ml_key  INT  <U>range</U> 1 255</P>
+
+<P>		<U>export</U> ml_val  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<P>	Val:			The desired value.</P>
+
+<br>
+<P>The routine Lstloc will give access to the largest location of any written image in the file
+referenced by key.</P>
+
+<br>
+<P>The routine Maxloc will give acces to the maximum value that can be used as parameter
+to Locate on the file referenced by key.</P>
+
+<br>
+<P>Lstloc and Maxloc are legal on directfiles and directbytefiles only.</P>
+
+<P>The Environment Interface	<A HREF="#N_58_"><SUP>(58)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.18  <U>Checkpoint</U></P>
+
+<br>
+<P>	<U>profile</U> chkpntp:newtag</P>
+
+<P>		<U>system</U> chkpnt:newtag "chkpnt"</P>
+
+<P>		<U>import</U> ll_key    INT  <U>range</U> 1 255</P>
+
+<P>		<U>export</U> ll_result BOOL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<br>
+<P>	Result:		Signals the result, see below.</P>
+
+<br>
+<P>When this routine is called, the environment shall attempt to secure the output produced
+so far. Depending on the nature of the associated external device, this causes completion
+of output transfer (i.e. intermediate buffer contents are transferred). If this is not possible,
+the result false is returned, otherwise the routine returns true.</P>
+
+<br>
+<P>The routine is legal for outfiles, directfiles, outbytefiles and directbytefiles only.</P>
+
+<P>The Environment Interface	<A HREF="#N_59_"><SUP>(59)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 7.19  <U>Direct file locking</U></P>
+
+<br>
+<P>	<U>profile</U> lockfip:newtag</P>
+
+<P>		<U>system</U> lockfi:newtag "lockfi"</P>
+
+<P>		<U>import</U> lf_key    INT  <U>range</U> 1 255</P>
+
+<P>		<U>import</U> lf_lim    REAL</P>
+
+<P>		<U>import</U> lf_loc1   INT</P>
+
+<P>		<U>import</U> lf_loc2   INT</P>
+
+<P>		<U>export</U> ll_result INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>	Lim:			Time limit (in seconds) for waiting for the file to be available for
+exclusive access. If the value is less than or equal to zero, the
+routine should return -1 without performing any file actions.</P>
+
+<P>	Loc1:		First record or byte to be locked.</P>
+
+<P>	Loc2:		Last record or byte to be locked.</P>
+
+<P>	Result:		  0 -	the file is locked</P>
+
+<P>				 -1 -	timelimit reached</P>
+
+<P>				&lt;-1 -	not possible to lock file</P>
+
+<br>
+<P>The routine Lockfi will lock the file for this application, i.e. it will give the program
+exclusive access to the dataset in question, to all or part of the file. See SIMULA
+Standard, 10.2.2.</P>
+
+<br>
+<br>
+<P>	<U>profile</U> unlockp:newtag</P>
+
+<P>		<U>system</U> unlock:newtag "unlock"</P>
+
+<P>		<U>import</U> ll_key  INT  <U>range</U> 1 255</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			The key associated with the data set.</P>
+
+<P>The Environment Interface	<A HREF="#N_60_"><SUP>(60)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The routine Unlock eliminates the effect Lockfi might have had on the data set.</P>
+
+<br>
+<P>Lockfi and Unlock are legal on directfiles and directbytefiles only.</P>
+
+<br>
+<br>
+<P>	7.20  <U>Data Set Access Specification</U></P>
+
+<br>
+<P>The standard attribute procedure "setaccess" is defined in the SIMULA Standard, section
+10.1.1. In order to implement the effect of this procedure, Opfile (section 7.4) and Clfile
+(section 7.5) may have a non-empty 'action' parameter, specifying the actions to be taken
+when a data set is opened, resp. closed.</P>
+
+<br>
+<P>The format of a non-empty action string, is w=  ;&lt;action&gt;  &lt; ; &lt;action&gt; &gt;* where &lt;action&gt;
+is an identifier specifying the wanted action. Standard S-port action identifiers are defined
+below, an implementation may add to this list as needed.</P>
+
+<br>
+<P>The column "at" in the table indicates when the action can occur: 'O' means as parameter
+to Opfile and 'C' means parameter to Clfile.</P>
+
+<br>
+<P>An action, if given, overrides an implementation defined default.</P>
+
+<br>
+<P>	Action	at	Definition</P>
+
+<br>
+<P>	SHARED	O	The data set may be shared with other programs.</P>
+
+<br>
+<P>	NOSHARED	O	The data set cannot be shared, i.e. access must be exclusive.</P>
+
+<br>
+<P>	APPEND	O	Open an existing data set for extension, i.e. position at highest
+written record + 1 (lastloc+1 on direct(byte)files).</P>
+
+<P>The Environment Interface	<A HREF="#N_61_"><SUP>(61)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	NOAPPEND	O	If the data set exists, it is logically emptied. This is relevant for
+direct(byte)files only.</P>
+
+<br>
+<P>	CREATE	O	If the data set exists, Opfile returns status 4 without further
+action.</P>
+
+<br>
+<P>	NOCREATE	O	If the data set does not exist, Opfile returns status 3 without
+further action.</P>
+
+<br>
+<P>	ANYCREATE	O	If the data set exists, it is used. If not, a new data set of
+the given Dsetspec is created.</P>
+
+<br>
+<P>	READONLY	O	Relevant for direct(byte)files only. If output operations are
+attempted, status 20 should be returned.</P>
+
+<br>
+<P>	WRITEONLY	O	Relevant for direct(byte)files only. If input operations are
+attempted, status 26 should be returned.</P>
+
+<br>
+<P>	BYTESZ:n	O	'n' is an integer. Relevant for bytefiles only. Specifies the size
+(in bits) of the bytes in the file. The interpretation is
+implementation-defined.</P>
+
+<br>
+<P>	REWIND	OC	Rewind tape before opening or after close. No effect if data set
+is not on tape.</P>
+
+<br>
+<P>	NOREWIND	OC	Do not rewind tape. No effect if data set is not on tape.</P>
+
+<P>	PURGE	OC	Make the data set inaccessible to the program after close.</P>
+
+<br>
+<P>	NOPURGE	OC	Keep the data set accessible to the program after close.</P>
+
+<P>The Environment Interface	<A HREF="#N_62_"><SUP>(62)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 RELEASE	C	If the data set is on tape, the tape is unloaded. Otherwise
+PURGE for scratch files, NOPURGE for other data sets.</P>
+
+<br>
+<P>	NEXTFILE	OC	Only relevant for data sets on tape. At open, the file at which
+the tape is positioned is skipped. At close, the tape is
+positioned at the beginning of the following file (this is normally
+not possible for output type files).</P>
+
+<br>
+<P>	PREVIOUS	C	Only relevant for data set on tape. After close, the tape is
+positioned at the beginning of the data set preceding the data
+set just closed (i.e. NEXTFILE at next open will position the
+tape at the data set just closed). If the current data set is the
+first on the tape, the tape is rewound.</P>
+
+<br>
+<P>	REPEAT	C	Only relevant for data set on tape. After close, the tape is
+positioned at the beginning of the data set just closed.</P>
+
+<br>
+<P>	MOVE:n	OC	'n' is an integer. Relevant for data sets on tape only. If n=0,
+REPEAT. If n&lt;0, perform PREVIOUS abs(n) times or until
+beginning-of-tape. If n&gt;0, perform NEXTFILE n times.</P>
+
+<P>The Environment Interface	<A HREF="#N_63_"><SUP>(63)</SUP></A>      </P>
+
+<br>
+<br>
+<P>8  <STRONG>TEXT PROCEDURES FROM SIMULA</STRONG></P>
+
+<br>
+<P>The following routines are intended to implement the de-editing and editing procedures
+described in SIMULA Common Base. The numeric items read or produced by the routines
+are defined by the syntax of numeric items, SIMULA Common Base 10.8.1.</P>
+
+<br>
+<br>
+<P>	8.1  <U>De-editing routines</U></P>
+
+<br>
+<P>The de-editing routines perform the functions described for the corresponding procedures
+in SIMULA Common Base 10.9.</P>
+
+<br>
+<P>The global variable itemsize shall be set by each routine to the number of characters in
+the numeric item read by the routine, including possible leading blanks.</P>
+
+<br>
+<br>
+<P>		8.1.1  <U>Integers</U></P>
+
+<br>
+<P>	<U>profile</U> get_intp:newtag</P>
+
+<P>		<U>system</U> get_int:newtag "getint"</P>
+
+<P>		<U>import</U> gi_item    STRING</P>
+
+<P>		<U>export</U> gi_val     INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for de-editing.</P>
+
+<br>
+<P>	Val:			This is the resulting integer from the routine.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_64_"><SUP>(64)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 8.1.2  <U>Reals</U></P>
+
+<br>
+<P>	<U>profile</U> get_realp:newtag</P>
+
+<P>		<U>system</U> get_real:newtag "gtreal"</P>
+
+<P>		<U>import</U> gr_item    STRING</P>
+
+<P>		<U>export</U> gr_val     LREAL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for de-editing.</P>
+
+<P>	Val:			This is the resulting long real from the routine.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<br>
+<br>
+<P>		8.1.3  <U>Fractions</U></P>
+
+<br>
+<P>	<U>profile</U> get_fracp:newtag</P>
+
+<P>		<U>system</U> get_frac:newtag "gtfrac"</P>
+
+<P>		<U>import</U> gf_item    STRING</P>
+
+<P>		<U>export</U> gf_val     INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for de-editing.</P>
+
+<P>	Val:			This is the resulting integer from the routine.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_65_"><SUP>(65)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 8.2  <U>Editing routines</U></P>
+
+<br>
+<P>The editing routines perform the functions described for the corresponding procedures in
+SIMULA Common Base 10.10. Extensions to the set in SIMULA Common Base 10.10 are
+put_fix and put_real. They have the same function as putfix and putreal, but with a real
+parameter instead of a long real.</P>
+
+<br>
+<P>Note that long reals are to be edited into a real item.</P>
+
+<br>
+<P>The string import parameter will not be empty.</P>
+
+<br>
+<P>If the string is too short to contain the numeric item then this will be signalled through the
+global variable status, and the string is not filled with asterisks.</P>
+
+<br>
+<br>
+<P>		8.2.1  <U>Integers</U></P>
+
+<br>
+<P>	<U>profile</U> put_intp:newtag</P>
+
+<P>		<U>system</U> put_int:newtag "putint"</P>
+
+<P>		<U>import</U> pi_item   STRING</P>
+
+<P>		<U>import</U> pi_val    INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for editing.</P>
+
+<br>
+<P>	Val:			This is the integer that is to be edited into the string.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_66_"><SUP>(66)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 8.2.2  <U>Fixed format reals</U></P>
+
+<br>
+<P>	<U>profile</U> put_fixp:newtag</P>
+
+<P>		<U>system</U> put_fix:newtag "putfix"</P>
+
+<P>		<U>import</U> pf_item   STRING</P>
+
+<P>		<U>import</U> pf_val    REAL</P>
+
+<P>		<U>import</U> pf_frac   INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for editing.</P>
+
+<br>
+<P>	Val:			This is the real that is to be edited into the text.</P>
+
+<br>
+<P>	Frac:		This is the number of characters that is to be reserved for the fraction
+part of the decimal item.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_67_"><SUP>(67)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 8.2.3  <U>Fixed format long reals</U></P>
+
+<br>
+<P>	<U>profile</U> put_lfixp:newtag</P>
+
+<P>		<U>system</U> put_lfix:newtag "ptlfix"</P>
+
+<P>		<U>import</U> pf_item   STRING</P>
+
+<P>		<U>import</U> pf_val    LREAL</P>
+
+<P>		<U>import</U> pf_frac   INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for editing.</P>
+
+<br>
+<P>	Val:			This is the long real that is to be edited into the string.</P>
+
+<br>
+<P>	Frac:		This is the number of characters that is to be reserved for the fraction
+part of the decimal item.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_68_"><SUP>(68)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 8.2.4  <U>Floating format reals</U></P>
+
+<br>
+<P>	<U>profile</U> put_realp:newtag</P>
+
+<P>		<U>system</U> put_real:newtag "ptreal"</P>
+
+<P>		<U>import</U> pr_item   STRING</P>
+
+<P>		<U>import</U> pr_val    REAL</P>
+
+<P>		<U>import</U> pr_frac   INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for editing.</P>
+
+<br>
+<P>	Val:			This is the real to be edited into the string.</P>
+
+<br>
+<P>	Frac:		This gives the length of the fraction part of the resulting item.</P>
+
+<br>
+<P>If the text string is too short to contain the resulting numeric item or the value of the
+parameter frac is less than zero, this will be signalled through the global variable status
+when returning from the routine. The possible values of the global variable status are
+given in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_69_"><SUP>(69)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 8.2.5  <U>Floating format long reals</U></P>
+
+<br>
+<P>	<U>profile</U> put_lrealp:newtag</P>
+
+<P>		<U>system</U> put_lreal:newtag "plreal"</P>
+
+<P>		<U>import</U> pr_item   STRING</P>
+
+<P>		<U>import</U> pr_val    LREAL</P>
+
+<P>		<U>import</U> pr_frac   INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for editing.</P>
+
+<br>
+<P>	Val:			This is the long real to be edited into the string.</P>
+
+<br>
+<P>	Frac:		This gives the length of the fraction part of the resulting item.</P>
+
+<br>
+<P>If the text string is too short to contain the resulting numeric item or the value of the
+parameter frac is less than zero, this will be signalled through the global variable status
+when returning from the routine. The possible values of the global variable status are
+given in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_70_"><SUP>(70)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 8.2.6  <U>Fractions</U></P>
+
+<br>
+<P>	<U>profile</U> put_fracp:newtag</P>
+
+<P>		<U>system</U> put_frac:newtag "ptfrac"</P>
+
+<P>		<U>import</U> pc_item STRING</P>
+
+<P>		<U>import</U> pc_val  INT</P>
+
+<P>		<U>import</U> pc_n    INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Item:		This is the string that is subject for editing.</P>
+
+<br>
+<P>	Val:			This is an integer to be edited as a grouped item.</P>
+
+<br>
+<P>	N:			This parameter specifies the number of digits to follow the
+decimal point in the grouped item.</P>
+
+<br>
+<P>If the string is too short to contain the resulting numeric item, this will be signalled through
+the global variable status when returning from the routine. The possible values of the
+global variable status are given in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_71_"><SUP>(71)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 8.2.7  <U>Additional editing routines</U></P>
+
+<br>
+<P>For internal purposes it is necessary to introduce additional editing routines. Specially for
+debugging of the run-time system these routines are important.</P>
+
+<br>
+<P>The routines will give the possibility of outputing the simple types in the S-code. Since
+they are target dependently represented, they can only be output through the
+environment. We will describe the necessary routines collectively.</P>
+
+<br>
+<P>	<U>profile</U> put_sizep:newtag</P>
+
+<P>		<U>system</U> put_size:newtag "ptsize"</P>
+
+<P>		<U>import</U> ps_item   STRING</P>
+
+<P>		<U>import</U> ps_val    SIZE</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	<U>profile</U> put_oaddrp:newtag</P>
+
+<P>		<U>system</U> put_oaddr:newtag "ptoadr"</P>
+
+<P>		<U>import</U> po_item   STRING</P>
+
+<P>		<U>import</U> po_val    OADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	<U>profile</U> put_aaddrp:newtag</P>
+
+<P>		<U>system</U> put_aaddr:newtag "ptaadr"</P>
+
+<P>		<U>import</U> pa_item   STRING</P>
+
+<P>		<U>import</U> pa_val    AADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	<U>profile</U> put_paddrp:newtag</P>
+
+<P>		<U>system</U> put_paddr:newtag "ptpadr"</P>
+
+<P>		<U>import</U> pp_item   STRING</P>
+
+<P>		<U>import</U> pp_val    PADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<P>The Environment Interface	<A HREF="#N_72_"><SUP>(72)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 <U>profile</U> put_raddrp:newtag</P>
+
+<P>		<U>system</U> put_raddr:newtag "ptradr"</P>
+
+<P>		<U>import</U> pr_item   STRING</P>
+
+<P>		<U>import</U> pr_val    RADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The import parameter val is the simple type which is to be edited into the string item.
+Editing of the type GADDR will be done through splitting and use of put_aaddr and
+put_oaddr.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_73_"><SUP>(73)</SUP></A>      </P>
+
+<br>
+<br>
+<P>9  <STRONG>STANDARD PROCEDURES FROM SIMULA</STRONG></P>
+
+<br>
+<P>	9.1  <U>Random drawing procedures</U></P>
+
+<br>
+<P>	<U>profile</U>  basic_drawp:newtag</P>
+
+<P>		<U>system</U>  basic_draw:newtag  "drawrp"</P>
+
+<P>		<U>import</U>  d_U    GADDR</P>
+
+<P>		<U>export</U>  d_val  LREAL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	U:			The general address of an INT quantity which will be modified
+by the routine.</P>
+
+<P>	Val:			A real number in the interval (0,1), such that 0 &lt;= val &lt; 1.</P>
+
+<br>
+<P>The routine shall replace the value of the specified integer variable U by a new value
+according to an implementation defined algorithm, which satisfy the condition stated in the
+Simula standard that</P>
+
+<br>
+<P>	U(i+1) must be generated on the basis of U(i) alone, i.e. no other elements in the
+stream of pseudo random numbers should be used in the calculation.</P>
+
+<br>
+<P>For positive values of U a linear congruential sequence:</P>
+
+<br>
+<P>	U(i+1) = ( a*U(i) + c ) modulo m      i &gt;= 0</P>
+
+<br>
+<P>may be adjusted to satisfy these conditions, and is recommended. The values of the
+constants "a", "c" and "m", and the value U(0), are crucial in order to generate "good"
+sequences; the target system representation of integers influences the choices. We refer
+to the litterature (e.g. D. Knuth: "The art of computer programming", chapter 3) for a
+discussion on how to obtain these values.</P>
+
+<br>
+<P>The exported real (val) is computed as U(i+1)/m.</P>
+
+<P>The Environment Interface	<A HREF="#N_74_"><SUP>(74)</SUP></A>      </P>
+
+<br>
+<br>
+<P>If U is negative a socalled "antithetic drawing" should be obtained by computing U' and
+val' from -U in the same manner as for positive U. The new values will then be</P>
+
+<br>
+<P>	U := - U';</P>
+
+<P>	val := if val' &lt;&gt; 0 then 1-val' else 0;</P>
+
+<br>
+<P>In this case the new value of U will also be negative, while the export real still lies in the
+interval (0,1).</P>
+
+<br>
+<P>This routine cannot change the value of status.</P>
+
+<P>The Environment Interface	<A HREF="#N_75_"><SUP>(75)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 9.2  <U>Utility procedures</U></P>
+
+<br>
+<P>		9.2.1  <U>Date and time</U></P>
+
+<br>
+<P>We need a routine to provide the function of date and time. This must be provided by the
+environment, because the information is only provided from the target system.</P>
+
+<br>
+<P>	<U>profile</U> date_and_timep:newtag</P>
+
+<P>		<U>system</U> date_and_time:newtag "dattim"</P>
+
+<P>		<U>import</U> dat_result   STRING</P>
+
+<P>		<U>export</U> dat_filled   INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The result of a call on the routine will be filled into the string. The string should have the
+following syntax:</P>
+
+<br>
+<P>	"yyyy-mm-dd hh:nn:ss.ppp"</P>
+
+<br>
+<P>This string is defined according to the ISO standard for providing the date and time. The
+ISO recommendation for the date specification is ISO 2014-1976, the recommendation for
+time is ISO 3307-1975, and the concatenation of the two is also in ISO 3307. The different
+parts of the string are:</P>
+
+<br>
+<P>	yyyy	Four digits specifying the year</P>
+
+<P>	mm	Two digits specifying the month</P>
+
+<P>	dd	Two digits specifying the day in month</P>
+
+<br>
+<P>	hh	Two digits specifying the hour</P>
+
+<P>	nn	Two digits specifying the minute within the hour</P>
+
+<P>	ss	Two digits specifying the second within the minute</P>
+
+<P>	ppp	At least three digits specifying part of second.</P>
+
+<br>
+<P>The returned STRING will be filled with this string.</P>
+
+<P>The Environment Interface	<A HREF="#N_76_"><SUP>(76)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 9.2.2  <U>Redefine the lowten character</U></P>
+
+<br>
+<P>The character '&amp;' represents the exponent sign in any numeric item to be edited or
+de-edited, (see the Common Base). This can be changed by the user. The following
+routine is defined to submit this information to the environment.</P>
+
+<br>
+<P>	<U>profile</U> lowtenp:newtag</P>
+
+<P>		<U>system</U> lowten:newtag "lowten"</P>
+
+<P>		<U>import</U> lt_c   CHAR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The parameter c to the routine is the character that from this point on is used to represent
+the exponent sign in a numeric item.</P>
+
+<br>
+<P>If the lowten character is changed, this should also imply that the double lowten ("&amp;&amp;")
+applied for long real should also be changed.</P>
+
+<br>
+<br>
+<P>		9.2.3  <U>Clock time</U></P>
+
+<br>
+<P>	<U>profile</U> clocktp:newtag</P>
+
+<P>		<U>known</U> clockt:newtag "clockt"</P>
+
+<P>		<U>export</U> ct_val  LREAL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The routine returns a long real value specifying the elapsed time in seconds since
+midnight.</P>
+
+<P>The Environment Interface	<A HREF="#N_77_"><SUP>(77)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 9.2.4  <U>Change decimal mark</U></P>
+
+<br>
+<P>	<U>profile</U> dcmarkp:newtag</P>
+
+<P>		<U>system</U> dcmark:newtag "dcmark"</P>
+
+<P>		<U>import</U> dc_chr  CHAR</P>
+
+<P>		<U>export</U> dc_old  CHAR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Chr:			The desired character to be applied as decimal mark from now
+on. Only legal values are '.' and ','.</P>
+
+<br>
+<P>	Old:			The previous decimal mark character.</P>
+
+<br>
+<P>The routine gives the possibility to redefine the value of the decimal mark character, and
+to get the default in the current system.</P>
+
+<br>
+<P>The Environment Interface	<A HREF="#N_78_"><SUP>(78)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		 9.2.5  <U>Text utility procedures</U></P>
+
+<br>
+<P>	<U>profile</U> blankp:newtag</P>
+
+<P>		<U>known</U>  blank:newtag "cblnk"</P>
+
+<P>		<U>import</U> br_str  STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The routine will space-fill the string Str.</P>
+
+<br>
+<P>This routine may not change the value of the global variable Status.</P>
+
+<br>
+<br>
+<P>	<U>profile</U> movep:newtag</P>
+
+<P>		<U>known</U>  move:newtag "cmove"</P>
+
+<P>		<U>import</U> br_src  STRING</P>
+
+<P>		<U>import</U> br_dst  STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The routine will move the contents of the string Src into the string Dst. The length of Dst
+must be greater than or equal to the length of Src, if not the value 24 will be assigned to
+the global variable status.</P>
+
+<P>The Environment Interface	<A HREF="#N_79_"><SUP>(79)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 <U>profile</U> textrelp:newtag</P>
+
+<P>		<U>known</U>  textrel:newtag "txtrel"</P>
+
+<P>		<U>import</U> tr_str1  STRING</P>
+
+<P>		<U>import</U> tr_str2  STRING</P>
+
+<P>		<U>import</U> tr_code  INT</P>
+
+<P>		<U>export</U> tr_rel   BOOL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Str1:		String to the left of the relation</P>
+
+<P>	Str2:		String to the right of the relation</P>
+
+<P>	Code:		Encodes relation to be tested (see below)</P>
+
+<P>	Rel:			Result of evaluation, according to value of parameter Code:</P>
+
+<br>
+<P>				code   result</P>
+
+<br>
+<P>				1    rel :=  Str1  &lt;  Str2</P>
+
+<P>				2    rel :=  Str1  =  Str2</P>
+
+<P>				3    rel :=  Str1  &lt;= Str2</P>
+
+<P>				4    rel :=  Str1  &gt;  Str2</P>
+
+<P>				5    rel :=  Str1  &lt;&gt; Str2</P>
+
+<P>				6    rel :=  Str1  &gt;= Str2</P>
+
+<br>
+<P>The routine will compare the two strings as indicated by "code" and return the result of the
+comparison.</P>
+
+<br>
+<P>This routine may change the value of the global variable Status.</P>
+
+<P>The Environment Interface	<A HREF="#N_80_"><SUP>(80)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 <U>profile</U> stripp:newtag</P>
+
+<P>		<U>known</U>  strip:newtag "stripp"</P>
+
+<P>		<U>import</U> str_Str     STRING</P>
+
+<P>		<U>export</U> str_filled  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The routine will strip off trailing blanks in "Str" and return the position of the last non-blank
+character.</P>
+
+<br>
+<P>This routine will not change the value of the global variable Status.</P>
+
+<br>
+<br>
+<P>		9.2.6  <U>Digit and Letter</U></P>
+
+<br>
+<P>	<U>profile</U> digitp:newtag</P>
+
+<P>		<U>known</U>  digit:newtag "digit"</P>
+
+<P>		<U>import</U> di_arg    CHAR</P>
+
+<P>		<U>export</U> di_result BOOL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Result:		true if Arg is a decimal digit, else false</P>
+
+<br>
+<br>
+<P>	<U>profile</U> letterp:newtag</P>
+
+<P>		<U>known</U>  letter:newtag "letter"</P>
+
+<P>		<U>import</U> le_arg    CHAR</P>
+
+<P>		<U>export</U> le_result BOOL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Result:		true if Arg is a letter of the English alphabet, else false</P>
+
+<br>
+<P>The routines Digit and Letter cannot change the value of the global variable status.</P>
+
+<P>The Environment Interface	<A HREF="#N_81_"><SUP>(81)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 9.3  <U>Mathematical library procedures</U></P>
+
+<br>
+<P>The following mathematical library routines are defined to cover the same standard
+procedures in SIMULA.</P>
+
+<br>
+<P>These routines may change the value of the global variable status to one of the values
+given in appendix C.</P>
+
+<br>
+<P>The routines correspond to the similarly named SIMULA Standard functions.</P>
+
+<br>
+<P>The routine are defined following one of two possible schemes:</P>
+
+<br>
+<P>Scheme 1:</P>
+
+<br>
+<P>	<U>profile</U> &lt;name&gt;p:newtag</P>
+
+<P>		<U>system</U> &lt;name&gt;:newtag "&lt;external name&gt;"</P>
+
+<P>		<U>import</U> arg  &lt;type&gt;</P>
+
+<P>		<U>export</U> val  &lt;type&gt;</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>Scheme 2:</P>
+
+<br>
+<P>	<U>profile</U> &lt;name&gt;p:newtag</P>
+
+<P>		<U>system</U> &lt;name&gt;:newtag "&lt;external name&gt;"</P>
+
+<P>		<U>import</U> arg1 &lt;type&gt;</P>
+
+<P>		<U>import</U> arg2 &lt;type&gt;</P>
+
+<P>		<U>export</U> val  &lt;type&gt;</P>
+
+<P>	<U>endprofile</U></P>
+
+<P>The Environment Interface	<A HREF="#N_82_"><SUP>(82)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The following routines are defined:</P>
+
+<br>
+<P>Routine:       Scheme:       Name:      External name:      Type:</P>
+
+<br>
+<P>Square root		1	sqrt			sqroot		LREAL</P>
+
+<P>Square root		1	rsqrt		rsqroo		REAL</P>
+
+<P>Logaritms			1	ln			logari		LREAL</P>
+
+<P>Logaritms			1	rln			rlogar		REAL</P>
+
+<P>Exponentiation		1	exp			expone		LREAL</P>
+
+<P>Exponentiation		1	rexp			rexpon		REAL</P>
+
+<P>Sinus			1	sinus		sinusr		LREAL</P>
+
+<P>Sinus			1	rsinus		rsinus		REAL</P>
+
+<P>Arctan			1	arctan		arctan		LREAL</P>
+
+<P>Arctan			1	rarctan		rartan		REAL</P>
+
+<P>Cosinus			1	cos			cosinu		LREAL</P>
+
+<P>Cosinus			1	rcos			rcosin		REAL</P>
+
+<P>Tangens			1	tan			tangen		LREAL</P>
+
+<P>Tangens			1	rtan			rtangn		REAL</P>
+
+<P>Arcsin			1	arcsin		arcsin		LREAL</P>
+
+<P>Arcsin			1	rarcsin		rarsin		REAL</P>
+
+<P>Arccos			1	arccos		arccos		LREAL</P>
+
+<P>Arccos			1	rarccos		rarcos		REAL</P>
+
+<P>Arctan2			2	atan2		atan2		LREAL</P>
+
+<P>Arctan2			2	ratan2		ratan2		REAL</P>
+
+<P>Sinh				1	sinh			sinh			LREAL</P>
+
+<P>Sinh				1	rsinh		rsinh		REAL</P>
+
+<P>Cosh				1	cosh			cosh			LREAL</P>
+
+<P>Cosh				1	rcosh		rcosh		REAL</P>
+
+<P>Tanh				1	tanh			tanh			LREAL</P>
+
+<P>Tanh				1	rtanh		rtanh		REAL</P>
+
+<P>Addepsilon		1	raddeps		raddep		REAL</P>
+
+<P>Addepsilon		1	daddeps		daddep		LREAL</P>
+
+<P>Subepsilon		1	rsubeps		rsubep		REAL</P>
+
+<P>Subepsilon		1	dsubeps		dsubep		LREAL</P>
+
+<P>The Environment Interface	<A HREF="#N_83_"><SUP>(83)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Routine:       Scheme:       Name:      External name:      Type:</P>
+
+<br>
+<P>IntIntpower		2	iipower		iipowr		INT</P>
+
+<P>RealIntpower	*)	2	ripower		ripowr		REAL/INT</P>
+
+<P>RealRealpower		2	rrpower		rrpowr		REAL</P>
+
+<P>RealLrealpower	*)	2	rdpower		rdpowr		 REAL/LREAL</P>
+
+<P>LrealIntpower	*)	2	dipower		dipowr		LREAL/INT</P>
+
+<P>LrealRealpower	*)	2	drpower		drpowr		 LREAL/REAL</P>
+
+<P>LrealLrealpower	2	ddpower		ddpowr		LREAL</P>
+
+<P>Log10			1	rlog10		rlog10		REAL</P>
+
+<P>Log10			1	dlog10		dlog10		LREAL</P>
+
+<P>Cotangens			1	rcotan		rcotan		REAL</P>
+
+<P>Cotangens			1	dcotan		cotang		LREAL</P>
+
+<P>Modulo			2	mod			modulo		INT</P>
+
+<br>
+<br>
+<P>The following known routines are defined, following the same scheme:</P>
+
+<br>
+<P>Entier		*)	1	rentier		renti		REAL/INT</P>
+
+<P>Entier		*)	1	dentier		denti		LREAL/INT</P>
+
+<P>Min				2	rmin			rmin			REAL</P>
+
+<P>Min				2	dmin			dmin			LREAL</P>
+
+<P>Max				2	rmax			rmax			REAL</P>
+
+<P>Max				2	dmax			dmax			LREAL</P>
+
+<P>Abs				2	iabs			iabs			INT</P>
+
+<P>Abs				2	rabs			rabs			REAL</P>
+
+<P>Abs				2	dabs			dabs			LREAL</P>
+
+<P>Sign			*)	1	rsign		rsign		 REAL/INT</P>
+
+<P>Sign			*)	1	dsign		dsign		 LREAL/INT</P>
+
+<P>The Environment Interface	<A HREF="#N_84_"><SUP>(84)</SUP></A>      </P>
+
+<br>
+<br>
+<P> *)	The routines have different type of parameters and result as follows:</P>
+
+<br>
+<P>	Routine:		1st param:	2nd param:	Result:</P>
+
+<br>
+<P>	ripower		REAL			INT			REAL</P>
+
+<P>	rdpower		REAL			LREAL		LREAL</P>
+
+<P>	dipower		LREAL		INT			LREAL</P>
+
+<P>	drpower		LREAL		REAL			LREAL</P>
+
+<P>	rentier		REAL			 -			INT</P>
+
+<P>	dentier		LREAL		 -			INT</P>
+
+<P>	rsign		REAL			 -			INT</P>
+
+<P>	dsign		LREAL		 -			INT</P>
+
+<P>The Environment Interface	<A HREF="#N_85_"><SUP>(85)</SUP></A>      </P>
+
+<br>
+<br>
+<P>10  <STRONG>EXCEPTION HANDLING</STRONG></P>
+
+<br>
+<P>The normal progress in program execution may be interrupted by the detection of an
+exceptional condition in any part of the system:</P>
+
+<br>
+<P>  -	errors detected within RTE service routines (e.g. file opening).</P>
+
+<br>
+<P>  -	errors or other exception conditions detected by hardware (e.g. division by zero,
+CPU time limit).</P>
+
+<br>
+<P>  -	from the terminal it may be possible to interrupt the execution in several ways.</P>
+
+<br>
+<P>  -	user-specified breakpoints may be set by means of the environment-routine
+'breakp' (see chapter 11).</P>
+
+<br>
+<br>
+<P>	10.1  <U>Exceptions in the environment routines</U></P>
+
+<br>
+<P>Normally, exceptional conditions that occur within either an environment interface routine
+(as defined in this document) or within the target environment, are reported via the global
+variable "status".</P>
+
+<br>
+<P>The illegal address/instruction traps (code 8 or 9) should not be reported in this manner; if
+they occur they will in general indicate implementation errors thus they should be reported
+as such.</P>
+
+<br>
+<P>The time limit exceeded interrupt as well as the user interrupt (codes 12 and 11) may
+occur anywhere in the system; they should always be treated by calling the exception
+handler.</P>
+
+<P>The Environment Interface	<A HREF="#N_86_"><SUP>(86)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 10.2  <U>The exception handler</U></P>
+
+<br>
+<P>An exception detected by hardware will normally suspend program execution, and activate
+the interrupt monitor sequence in the operating system. It is however necessary that the
+S-port system gets control in such situations; how this might be done is of course highly
+target system dependent. In order to ensure an as uniform treatment of exceptions as
+possible across all S-port systems, the S-port exception handling is distributed between
+the environment interface and the run time system.</P>
+
+<br>
+<P>The <U>exception monitor</U>, resident in the environment interface, gains control from the
+operating system in all cases of exceptions which cannot be reported by a non-zero value
+of the global variable "status"; it is detailed in the following sections of this chapter. The
+main purposes of the exception monitor are:</P>
+
+<br>
+<P>- to activate the exception handler in the run time system.</P>
+
+<P>- when the exception handler returns, switch control to a program   address exported from
+the exception handler.</P>
+
+<br>
+<P>The <U>exception handler</U> is a routine embedded in the run time system; its main task is to
+registrate the exception and to provide the program address where continuation of the
+execution is wanted. This will be the address of a code sequence which leads to
+appropriate treatment of the exception, e.g. printing of error diagnostics or activation of a
+system for interactive observation of the execution.</P>
+
+<P>The Environment Interface	<A HREF="#N_87_"><SUP>(87)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The RADDR of the exception handler will be passed to the environment as a parameter to
+the routine initialise (see 3.1). The body of the exception handler is defined in the run time
+system; the profile is</P>
+
+<br>
+<P>	<U>profile</U> exception_handlerp:newtag</P>
+
+<P>		<U>interface</U> "excpha"</P>
+
+<P>		<U>import</U> eh_code     INT <U>range</U> 0 13</P>
+
+<P>		<U>import</U> eh_message  STRING</P>
+
+<P>		<U>import</U> eh_addr     PADDR</P>
+
+<P>		<U>export</U> eh_cont     PADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Code:		Code for the actual exception condition.</P>
+
+<br>
+<P>	Message:		Further information about the exception (only given for code 0
+or 11).</P>
+
+<br>
+<P>	Addr:		The program address where the exception condition was
+encountered.</P>
+
+<br>
+<P>	Cont:		The address to a point for continuation.</P>
+
+<br>
+<br>
+<P>The exception handler will always return control to the exception monitor in the normal
+manner, explicitly giving an address (in parameter cont) at which execution should
+continue after exit from the exception monitor; this may or may not be equal to the address
+imported to the exception handler (in parameter addr).</P>
+
+<P>The Environment Interface	<A HREF="#N_88_"><SUP>(88)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The possible values for the import parameter code are:</P>
+
+<br>
+<P>	0	Unspecified error condition.</P>
+
+<P>		Message contains an implementation dependent string explaining the
+trap/interrupt.</P>
+
+<br>
+<P>	1	Invalid floating point operation trap.</P>
+
+<P>	2	Floating point division by zero trap.</P>
+
+<P>	3	Floating point overflow trap.</P>
+
+<P>	4	Floating point underflow trap.</P>
+
+<P>	5	Inexact result (floating point operation) trap.</P>
+
+<br>
+<P>		The codes 1-5 signal one of the possible traps defined in the IEEE Floating
+Point Standard (cf. IEEE "Computer" March 1981).</P>
+
+<br>
+<P>	6	Integer overflow trap.</P>
+
+<P>	7	Integer division by zero trap.</P>
+
+<br>
+<P>	8	Illegal address trap.</P>
+
+<P>	9	Illegal instruction trap.</P>
+
+<br>
+<P>		Codes 8 and 9 always signals an implementation error in either a front end
+compiler or an S-compiler; they should not occur otherwise.</P>
+
+<br>
+<P>   10	Breakpoint trap.</P>
+
+<P>		This trap results from a user-specified breakpoint, see section 11.3.</P>
+
+<br>
+<P>   11	User interrupt.</P>
+
+<P>		Message will detail the actual interrupt.</P>
+
+<P>The Environment Interface	<A HREF="#N_89_"><SUP>(89)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   12	 CPU time limit exceeded interrupt.</P>
+
+<P>		This interrupt must be given high priority; it will lead to a controlled
+termination of the program (by the run time system). Thus the time limit that
+provokes the interrupt must be sufficiently smaller than the absolute limit
+known to the operating system to allow for this.</P>
+
+<br>
+<P>   13	Continuation is impossible.</P>
+
+<P>		This code shall be given when it is time to give up, it is further explained
+below.</P>
+
+<br>
+<P>   14	Start of statement trap.</P>
+
+<P>		This trap results from a stmt instruction. See Definition of S-Code, chapter
+16, and the definition of the routine 'stmt note' in this document.</P>
+
+<br>
+<P>   15	Array index is out of bounds.</P>
+
+<br>
+<P>   16	Attribute access through none.</P>
+
+<br>
+<P>Values outside this range will lead to an error termination of the execution.</P>
+
+<P>The Environment Interface	<A HREF="#N_90_"><SUP>(90)</SUP></A>      </P>
+
+<br>
+<br>
+<P>When control is returned from the exception handler the export parameter cont will
+indicate what to do as follows:</P>
+
+<br>
+<P>Cont value:	Exception monitor action summary:</P>
+
+<br>
+<P><U>nowhere</U>		Immediate termination of the execution.</P>
+
+<br>
+<P>legal		Unconditional jump to the continuation address.</P>
+
+<P>address</P>
+
+<br>
+<P>illegal		The exception handler is called once again, with address		code=13.</P>
+
+<br>
+<P>This routine cannot change the value of status.</P>
+
+<P>The Environment Interface	<A HREF="#N_91_"><SUP>(91)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 10.3  <U>Recovery actions</U></P>
+
+<br>
+<P>The possible recovery actions that can be performed are highly hardware dependent. It is
+therefore not possible to specify such actions.  It is required that the environment takes
+the full responsibility for the handling of exceptions, for which recovery actions are
+implemented. For such exceptions, the exception handler should not be called.</P>
+
+<br>
+<br>
+<P>	10.4  <U>Implementation of the exception monitor</U></P>
+
+<br>
+<P>The environment can be seen as being in one of two different modes, normal mode or
+exception mode. When execution is initiated the environment is in normal mode, and it
+continues in this mode until an exception occurs. The environment then enters exception
+mode and stays in that mode until the exception has been treated by the exception
+monitor and the exception handler.</P>
+
+<br>
+<P>While in exception mode the treatment of possible nested exceptions differ from the
+normal in that all except the interrupts corresponding to codes 11 and 12 signals an error
+in the exception treatment. In that situation it is very dangerous to continue execution (e.g.
+the system may enter an infinite interrupt loop) so the program should be terminated
+directly.</P>
+
+<br>
+<P>In the algorithmic description of an exception monitor given below it is assumed that it is
+possible to disable the exception detection mechanism in some target dependent manner,
+using the primitives "disable" and "enable".</P>
+
+<br>
+<P>The Environment Interface	<A HREF="#N_92_"><SUP>(92)</SUP></A>      </P>
+
+<br>
+<br>
+<P><U>Skeleton of an exception monitor</U>:</P>
+
+<br>
+<br>
+<P>		Disable;</P>
+
+<P>		ADDR :=	the program address of the instruction that was to be executed
+next when the exception occured, see note 1;</P>
+
+<P>		<U>if</U> in exception mode <U>then</U> <U>begin</U></P>
+
+<P>			<U>if</U> interrupt  ! i.e. time-out or key-in, see note 2;</P>
+
+<P>			<U>then</U> <U>begin</U></P>
+
+<P>				queue interrupt;  ! see note 3;</P>
+
+<P>				Enable, goto (ADDR)  <U>end</U></P>
+
+<P>			<U>else</U>  call terminate(3,...);</P>
+
+<P>		<U>end</U> ;</P>
+
+<br>
+<P>		Set exception mode;</P>
+
+<br>
+<P>		CODE    := the relevant value, see 10.2;</P>
+
+<P>	REPEAT:</P>
+
+<P>		MESSAGE :- suitable message or <U>notext</U> ;</P>
+
+<P>		Enable;</P>
+
+<P>		call exception handler( CODE, MESSAGE, ADDR, CONT );</P>
+
+<P>		Disable;</P>
+
+<br>
+<P>		<U>if</U> CONT= nowhere <U>then</U> call terminate(3,...);</P>
+
+<br>
+<P>		<U>if</U> interrupt queued <U>then</U> <U>begin</U>   ! see note 3;</P>
+
+<P>			get the interrupt;</P>
+
+<P>			ADDR := CONT;   ! see note 1;</P>
+
+<P>			CODE := the relevant value, i.e. 11 or 12 ;</P>
+
+<P>			<U>goto</U> REPEAT  <U>end</U> ;</P>
+
+<br>
+<P>		set normal mode;</P>
+
+<P>The Environment Interface	<A HREF="#N_93_"><SUP>(93)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		<U>if</U> CONT is legal address <U>then</U></P>
+
+<P>			<U>begin</U> Enable, <U>goto</U> (CONT) <U>end</U></P>
+
+<P>		<U>else</U></P>
+
+<P>			<U>begin</U> CODE := 13; <U>goto</U> REPEAT <U>end</U> ;</P>
+
+<br>
+<P>1.	The value of ADDR should be such that goto (ADDR) leads to an uninterrupted
+continuation of the execution. This should be true also when the last instruction that
+has been executed was some kind of jump instruction (e.g. explicit jump or return
+from routine).</P>
+
+<br>
+<P>2.	Only nested interrupts are allowed, traps may without exception be regarded as
+caused by implementation errors and therefore lead to immediate termination.</P>
+
+<br>
+<P>3.	The following interrupts may occur: CPU time limit exceeded and User key-in. It is
+assumed that time-out has high precedence thus it should supercede any pending
+key-in interrupt. If several key-in interrupts occur it may be assumed either that the
+user lost patience with the system or that he/she regretted the previous key-in. In
+both cases only the latest key-in should be queued. As a consequence it may be
+seen that the queue employed is a single element queue, i.e. no more than one
+interrupt is pending.</P>
+
+<P>The Environment Interface	<A HREF="#N_94_"><SUP>(94)</SUP></A>      </P>
+
+<br>
+<br>
+<P>      </P>
+
+<P>       User program              </P>
+
+<P>                                      In Environment Interface:</P>
+
+<P>                        </P>
+
+<P>            exception  ( via OS )&gt; Exception monitor 	</P>
+
+<P>                                           	   	 </P>
+
+<P>                                                         	</P>
+
+<P>                                                         	</P>
+
+<P>                                                         	</P>
+
+<P>                              	</P>
+
+<P>                                     call exception handler(-)</P>
+
+<P>        &gt; ...                	</P>
+
+<P>       RTS                                             	</P>
+
+<P>                   .....          	</P>
+
+<P>            Exception handler &lt;                     	</P>
+
+<P>                .....                  &lt; CONT? &gt;	</P>
+
+<P>                      exit                   	</P>
+
+<P>                             = <U>nowhere</U> 	</P>
+
+<P>                                                       	</P>
+
+<P>                                     .....V.....V.....</P>
+
+<P>          continue      terminate</P>
+
+<P>                                             </P>
+
+<P>                                                                    </P>
+
+<br>
+<br>
+<P>The figure shows the path of control flow in case of an exception within the user program.
+Such an exception will give control to some point in the error monitor routine in the
+environment. When control comes to the exception handler, it decides what will be the
+appropriate treatment of the exception.  Its decision is signalled through the export
+parameter cont.</P>
+
+<br>
+<P>This routine cannot change the value of status.</P>
+
+<P>The Environment Interface	<A HREF="#N_95_"><SUP>(95)</SUP></A>      </P>
+
+<br>
+<br>
+<P>11  <STRONG>TOOLS FOR OBSERVATION OF PROGRAM EXECUTION</STRONG></P>
+
+<br>
+<P>The environment must support the needs at S-Code level to observe program execution
+integrated with an intelligible handling of errors and other exception conditions.</P>
+
+<br>
+<P>A set of tools for program developement and maintenance should comprise the features
+found in an interactive debugger combined with more extensive possibilities to trace the
+control and data flow and to measure time and storage requirements.</P>
+
+<br>
+<br>
+<P>	11.1  <U>Reference to program point at outermost level</U></P>
+
+<br>
+<P>At any time during program execution there exists a set (possibly empty) of nested routine
+activations. The routine activation which first (in time) entered this set is called the
+outermost one.</P>
+
+<br>
+<P>The program point at which the currently outermost routine was activated is of particular
+interest for the user. At any time this gives a reference to the statement at user program
+level giving rise to the action taking place.</P>
+
+<br>
+<P>The routine get outermost is defined to satisfy this need:</P>
+
+<br>
+<br>
+<P>	<U>profile</U> get_outermostp:newtag</P>
+
+<P>		<U>system</U> get_outermost:newtag  "gtoutm"</P>
+
+<P>		<U>export</U> gom_result   PADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>The result of a call on this routine will be the program address at which the currently
+outermost routine activation was performed, seen from the body of the get_outermost
+routine.</P>
+
+<P>The Environment Interface	<A HREF="#N_96_"><SUP>(96)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Note that, seen from the body of this routine, the set of nested routine activations is never
+empty. A nonzero status should never occur.</P>
+
+<br>
+<P>Also note that in this sense the handling of any exception condition (e.g. errors detected
+by hardware, user interrupts) should be considered as a routine activation. In these cases
+'get_outermost' will be used to get the PADDR of the program point at user program level
+to be referenced in error diagnostics etc.</P>
+
+<P>The Environment Interface	<A HREF="#N_97_"><SUP>(97)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 11.2  <U>Correspondence between line numbers and PADDR values</U></P>
+
+<br>
+<P>Error diagnostics and other messages in a dialogue with the user depends on the
+possibility to identify program points. This is prepared for in the S-Code by the definition
+of the <U>line</U>, <U>decl</U> or <U>stmt</U> instructions, giving the possibility to establish the connection
+between PADDR values and the line numbering found in source-listings produced by the
+S-Code generator (e.g. the Simula front end compiler).</P>
+
+<br>
+<P>In the communication with the user a program point is identified by a line number, together
+with an identification of the corresponding source program module. The program system
+may consist of several modules with line-numberings resulting from separate compilations
+(see the Definition of S-Code, chapter 1.3).</P>
+
+<br>
+<P>In the communication with the run time environment a program point is identified by a
+PADDR value.</P>
+
+<br>
+<P>The routines 'get_line_no' and 'get_paddr' will satisfy the need of the observation system
+to get the correspondence.</P>
+
+<br>
+<P>The environment is assumed to establish this correspondence as if a table of the numbers
+given in <U>line</U>, <U>decl</U> or <U>stmt</U> instructions and corresponding PADDR values were set up in
+the following way:</P>
+
+<br>
+<P>By the generation of target code a PADDR-counter exists, giving the location of the next
+target instruction to be produced. When a <U>line</U>, <U>decl</U> or <U>stmt</U> instruction is encountered the
+given line number is associated with the PADDR value of that counter. The value of the
+counter by the end of code generation will be the upper limit for PADDR values
+associated with the present module.</P>
+
+<P>The Environment Interface	<A HREF="#N_98_"><SUP>(98)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The line numbers given in succesive <U>line</U>, <U>decl</U> or <U>stmt</U> instructions will occur in increasing
+order. The first and last <U>line</U>, <U>decl</U> or <U>stmt</U> instruction encountered in a module defines the
+interval of valid line-numbers for that module. Note that there may be line-numbers in that
+interval for which no corresponding <U>line</U>, <U>decl</U> or <U>stmt</U> instruction appears, and thus will not
+appear in the line-number table.</P>
+
+<br>
+<P>In this manner each module will be associated with an interval of corresponding PAADR
+values. For two different modules the two corresponding PADDR intervals will never
+overlap.</P>
+
+<br>
+<P>When a module name and a line number n is given in a call on get_paddr, the part of the
+table corresponding to that module is searched for the smallest line number m greater or
+equal to n. The PADDR associated with m is returned as result. If no such m is found this
+is reported to the caller by a nonzero status.</P>
+
+<br>
+<P>When a PADDR is given in a call on get_line_no, the table is searched for the greatest
+PADDR q such that q &lt;= p .  As result the line number with which q is associated is
+returned. If there is no module in the table for which p is in the interval of associated
+PADDR values, this is reported through a nonzero status.</P>
+
+<P>The Environment Interface	<A HREF="#N_99_"><SUP>(99)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Routine definition:</P>
+
+<br>
+<P>	<U>profile</U> get_paddrp:newtag</P>
+
+<P>		<U>system</U> get_paddr:newtag  "gtpadr"</P>
+
+<P>		<U>import</U> gpa_module   STRING</P>
+
+<P>		<U>import</U> gpa_line     INT</P>
+
+<P>		<U>export</U> gpa_addr     PADDR</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Module:		The module name. If the empty string is given the main
+program is assumed.</P>
+
+<P>	Line:		The line number in the given module for which a corresponding
+PADDR value is wanted.</P>
+
+<P>	Addr:		The PADDR value resulting according to the rules above.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_100_"><SUP>(100)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Routine definition:</P>
+
+<br>
+<P>	<U>profile</U> get_line_nop:newtag</P>
+
+<P>		<U>system</U> get_line_no:newtag  "gtlno"</P>
+
+<P>		<U>import</U> gln_addr     PADDR</P>
+
+<P>		<U>export</U> gln_lineno   INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Addr:		A program address for which we want the corresponding source line
+number.</P>
+
+<P>				If this parameter has a value which is not associated with a
+source line, then status 27 should result.</P>
+
+<P>	Lineno:		Source line number corresponding to Addr.</P>
+
+<br>
+<P>The routine will return the line number corresponding to the given program address, as it
+originally was in the source text.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_101_"><SUP>(101)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	<U>profile</U> get_line_identp:newtag</P>
+
+<P>		<U>system</U> get_line_ident:newtag "gtlnid"</P>
+
+<P>		<U>import</U> gli_adr     PADDR</P>
+
+<P>		<U>import</U> gli_result  STRING</P>
+
+<P>		<U>export</U> gli_filled  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Adr:			A program address for which we want the line identification.</P>
+
+<P>	Result:		The resulting identification of the source line.</P>
+
+<P>	Filled:		The number of characters filled in Result.</P>
+
+<br>
+<P>The S-code instruction line establish a connection between a program address and a
+source line number.</P>
+
+<br>
+<P>This routine will convert an address into a complete identification of the corresponding
+source line. This identification must include the name of the module (the "module id") in
+which the line occurs.</P>
+
+<br>
+<P>If the program address specified does not identify a line number in any module, the global
+varibale status is given the value 19. If the string "result" is too short to contain the
+identification, the string is filled and status is given the value 24.</P>
+
+<P>The Environment Interface	<A HREF="#N_102_"><SUP>(102)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 11.3  <U>Implementation of static breakpoints</U></P>
+
+<br>
+<P>In order to implement the interactive debugging system it must be possible to set or reset
+a static breakpoint. The routine 'breakpoint' is defined to enable an efficient
+implementation of this.</P>
+
+<br>
+<P>	<U>profile</U> breakpointp:newtag</P>
+
+<P>		<U>system</U> breakpoint:newtag "brkpnt"</P>
+
+<P>		<U>import</U> brk_addr     PADDR</P>
+
+<P>		<U>import</U> brk_sw       BOOL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>The parameters to the routine have the following interpretation:</P>
+
+<br>
+<P>	Addr:	The program point at which a breakpoint is asked to be set or reset. At the
+breakpoint the exception handler (see chapter 10) should be called with
+code = 11 (key-in interrupt) and Addr as import parameters. If the PADDR
+value does not correspond to a program point within the executing program
+status 27 should result. The addr should always be an address that is
+achieved through an earlier call on get_paddr.</P>
+
+<P>	Sw:		On/Off</P>
+
+<P>			If Sw=true (On) and a breakpoint is already set at Addr, status 18
+should result. Accordingly, if Sw=false (Off) and no breakpoint is set
+at Addr, status 37 should result.</P>
+
+<br>
+<P>When a breakpoint is set at Addr, the environment is asked to force an exception each
+time that program point is reached by calling the exception handler immediately before the
+instruction at Addr is executed.</P>
+
+<br>
+<P>Some implementations may feel it necesary to restrict the number of breakpoints that can
+be in effect simultaneously.</P>
+
+<P>The Environment Interface	<A HREF="#N_103_"><SUP>(103)</SUP></A>      </P>
+
+<br>
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<br>
+<br>
+<P>	11.4  <U>Statement Start Exceptions</U></P>
+
+<br>
+<P>In order to efficiently and safely implement attention interrupts and stepwise execution of
+Simula statements, an observation tool must be able to get control each time a Simula
+statement is about to be executed.</P>
+
+<br>
+<P>The stmt instruction may be used to conditionally notify the processor executing the code,
+that a Simula statement is about to be executed, by causing a start of statement
+exception.</P>
+
+<br>
+<P>The stmt instructions may be part of the S-Code, even if the stmt instructions will not be
+used to generate start of statement exceptions. At compile-time the S-Code compiler may
+optionally be instructed that start of statement exceptions should never be generated, see
+section 4.1.</P>
+
+<br>
+<P>If not told otherwise, the S-Code compiler should generate code which conditionally
+generates an exception, at a point in the code corresponding to the stmt instruction. This
+point will correspond to the start of a Simula statement. At run-time a flag controls whether
+the exception should be generated or not. This flag is set on and off by an environment
+routine "stmt note". It will be called with argument value TRUE if the flag should be set on,
+and with the argument value FALSE if the flag should be set off. If the flag is on, then the
+exception handler should be called with a code indicating a start of statement exception.
+See section 10.2.</P>
+
+<P>The Environment Interface	<A HREF="#N_104_"><SUP>(104)</SUP></A>      </P>
+
+<br>
+<br>
+<P>The profile for the routine is:</P>
+
+<br>
+<P>	<U>profile</U>  stmt_notep:newtag</P>
+
+<P>		<U>system</U>  stmt_note:newtag  "stmnot"</P>
+
+<P>		<U>import</U>  stmt_on_off  INT <U>range</U>  0   1</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<br>
+<P>	11.5  <U>Communication with the user</U></P>
+
+<br>
+<P>	<U>profile</U> sysprip:newtag</P>
+
+<P>		<U>known</U> syspri:newtag "syspri"</P>
+
+<P>		<U>import</U> sp_img  STRING</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Img:			A string to be directly output to the debugging device.</P>
+
+<br>
+<P>The routine Syspri is used to give messages to the user, from the run time system, e.g.
+SIMOB. It is important that this output always reaches the user, since it may be an error
+message. Consequently, this routine is not allowed to change the value of the global
+variable status, and it should not itself generate any exceptions.</P>
+
+<br>
+<P>The "debugging device" is an i/o device defined by the environment. It is normally the
+combination of SYSIN and SYSOUT (e.g. the user's terminal).</P>
+
+<P>The Environment Interface	<A HREF="#N_105_"><SUP>(105)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	<U>profile</U> sysprop:newtag</P>
+
+<P>		<U>known</U> syspro:newtag "syspro"</P>
+
+<P>		<U>import</U> sp_msg  STRING</P>
+
+<P>		<U>import</U> sp_img  STRING</P>
+
+<P>		<U>export</U> sp_filled  INT</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Msg:			A string to be directly output to the debugging device.</P>
+
+<br>
+<P>	Img:			A string to be filled by the user at the debugging device.</P>
+
+<br>
+<P>	Filled:		The number of characters filled in Img by the user.</P>
+
+<br>
+<P>The routine Syspro is used to prompt for input from the user.</P>
+
+<br>
+<P>Note:	The supplied body for these routines will not work fully according to this
+description; only the environment inclusion can do that. The routines will connect to
+sysin/sysout.</P>
+
+<P>The Environment Interface	<A HREF="#N_106_"><SUP>(106)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	11.6  <U>Dump routine for debugging of RTS</U></P>
+
+<br>
+<P>This routine is only meant to help the debugging of the rts, and may of course be
+implemented with an empty body if the rts debugging is not relevant:</P>
+
+<br>
+<br>
+<P>	<U>profile</U> dmpobjp:newtag</P>
+
+<P>		<U>system</U> dmpobj:newtag "dmpobj"</P>
+
+<P>		<U>import</U> dmp_filekey  INT   <U>range</U>  1 255</P>
+
+<P>		<U>import</U> dmp_obj      OADDR</P>
+
+<P>		<U>import</U> dmp_lng      SIZE</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Key:			This is the internal identification of a data set. It must refer to
+an open printfile, otherwise the routine will have no effect.</P>
+
+<br>
+<P>	Obj:			This parameter specifies where the dump starts.</P>
+
+<br>
+<P>	Lng:			This parameter specifies the size of the dump.</P>
+
+<br>
+<P>The routine will give a dump of the area beginning at `obj` and ending at `obj+lng-1`.</P>
+
+<br>
+<P>This routine may change the value of the global variable status to one of the values given
+in app. C.</P>
+
+<P>The Environment Interface	<A HREF="#N_107_"><SUP>(107)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	 11.7  <U>Processor Time Usage</U></P>
+
+<br>
+<P>In order to measure the usage of cpu-time efficiently, the following routine is defined:</P>
+
+<br>
+<P>	<U>profile</U>  cpu_timep:newtag</P>
+
+<P>		<U>system</U>  cpu_time:newtag  "cputim"</P>
+
+<P>		<U>export</U>  time_used  LREAL</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>It returns the elapsed cpu-time measured in seconds. The difference between two calls
+will be interpreted as the elapsed time between the two calls.</P>
+
+<br>
+<P>Status 19 will result if it is not possible to measure the processor time usage.</P>
+
+<P>The Environment Interface	<A HREF="#N_108_"><SUP>(108)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	11.8  <U>Hashing routine</U></P>
+
+<br>
+<P>	<U>profile</U> hashp:newtag</P>
+
+<P>		<U>known</U> hash:newtag "hash"</P>
+
+<P>		<U>import</U> h_str  STRING</P>
+
+<P>		<U>export</U> h_val  INT  <U>range</U> 0 255</P>
+
+<P>	<U>endprofile</U></P>
+
+<br>
+<P>	Str:			A string to be "hashed"</P>
+
+<P>	Result:		Integer computed from "str"</P>
+
+<br>
+<P>The routine will from a string produce an integer value in the given range. Hash is e.g.
+used by the compiler to compute unique values for each symbol of the source text, and it
+is provided to enable an implementation to take full advantage of the machine
+architecture.</P>
+
+<br>
+<P>The string str may contain any character, not only letters. It should be tested that the
+routine has sufficient quality, for instance by studying possible collisions between SIMULA
+keywords and standard identifiers.</P>
+
+<P>The Environment Interface	<A HREF="#N_109_"><SUP>(109)</SUP></A>      </P>
+
+<br>
+<br>
+<P><STRONG>Listing of the Environment Module</STRONG></P>
+
+<br>
+<P>The following is a "complete" listing of the environment module.</P>
+
+<br>
+<P>	<U>global</U> module "comn" "update-no"</P>
+
+<P>		<U>global</U> status     INT   <U>range</U>  0 36  <U>system</U>  "status"</P>
+
+<P>		<U>global</U> itemsize   INT   <U>range</U>  0 72  <U>system</U>  "itsize"</P>
+
+<P>		<U>const</U> maxlen      SIZE  <U>nosize</U>       <U>system</U>  "maxlen"</P>
+
+<P>		<U>const</U> inptlinelng INT   <U>c-int</U>   "0"  <U>system </U> "inplth"</P>
+
+<P>		<U>const</U> ouptlinelng INT   <U>c-int</U>   "0"  <U>system</U>  "outlth"</P>
+
+<P>		<U>record</U> STRING</P>
+
+<P>			<U>attr</U> chradr GADDR</P>
+
+<P>			<U>attr</U> nchr   INT</P>
+
+<P>		<U>endrecord</U></P>
+
+<P>		<U>profile</U> initialisep     <U>system</U> initialise    "initia"</P>
+
+<P>		<U>profile</U> terminatep      <U>system</U> terminate     "termin"</P>
+
+<P>		<U>profile</U> get_intinfop    <U>system</U> get_intinfo   "gintin"</P>
+
+<P>		<U>profile</U> get_textinfop   <U>system</U> get_textinfo  "gtexin"</P>
+
+<P>		<U>profile</U> get_sizeinfop   <U>system</U> get_sizeinfo  "sizein"</P>
+
+<P>		<U>profile</U> give_intinfop   <U>system</U> give_intinfo  "gviinf"</P>
+
+<P>		<U>profile</U> give_textinfop  <U>system</U> give_textinfo "givinf"</P>
+
+<P>		<U>profile</U> def_work_areap  <U>system</U> def_work_area "dwarea"</P>
+
+<P>		<U>profile</U> movep           <U>system</U> move          "movein"</P>
+
+<P>		<U>profile</U> look_upp        <U>system</U> look_up       "lookup"</P>
+
+<P>		<U>profile</U> open_dsp        <U>system</U> open_ds       "opfile"</P>
+
+<P>		<U>profile</U> close_dsetp     <U>system</U> close_dset    "clfile"</P>
+
+<P>		<U>profile</U> inimagep        <U>system</U> inimage      "inimag"</P>
+
+<P>		<U>profile</U> outimagep       <U>system</U> outimage     "outima"</P>
+
+<P>		<U>profile</U> locatep         <U>system</U> locate       "locate"</P>
+
+<P>		<U>profile</U> get_dsetnamep   <U>system</U> get_dsetname "gdsnam"</P>
+
+<P>		<U>profile</U> get_dsetspecp   <U>system</U> get_dsetspec "gdspec"</P>
+
+<P>		<U>profile</U> get_lppp        <U>system</U> get_lpp      "getlpp"</P>
+
+<P>		<U>profile</U> newpagep        <U>system</U> newpage      "newpag"</P>
+
+<P>		<U>profile</U> print outimagep <U>system</U> print outimage "printo"</P>
+
+<P>The Environment Interface	<A HREF="#N_110_"><SUP>(110)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		<U>profile</U> inbytep         <U>system</U> inbyte       "inbyte"</P>
+
+<P>		<U>profile</U> in2bytep        <U>known</U>  in2byte      "in2byt"</P>
+
+<P>		<U>profile</U> outbytep        <U>system</U> outbyte      "outbyt"</P>
+
+<P>		<U>profile</U> out2bytep       <U>known</U>  out2byte     "out2by"</P>
+
+<P>		<U>profile</U> get_intp        <U>system</U> get_int      "getint"</P>
+
+<P>		<U>profile</U> get_realp       <U>system</U> get_real     "gtreal"</P>
+
+<P>		<U>profile</U> get_fracp       <U>system</U> get_frac     "gtfrac"</P>
+
+<P>		<U>profile</U> put_intp        <U>system</U> put_int      "putint"</P>
+
+<P>		<U>profile</U> put_fixp        <U>system</U> put_fix      "putfix"</P>
+
+<P>		<U>profile</U> put_lfixp       <U>system</U> put_lfix     "ptlfix"</P>
+
+<P>		<U>profile</U> put_realp       <U>system</U> put_real     "ptreal"</P>
+
+<P>		<U>profile</U> put_lrealp      <U>system</U> put_lreal    "plreal"</P>
+
+<P>		<U>profile</U> put_fracp       <U>system</U> put_frac     "ptfrac"</P>
+
+<P>		<U>profile</U> put_sizep       <U>system</U> put_size     "ptsize"</P>
+
+<P>		<U>profile</U> put_oaddrp      <U>system</U> put_oaddr    "ptoadr"</P>
+
+<P>		<U>profile</U> put_aaddrp      <U>system</U> put_aaddr    "ptaadr"</P>
+
+<P>		<U>profile</U> put_paddrp      <U>system</U> put_paddr    "ptpadr"</P>
+
+<P>		<U>profile</U> put_raddrp      <U>system</U> put_raddr    "ptradr"</P>
+
+<P>		<U>profile</U> basic_drawp     <U>system</U> basic_draw   "drawrp"</P>
+
+<P>		<U>profile</U> date_and_timep  <U>system</U> date_and_time "dattim"</P>
+
+<P>		<U>profile</U> lowtenp         <U>system</U> lowten       "lowten"</P>
+
+<P>		<U>profile</U> sqrtp           <U>system</U> sqrt         "sqroot"</P>
+
+<P>		<U>profile</U> rsqrtp          <U>system</U> rsqrt        "rsqroo"</P>
+
+<P>		<U>profile</U> lnp             <U>system</U> ln           "logari"</P>
+
+<P>		<U>profile</U> rlnp            <U>system</U> rln          "rlogar"</P>
+
+<P>		<U>profile</U> expp            <U>system</U> exp          "expone"</P>
+
+<P>		<U>profile</U> rexpp           <U>system</U> rexp         "rexpon"</P>
+
+<P>		<U>profile</U> sinusp          <U>system</U> sinus        "sinusr"</P>
+
+<P>		<U>profile</U> rsinusp         <U>system</U> rsinus       "rsinus"</P>
+
+<P>		<U>profile</U> arctanp         <U>system</U> arctan       "arctan"</P>
+
+<P>		<U>profile</U> rarctanp        <U>system</U> rarctan      "rartan"</P>
+
+<P>		<U>profile</U> cosp            <U>known</U>  cos          "cosinu"</P>
+
+<P>		<U>profile</U> rcosp           <U>known</U>  rcos         "rcosin"</P>
+
+<P>		<U>profile</U> tanp            <U>known</U>  tan          "tangen"</P>
+
+<P>The Environment Interface	<A HREF="#N_111_"><SUP>(111)</SUP></A>      </P>
+
+<br>
+<br>
+<P>		<U>profile</U> rtanp           <U>known</U>  rtan         "rtangn"</P>
+
+<P>		<U>profile</U> arcsinp         <U>known</U>  arcsin       "arcsin"</P>
+
+<P>		<U>profile</U> rarcsinp        <U>known</U>  rarcsin      "rarsin"</P>
+
+<P>		<U>profile</U> arccosp         <U>known</U>  arccos       "arccos"</P>
+
+<P>		<U>profile</U> rarccosp        <U>known</U>  rarccos      "rarcos"</P>
+
+<P>		<U>profile</U> exception_handlerp     <U>interface</U> "excpha"</P>
+
+<P>			import eh_code    INT <U>range</U> 0 13</P>
+
+<P>			import eh_message STRING</P>
+
+<P>			import eh_addr    PADDR</P>
+
+<P>			export eh_cont    PADDR</P>
+
+<P>		<U>endprofile</U></P>
+
+<P>		<U>profile</U> get_outermostp  <U>system</U> get_outermost "gtoutm"</P>
+
+<P>		<U>profile</U> get_paddrp      <U>system</U> get_paddr     "gtpadr"</P>
+
+<P>		<U>profile</U> get_line_nop    <U>system</U> get_line_no   "gtlno"</P>
+
+<P>		<U>profile</U> breakpointp     <U>system</U> breakpoint    "brkpnt"</P>
+
+<P>		<U>profile</U> stmt_notep      <U>system</U> stmt_note     "stmnot"</P>
+
+<P>		<U>profile</U> dmpobjp         <U>system</U> dmpobj        "dmpobj"</P>
+
+<P>		<U>profile</U> cpu_timep       <U>system</U> cpu_time      "cputim"</P>
+
+<P>		<U>global</U> encdrv     OADDR</P>
+
+<P>		<U>global</U> curdrv     OADDR</P>
+
+<P>		......</P>
+
+<P>		<U>tag</U> Status        0</P>
+
+<P>		<U>tag</U> Itemsize      1</P>
+
+<P>		......</P>
+
+<br>
+<P>	<U>body</U></P>
+
+<P>		......</P>
+
+<P>	<U>endmodule</U></P>
+
+<P>The Environment Interface	<A HREF="#N_112_"><SUP>(112)</SUP></A>      </P>
+
+<br>
+<br>
+<P><STRONG>Errors reported by status code</STRONG></P>
+
+<br>
+<P>Errors detected within RTE service routines (e.g. file opening) are normally reported as a
+non-zero status of the routine. The actions taken on the basis of this status will be defined
+at the S-code level. The meaning of the status codes that may be generated from the I/O
+subsystem of the environment interface, is in most cases evident from the short
+explanatory text given.</P>
+
+<br>
+<P>Note that in some cases more than one type of error may occur; no assumptions are made
+about the precedence of the status codes in general.</P>
+
+<br>
+<P>The types of errors that can occur, and give control back in this way, are illustrated by the
+following list of status codes:</P>
+
+<br>
+<P>	0	(not used)</P>
+
+<br>
+<P>		Zero can never be returned from a routine. In case everything is OK the
+value of status is not changed.</P>
+
+<br>
+<P>	1	Invalid filekey</P>
+
+<br>
+<P>		The key is within the interval 1..255, but no data set is associated with the
+key. The file may have been closed, and consequently the filekey is again
+undefined.</P>
+
+<br>
+<P>	2	File not defined</P>
+
+<br>
+<P>		No real file associated with local name.</P>
+
+<P>		The data set specification does not correspond to either a descriptor name
+or a data set name.</P>
+
+<P>The Environment Interface	<A HREF="#N_113_"><SUP>(113)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	3	File does not exist</P>
+
+<br>
+<P>		The file association has been given, but the fysical file specified does not
+exist. The data set specification refers a descriptor but this descriptor does
+not identify a data set.</P>
+
+<br>
+<P>	4	File already exists</P>
+
+<br>
+<P>		An attempt has been made to create a file which already exists. Some
+systems could allow you to define several files with the same name, e.g.
+scratch files. This should not occur.</P>
+
+<br>
+<P>	5	File not open</P>
+
+<br>
+<P>		An operation on a file is asked for, but the file is not open.</P>
+
+<br>
+<P>	6	File already open</P>
+
+<br>
+<P>		A request for file opening has been made on a file which is already open.</P>
+
+<br>
+<P>	7	File already closed</P>
+
+<br>
+<P>		For some exterior reason the data set has been closed outside the control of
+the Simula system, (e.g. a tape has been dismounted by the operator).</P>
+
+<br>
+<P>	8	Illegal use of file</P>
+
+<br>
+<P>		The data set organisation is incompatible with the wanted usage as given in
+filetype, e.g. an attempt to read from an outfile.</P>
+
+<P>The Environment Interface	<A HREF="#N_114_"><SUP>(114)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	9	Illegal record format for directfile</P>
+
+<br>
+<P>		The external record format is not compatible with the directfile definition.</P>
+
+<br>
+<P>   10	Illegal filename</P>
+
+<br>
+<P>		The string specified does not follow the syntax of a file name in this system.</P>
+
+<br>
+<P>   11	Output image too long</P>
+
+<br>
+<P>		The image length is longer than the file record on an attempt to write on the
+file.</P>
+
+<br>
+<P>   12	Input image too short</P>
+
+<br>
+<P>		When reading from a file, the image is not large enough to hold the
+complete record to be read.</P>
+
+<br>
+<P>   13	End of file on input</P>
+
+<br>
+<P>		When reading from a file, the end of file record was read.</P>
+
+<br>
+<P>   14	Not enough space available</P>
+
+<br>
+<P>		When work space is asked for, and the specified amount of storage cannot
+be allocated.</P>
+
+<br>
+<P>   15	File full on output</P>
+
+<br>
+<P>		When writing to a file, the space allocated to the file is exhausted, and no
+more space can be furnished.</P>
+
+<P>The Environment Interface	<A HREF="#N_115_"><SUP>(115)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   16	Location out of range</P>
+
+<br>
+<P>		When reading from a file, the specified record in the directfile has never
+been written. When writing or positioning in a file, the specified location will
+bring us outside the area reserved for the file.</P>
+
+<br>
+<P>   17	I/O error, e.g. hardware fault</P>
+
+<br>
+<P>		Any hardware detected error which does not refer to an error done by the
+user.</P>
+
+<br>
+<P>   18	Specified action cannot be performed</P>
+
+<br>
+<P>		The specified action for open file or close file has not been implemented,
+and consequently cannot be performed.</P>
+
+<br>
+<P>   19	Impossible</P>
+
+<br>
+<P>		This will mean that it is impossible to implement the the specified effect, or
+that the request has been defined illegal.</P>
+
+<P>		This status is returned as a signal to the run time system that it need not
+bother to try recovery, the program should be aborted.</P>
+
+<P>		There will normally be a separate specification of the interpretation of this
+code under each routine that can give this return value.</P>
+
+<br>
+<P>   20	No write access to this file</P>
+
+<br>
+<P>		Writing has been requested to a file that has been protected against writing.</P>
+
+<P>The Environment Interface	<A HREF="#N_116_"><SUP>(116)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   21	Non-numeric item as first character</P>
+
+<br>
+<P>		The de-editing of a string to a numeric item has been requested, but the
+string does not start according to the syntax of a numeric item.</P>
+
+<br>
+<P>   22	Value out of range</P>
+
+<br>
+<P>		The de-editing of a string to a numeric item has been requested, but the
+result is a numeric item that is to large to be represented in the specified
+type.</P>
+
+<br>
+<P>   23	Incomplete syntax</P>
+
+<br>
+<P>		The de-editing of a string to a real item has been requested, but the string
+does not complete a real item according to the syntax of a real item.</P>
+
+<br>
+<P>   24	Text string too short</P>
+
+<br>
+<P>		The editing of a numeric item into a string has been requested, but the string
+is too short to contain the result of the editing operation.</P>
+
+<br>
+<P>   25	Fraction part less than zero</P>
+
+<br>
+<P>		The editing of a real as a floating point or fixed point real has been
+requested, but the fraction part has been specified with a negative length.</P>
+
+<br>
+<P>   26	No read access to this file.</P>
+
+<br>
+<P>		Reading has been attempted on a read-protected file.</P>
+
+<P>The Environment Interface	<A HREF="#N_117_"><SUP>(117)</SUP></A>      </P>
+
+<br>
+<br>
+<P>   27	Argument out of range for system routine</P>
+
+<br>
+<P>		The code refers mainly to the matematical library routines, and indicate that
+one of the arguments were out of range.</P>
+
+<br>
+<P>   28	Key previously defined</P>
+
+<br>
+<P>		This specifies that the generation of a key has been made for a file which
+already has a key referencing it.</P>
+
+<br>
+<P>   29	Maximum number of keys exceeded</P>
+
+<br>
+<P>		The S-port system restricts the number of files that may be open
+simultaneously to 255, it is however expected that the target system's limit is
+lower. If any of these limits are exceeded this status is returned from open.</P>
+
+<br>
+<P>   30	This service function is not implemented</P>
+
+<br>
+<P>		One of the give_ or get_ routines have been called with an index which is
+not known in this implementation, or which has not been implemented. Some
+default value will be assumed.</P>
+
+<br>
+<P>   31	Syntax error in dsetspec</P>
+
+<br>
+<P>   32	No read access</P>
+
+<br>
+<P>   33	Illegal action</P>
+
+<br>
+<P>   34	Partial record read.</P>
+
+<br>
+<P>   35	Undefined record (on directfile).</P>
+
+<br>
+<P>   36	Maximum number of breakpoints set</P>
+
+<P>The Environment Interface	<A HREF="#N_118_"><SUP>(118)</SUP></A>      </P>
+
+<br>
+<br>
+<P><CENTER>STATUTES</CENTER>
+</P>
+
+<P><CENTER></CENTER>
+</P>
+
+<P><CENTER>for the</CENTER>
+</P>
+
+<P><CENTER></CENTER>
+</P>
+
+<P><CENTER>STANDARDS GROUP</CENTER>
+</P>
+
+<P><CENTER></CENTER>
+</P>
+
+<P><CENTER>for the Portabls SIMULA System.</CENTER>
+</P>
+
+<br>
+<br>
+<P>Article 1. Definitions</P>
+
+<br>
+<P>The Portable SIMULA System (PSS) consists of a language dependent part and a target
+dependent part. The interface between these two parts is at any time defined in the
+documents:</P>
+
+<br>
+<P>	S-PORT: Definition of S-code</P>
+
+<br>
+<P>	S-PORT: The Environment Interface</P>
+
+<br>
+<P>The two documents comprise the PSS interface definition.</P>
+
+<br>
+<P>An S-compiler system is a system which is able to translate and execute programs
+represented according to the PSS interface definition.</P>
+
+<br>
+<br>
+<P>Article 2. Objectives</P>
+
+<br>
+<P>The Standards Group for the Portable SIMULA System (SG/PSS) is an organisation which
+at all times shall:</P>
+
+<br>
+<P>	-	be the final arbiter in the interpretation of the PSS interface definition and be
+a center for custody of this formal definition.</P>
+
+<P>The Environment Interface	<A HREF="#N_119_"><SUP>(119)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	-	provide a forum for discussion and exchange of information relating to the
+PSS interface definition and its support.</P>
+
+<br>
+<P>	-	standardise the PSS interface definition and modify the definition when this
+is found necessary.</P>
+
+<br>
+<br>
+<P>Article 3. Membership</P>
+
+<br>
+<P>Membership is open to organisations and firms responsible for the maintenance and
+support of an S-compiler system in active use. Any organisation may apply and be voted a
+member of the SG/PSS.</P>
+
+<br>
+<P>The Norwegian Computing Center (NCC), Oslo, Norway and the Edinburgh Regional
+Computing Center (ERCC), Edinburgh, Scotland are ex officio members of the SG/PSS.
+The NCC will also act as the secretariat of the SG/PSS.</P>
+
+<br>
+<P>The SG/PSS can offer membership to individuals, in recognition of their contribution to the
+SG/PSS work.</P>
+
+<br>
+<P>Once granted, an SG/PSS membership lasts until:</P>
+
+<br>
+<P>  -	it is resigned by the member, or</P>
+
+<br>
+<P>  -	it is revoked by the SG/PSS because the conditions under which it was granted
+cease to exist or the member acts against the objectives of the SG/PSS.</P>
+
+<br>
+<P>There is no membership fee for the SG/PSS. Members must cover their own expences.</P>
+
+<P>The Environment Interface	<A HREF="#N_120_"><SUP>(120)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Article 4. Representation, Voting and Meetings</P>
+
+<br>
+<P>Each member shall appoint one person to be his/her representative in the SG/PSS. The
+duration of appointment is determined by the members.</P>
+
+<br>
+<P>The SG/PSS shall meet once every year for an Annual Meeting. This meeting will, in
+addition to possible administrative matters, handle proposals related to the PSS interface
+definition. The Annual Meeting shall also elect one of the member's representatives as
+Chairman for the Standards Group.</P>
+
+<br>
+<P>Decisions can only be taken regarding matters on the agenda presented to the members
+at least 3 weeks before the meeting, unless all members present agree otherwise.</P>
+
+<br>
+<P>In addition to the Annual Meeting SG/PSS may have extraordinary meetings. Such
+meetings are held when the Chairman finds it necessary, or when this is approved by a
+majority of the members.</P>
+
+<br>
+<P>To constitute a quorum, all members of the SG/PSS shall be notified of the meeting and a
+majority of the members representatives shall be present or give their votes by mail,
+including the NCC and ERCC representatives.</P>
+
+<br>
+<P>Decisions by SG/PSS are made by a majority vote among the representatives taking part
+in the vote. Changes to the statutes for the SG/PSS or a decision to dissolve the SG/PSS
+require 4/5 majority. Any decision requires the consent of the NCC.</P>
+
+<br>
+<P>The SG/PSS meetings are open to non-representatives or non-members. Observers have
+no voting rights, and must apply to the Chairman of the SG/PSS for each meeting they
+wish to attend.</P>
+
+<P>The Environment Interface	<A HREF="#N_121_"><SUP>(121)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Article 5. Effectuation and revisions</P>
+
+<br>
+<P>These statutes were adopted at the Foundation Meeting of the Standards Group for the
+Portable SIMULA System in Edinburgh the 3rd March 1981 and come into effect
+immediately.</P>
+
+<br>
+<P>The Environment Interface	<A HREF="#N_122_"><SUP>(122)</SUP></A>      </P>
+
+<br>
+<br>
+<P><STRONG>Formal rules of the SG/PSS operation</STRONG></P>
+
+<br>
+<P>1.	The main task of the SG/PSS is the maintenance of the PSS interface definition. Its
+work consists of:</P>
+
+<br>
+<P>	a)	a clarification of obscure parts of the definition.</P>
+
+<br>
+<P>	b)	removal of eventual conflicts in the definition.</P>
+
+<br>
+<P>	c)	alteration of the definition when necessary.</P>
+
+<br>
+<br>
+<P>2.	The following types of changes in the definition can be directly considered by
+SG/PSS:</P>
+
+<br>
+<P>	a)	obvious oversights that have occurred in the text of the definition.</P>
+
+<br>
+<P>	b)	removal of language restrictions that are proved obsolete for consistency
+and implementation.</P>
+
+<br>
+<P>	c)	trivial extensions to the existing concepts that are felt relevant for continued
+use of the definition in changing environments.</P>
+
+<br>
+<P>	d)	any other changes as long as none of the members are against it.</P>
+
+<P>The Environment Interface	<A HREF="#N_123_"><SUP>(123)</SUP></A>      </P>
+
+<br>
+<br>
+<P>3.	Any other changes than those mentioned in point 2 above can also be considered.
+These changes must, however, be submitted to the secretariat two (2) months prior
+to the meeting. Submitted proposals will be distributed to the members without
+delay, to facilitate inclusion of relevant comments in the material presented with the
+meeting agenda at least three (3) weeks before said meeting.</P>
+
+<br>
+<P>4.	All proposals for changes in the PSS interface definition conforming with the above
+rules must be formulated in writing in a concise manner and submitted to the
+secretariat. Anyone may submit such a proposal.</P>
+
+<br>
+<br>
+<P>5.	The Chairman of the SG/PSS is responsible for confirming receipt of each
+proposal, registering it and scheduling its processing at one of the meetings of the
+SG/PSS. Alternatively the Chairman may point out any inadequacies in a proposal
+to its submitter.</P>
+
+<br>
+<P>	The proposal will be announced at the subsequent SG/PSS meeting which may
+approve or revoke the Chairman's decision related to this proposal.</P>
+
+<br>
+<P>	Complete material related to a proposal will be submitted to the members when the
+proposal is processed at the next meeting or by specific request.</P>
+
+<br>
+<br>
+<P>6.	In its final form every proposal will be an updating text to one of the documents
+comprising the PSS interface definition. It will further indicate the original submitter,
+date of submission and its motivation. Alternative forms of the proposal and
+reasons for their rejection are a valuable part of the document. An example of a
+suitable form is attached to these rules.</P>
+
+<P>The Environment Interface	<A HREF="#N_124_"><SUP>(124)</SUP></A>      </P>
+
+<br>
+<br>
+<P>	The logical consistency of the text, its clarity and conciseness are of utmost
+importance. To this end the SG/PSS or its Chairman may allocate one particular
+member to bring the proposal into the required shape if this is deemed necessary.</P>
+
+<br>
+<br>
+<P>7.	It is the responsability of the Chairman to notify the submitter of a proposal about
+the result of its processing by the SG/PSS if this is not otherwise obvious. It is also
+his/her responsibility to minimize the time taken over each proposal.</P>
+
+<br>
+<P>8.	The final text of the proposals will be available from the secratariat as a
+supplement to the PSS interface definition until they are incorporated into the
+definition at the next revision of the documents. To facilitate this process, at its
+approval a proposal will be assigned a number reflecting which of the documents it
+refers to and its chronological order.</P>
+
+<br>
+<P>The Environment Interface	<A HREF="#N_125_"><SUP>(125)</SUP></A>      </P>
+
+<br>
+<br>
+<P>Proposal for changing the Portable SIMULA System interface definition.</P>
+
+<P>--------------------------------------------------------------------</P>
+
+<br>
+<P>Document affected:</P>
+
+<br>
+<P>Submitter:</P>
+
+<br>
+<P>Date:</P>
+
+<br>
+<P>Title of proposal:</P>
+
+<br>
+<P>Affected section:</P>
+
+<P>--------------------------------------------------------------------</P>
+
+<P>Proposal:</P>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<P>Motivation:</P>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<P>--------------------------------------------------------------------</P>
+
+<P>SG/PSS decision on the above proposal</P>
+
+<br>
+<P>For:               Against:                Abstained:</P>
+
+<br></MULTICOL>
+
+<MULTICOL COLS="2" WIDTH="863" GUTTER="106">
+
+<P>The Environment Interface	<A HREF="#N_126_"><SUP>(126)</SUP></A>      </P>
+
+<br>
+<br>
+<P><STRONG>Index of keywords</STRONG></P>
+
+<br>
+<br>
+<P>				Action 	 57      </P>
+
+<P>				ANYCREATE 	 58      </P>
+
+<P>				APPEND 	 57      </P>
+
+<P>				Arccos 	 79      </P>
+
+<P>				Arcsin 	 79      </P>
+
+<P>				Arctan 	 79      </P>
+
+<P>				Atan2 	 79      </P>
+
+<P>				Basic_draw 	 70      </P>
+
+<P>				Bioref 	 4      </P>
+
+<P>				Blank 	 75      </P>
+
+<P>				Breako 	 43      </P>
+
+<P>				Breakout 	 43      </P>
+
+<P>				Breakpoint 	 96      </P>
+
+<P>				Brkpnt 	 96      </P>
+
+<P>				BYTESZ 	 58      </P>
+
+<P>				Cblnk 	 75      </P>
+
+<P>				Chkpnt 	 55      </P>
+
+<P>				Clfile 	 40      </P>
+
+<P>				Clockt 	 73      </P>
+
+<P>				Close_dset 	 40      </P>
+
+<P>				Cmove 	 75      </P>
+
+<P>				Cos 	 79      </P>
+
+<P>				Cosh 	 79      </P>
+
+<P>				Cosinu 	 79      </P>
+
+<P>				Cotang 	 80      </P>
+
+<P>				Cpu_time 	 100      </P>
+
+<P>				Cputim 	 100      </P>
+
+<P>				CREATE 	 57      </P>
+
+<P>				Curins 	 4      </P>
+
+<P>				Dabs 	 80      </P>
+
+<P>				Daddep 	 79      </P>
+
+<P>The Environment Interface	<A HREF="#N_127_"><SUP>(127)</SUP></A>      </P>
+
+<br>
+<br>
+<P>				Daddeps 	 79      </P>
+
+<P>				Data set 	 34      </P>
+
+<P>				Date_and_time 	 72      </P>
+
+<P>				Dattim 	 72      </P>
+
+<P>				Dcmark 	 74      </P>
+
+<P>				Dcotan 	 80      </P>
+
+<P>				Ddpower 	 79      </P>
+
+<P>				Ddpowr 	 79      </P>
+
+<P>				Def_work_area 	 29      </P>
+
+<P>				Delete 	 45      </P>
+
+<P>				Denti 	 80      </P>
+
+<P>				Dentier 	 80      </P>
+
+<P>				Digit 	 77      </P>
+
+<P>				Dipower 	 79      </P>
+
+<P>				Dipowr 	 79      </P>
+
+<P>				Directbytefile 	 37      </P>
+
+<P>				Directfile 	 36      </P>
+
+<P>				Dlog10 	 80      </P>
+
+<P>				Dmax 	 80      </P>
+
+<P>				Dmin 	 80      </P>
+
+<P>				Dmpobj 	 99      </P>
+
+<P>				Drawrp 	 70      </P>
+
+<P>				Drpower 	 79      </P>
+
+<P>				Drpowr 	 79      </P>
+
+<P>				Dsign 	 80      </P>
+
+<P>				Dsubep 	 79      </P>
+
+<P>				Dsubeps 	 79      </P>
+
+<P>				Dwarea 	 29      </P>
+
+<P>				Enviro 	 4      </P>
+
+<P>				Environment module 	 101      </P>
+
+<P>				Errors 	 104      </P>
+
+<P>				Exception_handler 	 82      </P>
+
+<P>				Exceptions 	 82      </P>
+
+<P>				Excpha 	 82      </P>
+
+<P>The Environment Interface	<A HREF="#N_128_"><SUP>(128)</SUP></A>      </P>
+
+<br>
+<br>
+<P>				Exp 	 79      </P>
+
+<P>				Expone 	 79      </P>
+
+<P>				Extend_or_GC 	 32      </P>
+
+<P>				External-id 	 25      </P>
+
+<P>				File 	 34      </P>
+
+<P>				Garbage collection 	 27      </P>
+
+<P>				Garbage collector 	 26      </P>
+
+<P>				Gdsnam 	 46      </P>
+
+<P>				Gdspec 	 47      </P>
+
+<P>				Get_dsetname 	 46      </P>
+
+<P>				Get_dsetspec 	 47      </P>
+
+<P>				Get_frac 	 61      </P>
+
+<P>				Get_int 	 60      </P>
+
+<P>				Get_intinfo 	 11      </P>
+
+<P>				Get_line_ident 	 95      </P>
+
+<P>				Get_line_no 	 92, 94      </P>
+
+<P>				Get_lpp 	 49      </P>
+
+<P>				Get_outermost 	 90      </P>
+
+<P>				Get_paddr 	 92, 94      </P>
+
+<P>				Get_real 	 61      </P>
+
+<P>				Get_sizeinfo 	 30      </P>
+
+<P>				Get_textinfo 	 18      </P>
+
+<P>				Getint 	 60      </P>
+
+<P>				Getlpp 	 49      </P>
+
+<P>				Gintin 	 11      </P>
+
+<P>				Give_intinfo 	 22      </P>
+
+<P>				Give_textinfo 	 23      </P>
+
+<P>				Givinf 	 23      </P>
+
+<P>				Gtexin 	 18      </P>
+
+<P>				Gtfrac 	 61      </P>
+
+<P>				Gtlnid 	 95      </P>
+
+<P>				Gtlno 	 94      </P>
+
+<P>				Gtoutm 	 90      </P>
+
+<P>				Gtpadr 	 94      </P>
+
+<P>The Environment Interface	<A HREF="#N_129_"><SUP>(129)</SUP></A>      </P>
+
+<br>
+<br>
+<P>				Gtreal 	 61      </P>
+
+<P>				Gviinf 	 22      </P>
+
+<P>				Hash 	 100      </P>
+
+<P>				Iabs 	 80      </P>
+
+<P>				Iipower 	 79      </P>
+
+<P>				Iipowr 	 79      </P>
+
+<P>				In2byt 	 52      </P>
+
+<P>				In2byte 	 52      </P>
+
+<P>				Inbyte 	 52      </P>
+
+<P>				Inbytefile 	 36      </P>
+
+<P>				Infile 	 35      </P>
+
+<P>				Inimag 	 41      </P>
+
+<P>				Inimage 	 41      </P>
+
+<P>				Initia 	 6      </P>
+
+<P>				Initialise 	 6      </P>
+
+<P>				Interface definition 	 113      </P>
+
+<P>				Interface module 	 4      </P>
+
+<P>				Interrupt monitor 	 82      </P>
+
+<P>				Itsize 	 4      </P>
+
+<P>				Known 	 2      </P>
+
+<P>				Lastloc 	 54      </P>
+
+<P>				Letter 	 77      </P>
+
+<P>				Ln 	 78      </P>
+
+<P>				Locate 	 44      </P>
+
+<P>				Lockfi 	 56      </P>
+
+<P>				Logari 	 78      </P>
+
+<P>				Look_up 	 37      </P>
+
+<P>				Lookup 	 37      </P>
+
+<P>				Lowten 	 73      </P>
+
+<P>				Lstloc 	 54      </P>
+
+<P>				Maxint 	 4      </P>
+
+<P>				Maxlen 	 4      </P>
+
+<P>				Maxloc 	 54      </P>
+
+<P>				Maxlrl 	 4      </P>
+
+<P>The Environment Interface	<A HREF="#N_130_"><SUP>(130)</SUP></A>      </P>
+
+<br>
+<br>
+<P>				Maxrea 	 4      </P>
+
+<P>				Maxrnk 	 4      </P>
+
+<P>				Minint 	 4      </P>
+
+<P>				Minlrl 	 4      </P>
+
+<P>				Minrea 	 4      </P>
+
+<P>				Mod 	 80      </P>
+
+<P>				Modulo 	 80      </P>
+
+<P>				Move 	 33, 59, 75      </P>
+
+<P>				Movein 	 33      </P>
+
+<P>				Newpag 	 50      </P>
+
+<P>				Newpage 	 50      </P>
+
+<P>				NEXTFILE 	 59      </P>
+
+<P>				NOAPPEND 	 57      </P>
+
+<P>				NOCREATE 	 57      </P>
+
+<P>				NOPURGE 	 58      </P>
+
+<P>				NOREWIND 	 58      </P>
+
+<P>				NOSHARED 	 57      </P>
+
+<P>				Open_ds 	 38      </P>
+
+<P>				Opfile 	 38      </P>
+
+<P>				Out2by 	 53      </P>
+
+<P>				Out2byte 	 53      </P>
+
+<P>				Outbyt 	 53      </P>
+
+<P>				Outbyte 	 53      </P>
+
+<P>				Outbytefile 	 36      </P>
+
+<P>				Outermost 	 90      </P>
+
+<P>				Outfile 	 35      </P>
+
+<P>				Outima 	 42      </P>
+
+<P>				Outimage 	 42      </P>
+
+<P>				Plreal 	 66      </P>
+
+<P>				PREVIOUS 	 59      </P>
+
+<P>				Print_outimage 	 51      </P>
+
+<P>				Printfile 	 36      </P>
+
+<P>				Printo 	 51      </P>
+
+<P>				Proposals for changes 	 114      </P>
+
+<P>The Environment Interface	<A HREF="#N_131_"><SUP>(131)</SUP></A>      </P>
+
+<br>
+<br>
+<P>				Ptaadr 	 68      </P>
+
+<P>				Ptfrac 	 67      </P>
+
+<P>				Ptlfix 	 64      </P>
+
+<P>				Ptoadr 	 68      </P>
+
+<P>				Ptpadr 	 68      </P>
+
+<P>				Ptradr 	 69      </P>
+
+<P>				Ptreal 	 65      </P>
+
+<P>				Ptsize 	 68      </P>
+
+<P>				PURGE 	 58      </P>
+
+<P>				Put_aaddr 	 68      </P>
+
+<P>				Put_fix 	 63      </P>
+
+<P>				Put_frac 	 67      </P>
+
+<P>				Put_int 	 62      </P>
+
+<P>				Put_lfix 	 64      </P>
+
+<P>				Put_lreal 	 66      </P>
+
+<P>				Put_oaddr 	 68      </P>
+
+<P>				Put_paddr 	 68      </P>
+
+<P>				Put_raddr 	 69      </P>
+
+<P>				Put_real 	 65      </P>
+
+<P>				Put_size 	 68      </P>
+
+<P>				Putfix 	 63      </P>
+
+<P>				Putint 	 62      </P>
+
+<P>				Rabs 	 80      </P>
+
+<P>				Raddep 	 79      </P>
+
+<P>				Raddeps 	 79      </P>
+
+<P>				Rarccos 	 79      </P>
+
+<P>				Rarcos 	 79      </P>
+
+<P>				Rarcsin 	 79      </P>
+
+<P>				Rarctan 	 79      </P>
+
+<P>				Rarsin 	 79      </P>
+
+<P>				Rartan 	 79      </P>
+
+<P>				Ratan2 	 79      </P>
+
+<P>				Rcos 	 79      </P>
+
+<P>				Rcosh 	 79      </P>
+
+<P>The Environment Interface	<A HREF="#N_132_"><SUP>(132)</SUP></A>      </P>
+
+<br>
+<br>
+<P>				Rcosin 	 79      </P>
+
+<P>				Rcotan 	 80      </P>
+
+<P>				Rdpower 	 79      </P>
+
+<P>				Rdpowr 	 79      </P>
+
+<P>				READONLY 	 58      </P>
+
+<P>				Recovery actions 	 86      </P>
+
+<P>				RELEASE 	 59      </P>
+
+<P>				Renti 	 80      </P>
+
+<P>				Rentier 	 80      </P>
+
+<P>				REPEAT 	 59      </P>
+
+<P>				REWIND 	 58      </P>
+
+<P>				Rexp 	 79      </P>
+
+<P>				Rexpon 	 79      </P>
+
+<P>				Ripower 	 79      </P>
+
+<P>				Ripowr 	 79      </P>
+
+<P>				Rln 	 78      </P>
+
+<P>				Rlog10 	 79      </P>
+
+<P>				Rlogar 	 78      </P>
+
+<P>				Rmax 	 80      </P>
+
+<P>				Rmin 	 80      </P>
+
+<P>				Rrpower 	 79      </P>
+
+<P>				Rrpowr 	 79      </P>
+
+<P>				Rsign 	 80      </P>
+
+<P>				Rsinh 	 79      </P>
+
+<P>				Rsinus 	 79      </P>
+
+<P>				Rsqroo 	 78      </P>
+
+<P>				Rsqrt 	 78      </P>
+
+<P>				Rsubep 	 79      </P>
+
+<P>				Rsubeps 	 79      </P>
+
+<P>				Rtan 	 79      </P>
+
+<P>				Rtangn 	 79      </P>
+
+<P>				Rtanh 	 79      </P>
+
+<P>				SG/PSS 	 110      </P>
+
+<P>				SHARED 	 57      </P>
+
+<P>The Environment Interface	<A HREF="#N_133_"><SUP>(133)</SUP></A>      </P>
+
+<br>
+<br>
+<P>				Sinh 	 79      </P>
+
+<P>				Sinus 	 79      </P>
+
+<P>				Sinusr 	 79      </P>
+
+<P>				Sizein 	 30      </P>
+
+<P>				Sqroot 	 78      </P>
+
+<P>				Sqrt 	 78      </P>
+
+<P>				Standards Group 	 110      </P>
+
+<P>				Status 	 4, 81, 104      </P>
+
+<P>				Stmnot 	 97      </P>
+
+<P>				Stmt_note 	 97      </P>
+
+<P>				Strip 	 77      </P>
+
+<P>				Stripp 	 77      </P>
+
+<P>				SYSIN 	 47      </P>
+
+<P>				SYSOUT 	 47      </P>
+
+<P>				Syspri 	 98      </P>
+
+<P>				Syspro 	 98      </P>
+
+<P>				System 	 2      </P>
+
+<P>				SYSTRACE 	 47      </P>
+
+<P>				Tan 	 79      </P>
+
+<P>				Tangen 	 79      </P>
+
+<P>				Tanh 	 79      </P>
+
+<P>				Termin 	 7      </P>
+
+<P>				Terminate 	 7      </P>
+
+<P>				Textrel 	 76      </P>
+
+<P>				Tmpqnt 	 4      </P>
+
+<P>				Txtrel 	 76      </P>
+
+<P>				Unlock 	 56      </P>
+
+<P>				Work areas 	 26      </P>
+
+<P>				WRITEONLY 	 58      </P>
+
+<P>				Xorgc 	 32      </P>
+
+<br>
+<br>
+<br></MULTICOL>
+
+
+<P><A NAME="N_1_">1. </A>
+<P><A NAME="N_2_">2. </A>
+<P><A NAME="N_3_">3. </A>
+<P><A NAME="N_4_">4. </A>
+<P><A NAME="N_5_">5. </A>
+<P><A NAME="N_6_">6. </A>
+<P><A NAME="N_7_">7. </A>
+<P><A NAME="N_8_">8. </A>
+<P><A NAME="N_9_">9. </A>
+<P><A NAME="N_10_">10. </A>
+<P><A NAME="N_11_">11. </A>
+<P><A NAME="N_12_">12. </A>
+<P><A NAME="N_13_">13. </A>
+<P><A NAME="N_14_">14. </A>
+<P><A NAME="N_15_">15. </A>
+<P><A NAME="N_16_">16. </A>
+<P><A NAME="N_17_">17. </A>
+<P><A NAME="N_18_">18. </A>
+<P><A NAME="N_19_">19. </A>
+<P><A NAME="N_20_">20. </A>
+<P><A NAME="N_21_">21. </A>
+<P><A NAME="N_22_">22. </A>
+<P><A NAME="N_23_">23. </A>
+<P><A NAME="N_24_">24. </A>
+<P><A NAME="N_25_">25. </A>
+<P><A NAME="N_26_">26. </A>
+<P><A NAME="N_27_">27. </A>
+<P><A NAME="N_28_">28. </A>
+<P><A NAME="N_29_">29. </A>
+<P><A NAME="N_30_">30. </A>
+<P><A NAME="N_31_">31. </A>
+<P><A NAME="N_32_">32. </A>
+<P><A NAME="N_33_">33. </A>
+<P><A NAME="N_34_">34. </A>
+<P><A NAME="N_35_">35. </A>
+<P><A NAME="N_36_">36. </A>
+<P><A NAME="N_37_">37. </A>
+<P><A NAME="N_38_">38. </A>
+<P><A NAME="N_39_">39. </A>
+<P><A NAME="N_40_">40. </A>
+<P><A NAME="N_41_">41. </A>
+<P><A NAME="N_42_">42. </A>
+<P><A NAME="N_43_">43. </A>
+<P><A NAME="N_44_">44. </A>
+<P><A NAME="N_45_">45. </A>
+<P><A NAME="N_46_">46. </A>
+<P><A NAME="N_47_">47. </A>
+<P><A NAME="N_48_">48. </A>
+<P><A NAME="N_49_">49. </A>
+<P><A NAME="N_50_">50. </A>
+<P><A NAME="N_51_">51. </A>
+<P><A NAME="N_52_">52. </A>
+<P><A NAME="N_53_">53. </A>
+<P><A NAME="N_54_">54. </A>
+<P><A NAME="N_55_">55. </A>
+<P><A NAME="N_56_">56. </A>
+<P><A NAME="N_57_">57. </A>
+<P><A NAME="N_58_">58. </A>
+<P><A NAME="N_59_">59. </A>
+<P><A NAME="N_60_">60. </A>
+<P><A NAME="N_61_">61. </A>
+<P><A NAME="N_62_">62. </A>
+<P><A NAME="N_63_">63. </A>
+<P><A NAME="N_64_">64. </A>
+<P><A NAME="N_65_">65. </A>
+<P><A NAME="N_66_">66. </A>
+<P><A NAME="N_67_">67. </A>
+<P><A NAME="N_68_">68. </A>
+<P><A NAME="N_69_">69. </A>
+<P><A NAME="N_70_">70. </A>
+<P><A NAME="N_71_">71. </A>
+<P><A NAME="N_72_">72. </A>
+<P><A NAME="N_73_">73. </A>
+<P><A NAME="N_74_">74. </A>
+<P><A NAME="N_75_">75. </A>
+<P><A NAME="N_76_">76. </A>
+<P><A NAME="N_77_">77. </A>
+<P><A NAME="N_78_">78. </A>
+<P><A NAME="N_79_">79. </A>
+<P><A NAME="N_80_">80. </A>
+<P><A NAME="N_81_">81. </A>
+<P><A NAME="N_82_">82. </A>
+<P><A NAME="N_83_">83. </A>
+<P><A NAME="N_84_">84. </A>
+<P><A NAME="N_85_">85. </A>
+<P><A NAME="N_86_">86. </A>
+<P><A NAME="N_87_">87. </A>
+<P><A NAME="N_88_">88. </A>
+<P><A NAME="N_89_">89. </A>
+<P><A NAME="N_90_">90. </A>
+<P><A NAME="N_91_">91. </A>
+<P><A NAME="N_92_">92. </A>
+<P><A NAME="N_93_">93. </A>
+<P><A NAME="N_94_">94. </A>
+<P><A NAME="N_95_">95. </A>
+<P><A NAME="N_96_">96. </A>
+<P><A NAME="N_97_">97. </A>
+<P><A NAME="N_98_">98. </A>
+<P><A NAME="N_99_">99. </A>
+<P><A NAME="N_100_">100. </A>
+<P><A NAME="N_101_">101. </A>
+<P><A NAME="N_102_">102. </A>
+<P><A NAME="N_103_">103. </A>
+<P><A NAME="N_104_">104. </A>
+<P><A NAME="N_105_">105. </A>
+<P><A NAME="N_106_">106. </A>
+<P><A NAME="N_107_">107. </A>
+<P><A NAME="N_108_">108. </A>
+<P><A NAME="N_109_">109. </A>
+<P><A NAME="N_110_">110. </A>
+<P><A NAME="N_111_">111. </A>
+<P><A NAME="N_112_">112. </A>
+<P><A NAME="N_113_">113. </A>
+<P><A NAME="N_114_">114. </A>
+<P><A NAME="N_115_">115. </A>
+<P><A NAME="N_116_">116. </A>
+<P><A NAME="N_117_">117. </A>
+<P><A NAME="N_118_">118. </A>
+<P><A NAME="N_119_">119. </A>
+<P><A NAME="N_120_">120. </A>
+<P><A NAME="N_121_">121. </A>
+<P><A NAME="N_122_">122. </A>
+<P><A NAME="N_123_">123. </A>
+<P><A NAME="N_124_">124. </A>
+<P><A NAME="N_125_">125. </A>
+<P><A NAME="N_126_">126. </A>
+<P><A NAME="N_127_">127. </A>
+<P><A NAME="N_128_">128. </A>
+<P><A NAME="N_129_">129. </A>
+<P><A NAME="N_130_">130. </A>
+<P><A NAME="N_131_">131. </A>
+<P><A NAME="N_132_">132. </A>
+<P><A NAME="N_133_">133. </A>
+</BODY>
+</HTML>

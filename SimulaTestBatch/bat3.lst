@@ -1,0 +1,96 @@
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst30.sim
+SIM: load
+simtst30 loaded
+SIM: simtst30 /w1
+--- START Simula a.s. TEST 30
+--- Test transmission by name - value types, text, object
+--- reference type and arrays of these types.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 30
+SIM: compile src/simtst31.sim
+FATAL: (l. 58) SORRY, complex switch element IS NOT IMPLEMENTED
+*** COMPILATION ABORTED ***
+SIM: CC simtst31 has complex switch - error under comp
+SIM: CC load
+SIM: CC simtst31 /w1
+SIM: compile src/simtst32.sim
+
+*** INTERNAL ERROR (RTS error #16) at source line 63
+SIM: load
+simtst30 loaded
+SIM: simtst32 /w1
+sh: simtst32: not found
+SIM: compile src/simtst33.sim
+SIM: load
+simtst33 loaded
+SIM: simtst33 /w1
+--- START Simula a.s. TEST 33
+--- Test call by reference for object reference type, text,
+--- value type array and reference type array.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 33
+SIM: compile src/simtst34.sim
+SIM: load
+simtst34 loaded
+SIM: simtst34 /w1
+--- START Simula a.s. TEST 34
+--- Test procedures with procedures as parameters
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 34
+SIM: compile src/simtst35.sim
+SIM: load
+simtst35 loaded
+SIM: simtst35 /w1
+--- START Simula a.s. TEST 35
+--- Test type procedures as parameters
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 35
+SIM: compile src/simtst36.sim
+
+*** INTERNAL ERROR (RTS error #16) at source line 41
+SIM: load
+simtst35 loaded
+SIM: simtst36 /w1
+sh: simtst36: not found
+SIM: compile src/simtst37.sim
+SIM: load
+simtst37 loaded
+SIM: simtst37 /w1
+--- START Simula a.s. TEST 37
+--- Test transmission by name, when the actual parameters
+--- and formal parameters are of different type.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 37
+SIM: compile src/simtst38.sim
+SIM: load
+simtst38 loaded
+SIM: simtst38 /w1
+--- START Simula a.s. TEST 38
+--- Test value of type procedures.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 38
+SIM: compile src/simtst39.sim
+SIM: load
+simtst39 loaded
+SIM: simtst39 /w1
+--- START Simula a.s. TEST 39
+--- Check that the formal parameters are global to the
+--- procedure body.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 39
+SIM: exit
+EXIT  SIMULA

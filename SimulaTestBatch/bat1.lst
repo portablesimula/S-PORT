@@ -1,0 +1,109 @@
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst10.sim
+SIM: load
+simtst10 loaded
+SIM: simtst10 /w1
+--- START Simula a.s. TEST 10
+--- Test the evaluation of text constants.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 10
+SIM: compile src/simtst11.sim
+SIM: load
+simtst11 loaded
+SIM: simtst11 /w1
+--- START Simula a.s. TEST 11
+--- Test the text attributes constant, start, length,
+--- pos and main.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END OF Simula a.s. TEST 11
+SIM: compile src/simtst12.sim
+SIM: load
+simtst12 loaded
+SIM: simtst12 /w1
+--- START Simula a.s. TEST 12
+--- Test the text value and reference relations.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 12
+SIM: compile src/simtst13.sim
+SIM: load
+simtst13 loaded
+SIM: simtst13 /w1
+--- START Simula a.s. TEST 13
+--- Test text value and text reference assigment.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END SIMULA a.s. TEST 13
+SIM: compile src/simtst14.sim
+SIM: load
+simtst14 loaded
+SIM: simtst14 /w1
+--- START Simula a.s. TEST 14
+--- Test the text attributes pos, setpos, more,
+--- getchar and putchar.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 14
+SIM: compile src/simtst15.sim
+SIM: load
+simtst15 loaded
+SIM: simtst15 /w1
+--- START Simula a.s. TEST 15
+--- Test the text generation procedures copy and blanks.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 15
+SIM: compile src/simtst16.sim
+SIM: load
+simtst16 loaded
+SIM: simtst16 /w1
+--- START Simula a.s. TEST 16
+--- Test the standard text procedures sub and strip
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 16
+SIM: compile src/simtst17.sim
+SIM: load
+simtst17 loaded
+SIM: simtst17 /w1
+--- START Simula a.s. TEST 17
+--- Test the (de-)editing text attributes getint,
+--- getreal, getfrac, putint, putfix, putreal and putfrac.
+
+
+*** Test of long real procedure getreal, procedure putfix
+*** and procedure putreal is not implemented.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- Two edit overflows should be signaled.
+--- END Simula a.s. TEST 17
+No. of text edit overflows: 2
+SIM: compile src/simtst18.sim
+SIM: load
+simtst18 loaded
+SIM: simtst18 /w1
+--- START Simula a.s. TEST 18
+--- Test the put- and get-procedures of text
+--- NO ERRORS FOUND IN THIS TEST
+--- Six text edit overflows should be signaled.
+--- END Simula a.s. TEST 18
+No. of text edit overflows: 6
+SIM: compile src/simtst19.sim
+SIM: load
+simtst19 loaded
+SIM: simtst19 /w1
+--- START Simula a.s. TEST 19
+--- Test text concatenation and text expression evaluation.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 19
+SIM: exit
+EXIT  SIMULA

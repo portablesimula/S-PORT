@@ -1,0 +1,417 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta http-equiv="Content-Language" content="en-gb">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>1</title>
+</head>
+
+<body>
+
+<h2>1.  <strong>INTRODUCTION</strong></h2>
+
+<p>In 1979 the Norwegian Computing Center (Oslo) and the Program Library Unit
+(Edinburgh) initiated the &quot;S-PORT&quot; project: implementation of a portable SIMULA-system.
+The system consists of three parts:</p>
+
+<ul>
+  <li>a portable front-end compiler,</li>
+  <li>a portable run time support system, and</li>
+  <li>a machine dependent code generator.</li>
+</ul>
+<p>The latter includes the interfaces to the compile and run time environment.</p>
+
+<p>The present report defines the intermediate language &quot;S-code&quot; used to transmit an
+analyzed Simula program from the front end compiler to the code generator.</p>
+
+<p>Both the front end compiler and the run time system will be distributed in S-code. In order
+to implement Simula it will be necessary to program the code generator (the S-compiler)
+for the machine in question. This compiler will take care of two tasks:</p>
+
+<ul>
+  <li>it will produce code for the target machine corresponding to the S-program, and</li>
+  <li>it will insert the necessary links to the operating system.</li>
+</ul>
+<p>This report is intended as an implementation independent definition, therefore the code
+generation semantics are rather naive. A forthcoming report, &quot;S-compiler implementation
+guide&quot;, will treat the implementation problems more in depth in view of our experience with
+the S-PORT systems under way on HB DPS8, VAX, PR1ME, NORD 500 and Univac
+1100.</p>
+
+<p>The S-code has been designed by the authors. We acknowledge valuable criticism and
+comment from Peter H&aring;ndlykken and H&aring;vard Hegna (NCC), who painstakingly read
+through the draft of this report. Thanks are also due to Geoffrey E. Millard and Rob Pooley
+(PLU), Georg P. Philippot (University of Oslo), Andras Gaspar and the rest of the team at
+SZKI in Budapest, and Karel Babcicky and Birger M&oslash;ller Pedersen (NCC) for
+contributions and ideas.</p>
+
+<h3>1.1.  <u>References</u></h3>
+
+<div align="center">
+  <center>
+  <table border="0" cellspacing="3" width="80%" cellpadding="3">
+    <tr>
+      <td width="6%" valign="top">
+<p>1.&nbsp;</p>
+
+      </td>
+      <td width="94%">
+	&quot;Simula Common Base&quot;<br>
+	by O.-J. Dahl, B. Myhrhaug and K. Nygaard<br>
+	Norwegian Computing Center, 1971.
+
+      </td>
+    </tr>
+    <tr>
+      <td width="6%" valign="top">
+<p>2.&nbsp;</p>
+
+      </td>
+      <td width="94%">
+	&quot;Simula Implementation Guide&quot;<br>
+	by O.-J. Dahl and B. Myhrhaug<br>
+	Norwegian Computing Center, 1973
+
+      </td>
+    </tr>
+    <tr>
+      <td width="6%" valign="top">3.&nbsp;</td>
+      <td width="94%">	&quot;S-compiler Implementation Guide&quot;<br>
+	Norwegian Computing Center (forthcoming)</td>
+    </tr>
+    <tr>
+      <td width="6%" valign="top">4.</td>
+      <td width="94%">&nbsp;&quot;The Environment Interface&quot;<br>
+	by G. E. Millard, &oslash;. Myhre and G. Syrrist<br>
+	Norwegian Computing Center, 1981.</td>
+    </tr>
+    <tr>
+      <td width="6%" valign="top">
+<p>5.&nbsp;</p>
+
+      </td>
+      <td width="94%">
+	&quot;Run Time System Definition.&quot;<br>
+	by &oslash;ystein Myhre.<br>
+	Norwegian Computing Center, 1982.<br>
+(restricted).
+
+      </td>
+    </tr>
+    <tr>
+      <td width="6%" valign="top">
+<p>6.&nbsp;</p>
+
+      </td>
+      <td width="94%">
+	&quot;Code Generation Schemes for Portable SIMULA.&quot;<br>
+	by &oslash;ystein Myhre and Birger M&oslash;ller-Pedersen<br>
+	Norwegian Computing Center, 1982.<br>
+(restricted).
+
+      </td>
+    </tr>
+  </table>
+  </center>
+</div>
+<h3>
+
+<br WP="BR1">1.2.  <u>Philosophy of the design</u></h3>
+<p>It is important to realize, that S-code is not seen as a set of instructions which can be
+executed (or interpreted) to perform the task specified by the source program. Instead
+S-code controls a compilation process, the outcome of which is an executable form of the
+program. Thus S-code comprises the instruction set of a <u>compiler</u>, not a (Simula)
+<u>machine</u>.</p>
+
+<p>S-code has been designed as a practical tool to facilitate the production of Simula
+compilers on as wide a range of computers as possible. In addition the language makes it
+possible to generate efficient object code, where &quot;efficient&quot; can mean different things
+depending on the context: fast, compact, highly diagnostic, etc.</p>
+
+<p>In order to achieve these aims the language had to be flexible enough to cater to these
+needs. Unfortunately this flexibility forces a certain vagueness in the definition of the
+S-code, making precise statements difficult and even dangerous as they may invalidate
+styles of implementation for no better reason than that other possibilities were not
+foreseen. Consequently this definition is only precise in terms of those parts of the
+semantics which relate directly to the problems faced by the processor generating the
+S-code.</p>
+
+<p>It is appreciated that the task of producing an S-compiler is in many ways much simpler
+than the task of maintaining such a compiler. The language has therefore been designed
+so that errors in both the S-program and the S-compiler can be detected as close to the
+point of error as possible.</p>
+
+<p>To this end operations with far-reaching effects have been avoided as experience has
+shown them to be excellent at covering up processing errors. A guiding principle adopted
+is that it is better for the compiler to fail to compile a program (and inform the user of the
+fact) than to purport to have compiled it but in reality to have generated faulty code. In the
+former case there is no doubt as to where the problem lies (the compiler is wrong)
+whereas in the latter vast amounts of time can be spent trying to find non-existent bugs in
+user's programs.</p>
+
+<p>In this report the language is presented using a conventional notation for the language
+symbols as if S-programs were created as symbolic strings. This notation has been
+chosen for publication purposes in order to make the report more readable. Actually all
+S-programs will be byte encoded, i.e. a program will always be a string of (8-bit) bytes,
+which encode the program according to the tables given in the appendix. No separating
+spaces etc. are necessary, and will thus never occur.</p>
+
+<h3>1.3.  <u>General overview</u></h3>
+
+<p>A system programmed in S-code will in the general case consist of a main program, which
+will receive control when the translated system is to begin execution, and several modules
+which may provide type definitions, routine support (in the form of a run time system, as is
+the case in S-PORT), etc.</p>
+
+<p>Each program or module will contain three main classes of program elements:</p>
+
+<ul>
+  <li>type definitions (<u>record</u> descriptors) govern the structure and manipulation of data
+quantities,</li>
+  <li>data quantity declarations (<u>const</u>, <u>local</u>) control the actual (static) allocation and
+identification of data, and</li>
+  <li>statements and instructions, possibly grouped in <u>routines</u>, specify (together with the
+type information) the target machine instructions to be generated.</li>
+</ul>
+<p>Unlike most assembly languages, S-code contains a number of structured statements
+such as <u>if</u>-statement or <u>call</u>-statement. But unlike higher level languages (such as Simula)
+any intermixture of the above elements is permitted, as long as a very few rules are
+obeyed, the most significant being that</p>
+
+<blockquote>
+
+<p>	Any identifier (<u>tag</u>) must have been explicitly &quot;declared&quot; before it may be used in an
+instruction.</p>
+
+</blockquote>
+
+<p>Data to be manipulated may be of one of the usual types, such as integer, or the
+information may be structured as a <u>record</u> with named (tagged) components, or even into
+higher order structures such as linked lists or networks. Instructions (such as <u>add</u>) are
+included for the massage of primitive data, while pointer- and structure- manipulating
+instructions (such as <u>select</u> component) are included to support general graph traversion.</p>
+
+<p>In principle S-code is a typed language, but type compatibility is enforced only upon the
+simple types; usually no checking is implied when manipulating the representation of
+instances of structured types, in particular no qualification check is implied on access to
+record components. It is considered the responsibility of the S-code generators (e.g. the
+front-end compiler) to ensure consistent use of pointers.</p>
+
+<p>The main control structuring tool is the routine concept. A routine is inherently
+non-recursive, all parameter transmissions are by value (but it is possible to transfer
+pointer values), and strict syntax rules ensure that a routine will exit only through its final
+end. Unlike other languages, S-code permits explicit naming of the location, in which the
+return address is saved, so that a routine not necessarily returns to its point-of-call.</p>
+
+<p>Routines also establish name hiding: all names (tags) defined within the routine are
+invisible from the outside, they lose their meaning when the routine is left. As a matter of
+fact they may be reused in other routines or even at a later point in the enclosing program,
+for quite different purposes.</p>
+
+<p>A module defines a closed name scope (just like routines), it is however possible to
+selectively open the scope, making certain aspects of a module accessible outwith the
+module, while other aspects remain hidden. Type definitions, routine identifications,
+labels, and named constants can be made visible in this manner.</p>
+
+<p>The <u>interface</u> <u>module</u> specifies the assumptions made about the environment, in which the
+translated program is to be executed. This special module also serves as a global area for
+variables and constants.</p>
+
+<h3>1.4.  <u>Terminology</u></h3>
+
+<div align="center">
+  <center>
+  <table border="0" width="80%" cellspacing="0" cellpadding="0">
+    <tr>
+      <td width="100%">
+
+<dl>
+  <dt>Atomic unit</dt>
+  <dd>A data storage unit. The size is the highest common factor of the sizes of
+    all the data quantities which will be manipulated during the execution of a
+    program. The size is implementation dependent. Atomic units may impose a
+    finer resolution on the storage than the machine address allows.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+  <dt>Area</dt>
+	<dd>A vector of one or more consecutive atomic units.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+  <dt>Object unit</dt>
+	<dd>An area of implementation-defined fixed size; the size will always be an integral
+number of machine addressable storage cells. This is the allocation unit (storage
+cells may not be directly usable because of alignment problems).</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Quantity</dt>
+<dd>Used with the meaning: something that (at run time) may be manipulated by the
+executing program.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Record</dt>
+<dd>An area with a structure imposed by a structured type defined by a record
+descriptor.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Object</dt>
+<dd>A record which is not a component of any record. An object will always comprise an
+integral number of object units.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Static quantity</dt>
+<dd>The quantity exists throughout the program execution.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Dynamic quantity</dt>
+<dd>The quantity is created during program execution.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Descriptor</dt>
+<dd>	An abstraction used by the S-compiler to describe properties of quantities existing
+at run-time. The exact formats of the different kinds of descriptors are
+implementation dependent.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Complete descriptor</dt>
+<dd>	A descriptor is said to be complete if the quantity described has been allocated, i.e.
+the actual address is known (otherwise it is incomplete).</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Segment</dt>
+<dd>	A contiguous storage area containing machine instructions.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Current program point</dt>
+<dd>The place which will contain the next target machine instruction generated is called
+the current program point.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Constant area</dt>
+<dd>A storage area used for the allocation of constants. Dependent upon the
+architecture of the target machine constants may be allocated interspersed with
+instructions (i.e. in program segments), in a separate storage area or elsewhere.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>Stack</dt>
+<dd>A data structure in the S-compiler used in this report as an explanatory tool. See
+chapter 2.</dd>
+</dl>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%">
+
+<dl>
+<dt>S-program</dt>
+<dd>A byte string to be interpreted according to the syntax. Note that since all symbols
+are of fixed length (an integral number of bytes), no separators such as spaces or
+line shifts are necessary nor will they occur.</dd>
+</dl>
+      </td>
+    </tr>
+  </table>
+  </center>
+</div>
+<p>&nbsp;</p>
+<h3>1.5.  <u>Description of syntax rules</u></h3>
+
+<p>The S-code syntax is described in BNF with the following additions:</p>
+
+<ul>
+  <li>Meta symbols are written in lower case without brackets, terminal symbols are
+underlined lower case, and upper case is used for pre- defined tags.</li>
+  <li>Alternative right hand sides for a production may be separated by ::= as well as !.</li>
+  <li>Productions may be annotated with comments enclosed in parentheses.</li>
+  <li>Part of a right hand side may be enclosed in angular brackets followed by one of
+the characters ?, *, or + with the following meanings:
+    <ul>
+      <li>	&lt; symbol string &gt;?	( &quot;symbol string&quot; is optional; it may occur zero times or once. )</li>
+      <li>	&lt; symbol string &gt;*	( &quot;symbol string&quot; may occur zero or more times at this point. )</li>
+      <li>	&lt; symbol string &gt;+	( &quot;symbol string&quot; must occur one or more times at this point. )</li>
+    </ul>
+  </li>
+  <li>Spaces and line breaks are used simply to separate various parts of a production;
+they have no other significance, in particular they will not occur in the S-program.</li>
+  <li>Particular instances of a meta-symbol may be given a prefix, separated from the
+symbol by a colon, e.g. body:tag. The prefix (body) has the sole purpose of
+identifying the meta-symbol (tag) in the accompanying description; it has no
+syntactical significance whatsoever.</li>
+</ul>
+<p>&nbsp;</p>
+<p>	<img border="0" src="../compilation.gif" width="720" height="540"></p>
+
+<p><center><u>General overview of an S-PORT system</u></center>
+</p>
+
+<h2>&nbsp;</h2>
+
+</body>
+
+</html>

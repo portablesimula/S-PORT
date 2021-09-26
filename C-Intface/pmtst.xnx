@@ -1,0 +1,28 @@
+SIMULA=${1:?'Compiler name missing'}
+VERSION=${2:-0}
+WRKMAX=${3:-1}
+echo $SIMULA version:$VERSION wrkmax:$WRKMAX
+$SIMULA <<endcompile
+set option M
+set sysmode sport
+set version $VERSION
+CC  set select :Z
+CC  set option R
+CC  set select X
+CC  DEBUG 0
+CC  set sys sport
+CC  set version 1
+CC  set  target 0 -- MS-DOS without numeric coprocessor
+CC  set  target 1 -- MS-DOS with 8087 or higher
+CC  set  target 2 -- MS-OS/2 with 80287 or higher
+CC  set  target 3 -- XENIX/286 with 80287 or emulator
+CC  set  target 4 -- XENIX/386 with 80287 or emulator
+CC  set  target 5 -- XENIX/386 with Weitek x167 or emulator
+CC  set  target 6 -- UNIX/386 with 80287 or emulator
+CC  set  target 7 -- UNIX/386 with Weitek x167 or emulator
+CC  set sk1lin 1
+CC  set sk1trc 1
+comp pmtst.sim
+CC  load
+exit
+endcompile

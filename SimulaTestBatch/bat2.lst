@@ -1,0 +1,105 @@
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst20.sim
+SIM: load
+simtst20 loaded
+SIM: simtst20 /w1
+--- START Simula a.s. TEST 20
+--- Test the relational operators <, <=, =, >=, >
+--- and <> on integers.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 20
+SIM: compile src/simtst21.sim
+SIM: load
+simtst21 loaded
+SIM: simtst21 /w1
+--- START Simula a.s. TEST 21
+--- Test arrays of simple types and text.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 21
+SIM: compile src/simtst22.sim
+SIM: load
+simtst22 loaded
+SIM: simtst22 /w1
+--- START Simula a.s. TEST 22
+--- Test for-loops with various for-list elements.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 22
+SIM: compile src/simtst23.sim
+SIM: load
+simtst23 loaded
+SIM: simtst23 /w1
+--- START Simula a.s. TEST 23
+--- Test all possible type conversions in connection with
+--- step-until
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 23
+SIM: compile src/simtst24.sim
+SIM: load
+simtst24 loaded
+SIM: simtst24 /w1
+--- START Simula a.s. TEST 24
+--- Test conditional statements.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 24
+SIM: compile src/simtst25.sim
+SIM: load
+simtst25 loaded
+SIM: simtst25 /w1
+--- START Simula a.s. TEST 25
+--- Test multiple arithmetic assignment.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 25
+SIM: compile src/simtst26.sim
+FATAL: (l. 28) SORRY, switch element requiring thunk IS NOT IMPLEMENTED
+*** COMPILATION ABORTED ***
+SIM: CC simtst26 contains complex switch - error under comp /w1
+SIM: CC load
+SIM: CC simtst26 /w1
+SIM: compile src/simtst27.sim
+SIM: load
+simtst27 loaded
+SIM: simtst27 /w1
+--- START Simula a.s. TEST 27
+--- Test of while-loops.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 27
+SIM: compile src/simtst28.sim
+SIM: load
+simtst28 loaded
+SIM: simtst28 /w1
+--- START Simula a.s. TEST 28
+--- Test parameter transmission of value types and
+--- text, and arrays of these types to procedures by
+--- value (except text array).
+
+FALSE Y   2  14  2.9766&+06 4.4810&+003 ABRACADADRA (MISSPELT).
+*** ERROR: Call with constants with type conversion
+            as actual parameters (2).
+
+--- END Simula a.s. TEST 28
+SIM: compile src/simtst29.sim
+SIM: load
+simtst29 loaded
+SIM: simtst29 /w1
+--- START Simula a.s. TEST 29
+--- Test that transmission of parameters by value to
+--- procedures do not effect the actual parameters and
+--- that the formal parameters get the rigth values.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 29
+SIM: exit
+EXIT  SIMULA

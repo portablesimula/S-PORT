@@ -1,0 +1,13 @@
+set -kx
+date
+run bat0 $1 $2
+run bat1 $1 $2
+run bat2 $1 $2
+run bat3 $1 $2
+run bat4 $1 $2
+run bat5 $1 $2
+run bat6 $1 $2
+run bat7 $1 $2
+run bat8 $1 $2
+run bat9 $1 $2
+date

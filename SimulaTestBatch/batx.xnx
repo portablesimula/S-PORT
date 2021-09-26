@@ -1,0 +1,36 @@
+set -kv
+sim108.x16 <<endc
+set opt M
+com src/simtst21.sim
+lo
+simtst21
+rm simtst* auto*
+com src/simtst63.sim
+lo
+simtst63
+rm simtst* auto*
+com src/simtst65.sim
+lo
+simtst65
+rm simtst* auto*
+com src/simtst77.sim
+lo
+CC simtst77
+rm simtst* auto*
+com src/simtst92.sim
+lo
+simtst92
+rm simtst* auto*
+com src/simtst93.sim
+lo
+simtst93
+rm simtst* auto*
+com src/simtst96.sim
+lo
+simtst96
+rm simtst* auto*
+com src/simtst97.sim
+lo
+simtst97
+rm simtst* auto*
+endc

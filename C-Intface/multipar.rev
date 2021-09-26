@@ -1,0 +1,1360 @@
+zim109.x32 <<endc
+set opt M
+set sys sport
+set sk1trc 221001
+set sk1lin 1
+com multipar.sim
+exit
+endc
+ZIMULA Version 109.1.0 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sys sport
+SIM: set sk1trc 221001
+SIM: set sk1lin 1
+SIM: com multipar.sim
+PROGRAM       1991-04-23 21:08:03.000S-port 109.1iAPX..86/SIMULA A.S.
+                                                 #2
+                                                 S@MAIN     LABEL  WORD
+                                                            PUBLIC   S@MAIN
+MAIN
+StoQ:      0189BDB8 P B2 0000  ANY LABEL BPRO==> SIM_MAIN   PROC  FAR
+                                                             PUBLIC   SIM_MAIN
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+StoQ:      0189BDEC P B2 0000  OBJ LOADC  EAX==>            MOV    EAX,OFFSET SEG0
+          Read:None  Write:EAX  Mind:EAX:ESP:EBP:M
+StoQ:      0189BE10 P B2 0000  OBJ STORE  EAX==>            MOV    G@PRGINF,EAX
+          Read:EAX  Write:M  Mind:ESP:EBP:M
+=== Massage Scheme STORE(5)
+b:         0189BDEC P B2 0000  OBJ LOADC  EAX,OFFSET SEG0
+a:         0189BE10 P B2 0000  OBJ STORE  EAX,G@PRGINF
+Insert:    0189BE38 P B2 0000  OBJ MOVMC  DWO==>            MOV    DWORD PTR G@PRGINF,OFFSET SEG0
+          Read:None  Write:M
+Remove:    0189BE10 P B2 0000  OBJ STORE  EAX,G@PRGINF
+Remove:    0189BDEC P B2 0000  OBJ LOADC  EAX,OFFSET SEG0
+ReMass:    0189BE38 P B2 0000  OBJ MOVMC  DWORD PTR  G@PRGINF,OFFSET SEG0
+SYSINSERT     rt RTS  T32: T394:
+SYSINSERT     knwn RTS  T395: T458:
+SYSINSERT     cent RTS  T459: T557:
+SYSINSERT     cint RTS  T558: T567:
+SYSINSERT     arr RTS  T568: T583:
+SYSINSERT     fil RTS  T584: T673:
+SYSINSERT     edit RTS  T674: T771:
+SYSINSERT     form RTS  T772: T883:
+SYSINSERT     libr RTS  T884: T971:
+SYSINSERT     smst RTS  T972: T1001:
+SYSINSERT     sml RTS  T1002: T1039:
+SYSINSERT     mntr RTS  T1040: T1050:
+CONSTSPEC     T1051: T380:
+LINE          1
+StoQ:      018A2424 P B2 0000  ANY               ;     SOURCE LINE 1
+          Read:None  Write:None  Mind:ESP:EBP:M
+PRECALL       T1043:
+CALL          T1044:
+StoQ:      018A2454 P B2 0000  ANY CALL   1,0==>            CALL   R14@B_PROG
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+STMT          1
+StoQ:      018A247C P B2 0000  ANY               ;     STATEMENT LINE 1
+          Read:None  Write:None  Mind:ESP:EBP:M
+RECORD        T1052:
+PREFIX        T150:
+ATTR          T1062: T3:
+ENDRECORD
+CONSTSPEC     T1053: T89:
+LABELSPEC     T1054:
+PROFILE       T1055:
+EXTERNAL      T1056: c many ENT=_many
+IMPORT        T1058: T3:
+IMPORT        T1059: T3:
+IMPORT        T1060: T9:
+IMPORT        T1061: T3:
+ENDPROFILE
+RECORD        T1064:
+PREFIX        T150:
+ATTR          T1067: T344:
+ENDRECORD
+CONSTSPEC     T1065: T91:
+CONSTSPEC     T1068: T124:
+PUSHC
+C-OADDR       T1053:
+StoQ:      0189BDEC P B2 0000  OBJ PUSHC  EAX==>            PUSH   OFFSET ?FIX3
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ASSCALL       T463:
+CALL          T464:
+StoQ:      018A2560 P B2 0000  ANY CALL   0,0==>            CALL   R06@B_SUB
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+DECL          7
+StoQ:      018A2588 P B2 0000  ANY               ;     DECLARATION LINE 7
+          Read:None  Write:None  Mind:ESP:EBP:M
+RECORD        T1069:
+PREFIX        T1064:
+ENDRECORD
+BSEG
+StoQ:      018A2608 P 33 0000  ANY               ;     SOURCE LINE 7
+          Read:None  Write:None  Mind:ESP:EBP:M
+LABEL         T1066:
+StoQ:      018A2630 P 33 0000  ANY LABEL 4   ==> ?FIX4      LABEL  NEAR
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+STMT          8
+StoQ:      018A2654 P 33 0000  ANY               ;     STATEMENT LINE 8
+          Read:None  Write:None  Mind:ESP:EBP:M
+PRECALL       T1055:
+PUSHC
+C-INT         1
+StoQ:      018A2670 P 33 0000  VAL PUSHC  AL,==>            PUSH   1
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ASSPAR
+StoQ:      018A268C P 33 0000  ANY POPK   1  ==>            POP    EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2670 P 33 0000  VAL PUSHC  AL,1
+=== Massage Scheme POPK(1)
+b:         018A2670 P 33 0000  VAL PUSHC  AL,1
+a:         018A268C P 33 0000  ANY POPK   1
+Remove:    018A268C P 33 0000  ANY POPK   1
+Remove:    018A2670 P 33 0000  VAL PUSHC  AL,1
+StoQ:      018A2670 P 33 0000  VAL PUSHC  EAX==>            PUSH   1
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+PUSHV         T57:
+StoQ:      018A26C0 P 33 0000  OBJ PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTEV       T144:
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A26C0 P 33 0000  OBJ PUSHM  4,G@CURINS
+=== Massage Scheme POPR(5)
+b:         018A26C0 P 33 0000  OBJ PUSHM  4,G@CURINS
+a:         018A26F8 P 33 0000  OBJ POPR   EBX
+Insert:    018A2710 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,G@CURINS
+          Read:M  Write:EBX
+Remove:    018A26C0 P 33 0000  OBJ PUSHM  4,G@CURINS
+Remove:    018A26F8 P 33 0000  OBJ POPR   EBX
+ReMass:    018A2710 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+StoQ:      018A26C0 P 33 0000  OBJ PUSHM  4,[==>            PUSH   [EBX]
+          Read:EBX:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTEV       T1062:
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A26C0 P 33 0000  OBJ PUSHM  4,[EBX]
+=== Massage Scheme POPR(5)
+b:         018A26C0 P 33 0000  OBJ PUSHM  4,[EBX]
+a:         018A26F8 P 33 0000  OBJ POPR   EBX
+Insert:    018A2740 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,[EBX]
+          Read:EBX:M  Write:EBX
+Remove:    018A26C0 P 33 0000  OBJ PUSHM  4,[EBX]
+Remove:    018A26F8 P 33 0000  OBJ POPR   EBX
+ReMass:    018A2740 P 33 0000  OBJ LOAD   EBX,[EBX],0,0
+=== Massage Scheme LOAD(1)
+b:         018A2710 P 33 0000  OBJ LOAD   EBX,G@CURINS,1,0
+a:         018A2740 P 33 0000  OBJ LOAD   EBX,[EBX],0,0
+Modify:    018A2710 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,G@CURINS
+                                                            MOV    EBX,[EBX]+0
+          Read:M  Write:EBX
+Remove:    018A2740 P 33 0000  OBJ LOAD   EBX,[EBX],0,0
+ReMass:    018A2710 P 33 0000  OBJ LOAD   EBX,G@CURINS,1,0
+StoQ:      018A26C0 P 33 0000  VAL PUSHM  4,[==>            PUSH   [EBX]+24
+          Read:EBX:ESP:M  Write:ESP  Mind:ESP:EBP:M
+ASSPAR
+StoQ:      018A26F8 P 33 0000  VAL POPR   EAX==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:EAX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A26C0 P 33 0000  VAL PUSHM  4,[EBX]+24
+=== Massage Scheme POPR(5)
+b:         018A26C0 P 33 0000  VAL PUSHM  4,[EBX]+24
+a:         018A26F8 P 33 0000  VAL POPR   EAX
+Insert:    018A2740 P 33 0000  VAL LOAD   EAX==>            MOV    EAX,[EBX]+24
+          Read:EBX:M  Write:EAX
+Remove:    018A26C0 P 33 0000  VAL PUSHM  4,[EBX]+24
+Remove:    018A26F8 P 33 0000  VAL POPR   EAX
+ReMass:    018A2740 P 33 0000  VAL LOAD   EAX,[EBX]+24,0,0
+StoQ:      018A26F8 P 33 0000  VAL PUSHR  EAX==>            PUSH   EAX
+          Read:EAX:ESP  Write:ESP  Mind:ESP:EBP:M
+Insert:    018A26C0 P 33 0000  VAL PUSHM  4,[==>            PUSH   [EBX]+24
+          Read:EBX:ESP:M  Write:ESP
+Remove:    018A26F8 P 33 0000  VAL PUSHR  EAX
+Remove:    018A2740 P 33 0000  VAL LOAD   EAX,[EBX]+24,0,0
+ReMass:    018A26C0 P 33 0000  VAL PUSHM  4,[EBX]+24
+PUSHV         T57:
+StoQ:      018A2770 P 33 0000  OBJ PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTE        T1067:
+SELECTV       T348:
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2770 P 33 0000  OBJ PUSHM  4,G@CURINS
+=== Massage Scheme POPR(5)
+b:         018A2770 P 33 0000  OBJ PUSHM  4,G@CURINS
+a:         018A26F8 P 33 0000  OBJ POPR   EBX
+Insert:    018A2740 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,G@CURINS
+          Read:M  Write:EBX
+Remove:    018A2770 P 33 0000  OBJ PUSHM  4,G@CURINS
+Remove:    018A26F8 P 33 0000  OBJ POPR   EBX
+ReMass:    018A2740 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+*** SameMemPart([EBX]+24,G@CURINS) -- NO*** SameMemPart(G@CURINS,G@CURINS
+StoQ:      018A2770 P 33 0000  VAL PUSHM  1,[==>            PUSH   [EBX]+36
+          Read:EBX:ESP:M  Write:ESP  Mind:ESP:EBP:M
+PUSHC
+TRUE
+StoQ:      018A268C P 33 0000  VAL PUSHC  AL,==>            PUSH   255
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+IF
+?EQ
+StoQ:      018A27C4 P 33 0000  ANY POPK   1  ==>            POP    EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A268C P 33 0000  VAL PUSHC  AL,255
+=== Massage Scheme POPK(1)
+b:         018A268C P 33 0000  VAL PUSHC  AL,255
+a:         018A27C4 P 33 0000  ANY POPK   1
+Remove:    018A27C4 P 33 0000  ANY POPK   1
+Remove:    018A268C P 33 0000  VAL PUSHC  AL,255
+StoQ:      018A268C P 33 0000  VAL LOADC  DL,==>            MOV    DL,255
+          Read:None  Write:DL  Mind:DL:ESP:EBP:M
+StoQ:      018A26F8 P 33 0000  VAL POPR   AL ==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:AL:DL:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2770 P 33 0000  VAL PUSHM  1,[EBX]+36
+=== Massage Scheme POPR(5)
+b:         018A2770 P 33 0000  VAL PUSHM  1,[EBX]+36
+           018A268C P 33 0000  VAL LOADC  DL,255
+a:         018A26F8 P 33 0000  VAL POPR   AL
+Insert:    018A27E0 P 33 0000  VAL LOAD   AL,==>            MOV    AL,[EBX]+36
+          Read:EBX:M  Write:AL
+Remove:    018A2770 P 33 0000  VAL PUSHM  1,[EBX]+36
+Remove:    018A26F8 P 33 0000  VAL POPR   AL
+ReMass:    018A27E0 P 33 0000  VAL LOAD   AL,[EBX]+36,0,0
+StoQ:      018A27C4 P 33 0000  VAL CMP    AL,==>            CMP    AL,DL
+          Read:AL:DL  Write:F  Mind:ESP:EBP:F:M
+=== Massage Scheme DYADR(2)
+b:         018A268C P 33 0000  VAL LOADC  DL,255
+           018A27E0 P 33 0000  VAL LOAD   AL,[EBX]+36,0,0
+a:         018A27C4 P 33 0000  VAL CMP    AL,DL
+Insert:    018A2810 P 33 0000  VAL CMP    AL,==>            CMP    AL,255
+          Read:AL  Write:F
+Remove:    018A27C4 P 33 0000  VAL CMP    AL,DL
+Remove:    018A268C P 33 0000  VAL LOADC  DL,255
+ReMass:    018A2810 P 33 0000  VAL CMP    AL,255
+Insert:    018A2770 P 33 0000  VAL CMP    BYT==>            CMP    BYTE PTR [EBX]+36,255
+          Read:EBX:M  Write:F:M
+Remove:    018A2810 P 33 0000  VAL CMP    AL,255
+Remove:    018A27E0 P 33 0000  VAL LOAD   AL,[EBX]+36,0,0
+ReMass:    018A2770 P 33 0000  VAL CMP    BYTE PTR [EBX]+36,255
+StoQ:      018A282C P 33 0000  ANY JMP    WNE==>            JNE    NEAR PTR ?FIX5
+          Read:ESP:EBP:F:M  Write:ALL  Mind:ESP:EBP:M
+PUSHV         T57:
+StoQ:      018A2880 P 33 0000  OBJ PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTE        T1067:
+SELECTV       T347:
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2880 P 33 0000  OBJ PUSHM  4,G@CURINS
+=== Massage Scheme POPR(5)
+b:         018A2880 P 33 0000  OBJ PUSHM  4,G@CURINS
+a:         018A26F8 P 33 0000  OBJ POPR   EBX
+Insert:    018A27E0 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,G@CURINS
+          Read:M  Write:EBX
+Remove:    018A2880 P 33 0000  OBJ PUSHM  4,G@CURINS
+Remove:    018A26F8 P 33 0000  OBJ POPR   EBX
+ReMass:    018A27E0 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+StoQ:      018A2880 P 33 0000  OBJ PUSHM  4,[==>            PUSH   [EBX]+32
+          Read:EBX:ESP:M  Write:ESP  Mind:ESP:EBP:M
+PUSHV         T57:
+StoQ:      018A28B8 P 33 0000  OBJ PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTE        T1067:
+SELECTV       T349:
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A28B8 P 33 0000  OBJ PUSHM  4,G@CURINS
+=== Massage Scheme POPR(5)
+b:         018A28B8 P 33 0000  OBJ PUSHM  4,G@CURINS
+a:         018A26F8 P 33 0000  OBJ POPR   EBX
+Insert:    018A28F0 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,G@CURINS
+          Read:M  Write:EBX
+Remove:    018A28B8 P 33 0000  OBJ PUSHM  4,G@CURINS
+Remove:    018A26F8 P 33 0000  OBJ POPR   EBX
+ReMass:    018A28F0 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+) -- YES*** SameMemPart([EBX]+32,G@CURINS) -- NO*** SameMemPart(G@CURINS,
+=== Massage Scheme LOAD(2)
+b:         018A27E0 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+           018A2880 P 33 0000  OBJ PUSHM  4,[EBX]+32
+a:         018A28F0 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+Remove:    018A28F0 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+StoQ:      018A28B8 P 33 0000  VAL PUSHM  4,[==>            PUSH   [EBX]+40
+          Read:EBX:ESP:M  Write:ESP  Mind:ESP:EBP:M
+LOCATE
+StoQ:      018A26F8 P 33 0000  VAL POPR   EAX==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:EAX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A28B8 P 33 0000  VAL PUSHM  4,[EBX]+40
+=== Massage Scheme POPR(5)
+b:         018A28B8 P 33 0000  VAL PUSHM  4,[EBX]+40
+a:         018A26F8 P 33 0000  VAL POPR   EAX
+Insert:    018A28F0 P 33 0000  VAL LOAD   EAX==>            MOV    EAX,[EBX]+40
+          Read:EBX:M  Write:EAX
+Remove:    018A28B8 P 33 0000  VAL PUSHM  4,[EBX]+40
+Remove:    018A26F8 P 33 0000  VAL POPR   EAX
+ReMass:    018A28F0 P 33 0000  VAL LOAD   EAX,[EBX]+40,0,0
+StoQ:      018A26F8 P 33 0000  VAL PUSHR  EAX==>            PUSH   EAX
+          Read:EAX:ESP  Write:ESP  Mind:ESP:EBP:M
+Insert:    018A28B8 P 33 0000  VAL PUSHM  4,[==>            PUSH   [EBX]+40
+          Read:EBX:ESP:M  Write:ESP
+Remove:    018A26F8 P 33 0000  VAL PUSHR  EAX
+Remove:    018A28F0 P 33 0000  VAL LOAD   EAX,[EBX]+40,0,0
+ReMass:    018A28B8 P 33 0000  VAL PUSHM  4,[EBX]+40
+ELSE
+StoQ:      018A2920 P 33 0000  ANY JMP    ?FI==>            JMP    NEAR PTR ?FIX6
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+StoQ:      018A2948 P 33 0000  ANY FDEST ?FIX==> ?FIX5:
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+PUSHV         T57:
+StoQ:      018A296C P 33 0000  OBJ PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTE        T1067:
+SELECTV       T346:
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A296C P 33 0000  OBJ PUSHM  4,G@CURINS
+=== Massage Scheme POPR(5)
+b:         018A296C P 33 0000  OBJ PUSHM  4,G@CURINS
+a:         018A26F8 P 33 0000  OBJ POPR   EBX
+Insert:    018A28F0 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,G@CURINS
+          Read:M  Write:EBX
+Remove:    018A296C P 33 0000  OBJ PUSHM  4,G@CURINS
+Remove:    018A26F8 P 33 0000  OBJ POPR   EBX
+ReMass:    018A28F0 P 33 0000  OBJ LOAD   EBX,G@CURINS,0,0
+StoQ:      018A296C P 33 0000  OBJ PUSHM  4,[==>            PUSH   [EBX]+28
+          Read:EBX:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTEV       T325:
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A296C P 33 0000  OBJ PUSHM  4,[EBX]+28
+=== Massage Scheme POPR(5)
+b:         018A296C P 33 0000  OBJ PUSHM  4,[EBX]+28
+a:         018A26F8 P 33 0000  OBJ POPR   EBX
+Insert:    018A2998 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,[EBX]+28
+          Read:EBX:M  Write:EBX
+Remove:    018A296C P 33 0000  OBJ PUSHM  4,[EBX]+28
+Remove:    018A26F8 P 33 0000  OBJ POPR   EBX
+ReMass:    018A2998 P 33 0000  OBJ LOAD   EBX,[EBX]+28,0,0
+=== Massage Scheme LOAD(1)
+b:         018A28F0 P 33 0000  OBJ LOAD   EBX,G@CURINS,1,28
+a:         018A2998 P 33 0000  OBJ LOAD   EBX,[EBX]+28,0,0
+Modify:    018A28F0 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,G@CURINS
+                                                            MOV    EBX,[EBX]+28
+          Read:M  Write:EBX
+Remove:    018A2998 P 33 0000  OBJ LOAD   EBX,[EBX]+28,0,0
+ReMass:    018A28F0 P 33 0000  OBJ LOAD   EBX,G@CURINS,1,28
+StoQ:      018A296C P 33 0000  VAL PUSHM  1,[==>            PUSH   [EBX]
+          Read:EBX:ESP:M  Write:ESP  Mind:ESP:EBP:M
+PUSHC
+C-INT         4
+StoQ:      018A2810 P 33 0000  VAL PUSHC  AL,==>            PUSH   4
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+IF
+?NE
+StoQ:      018A268C P 33 0000  ANY POPK   1  ==>            POP    EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2810 P 33 0000  VAL PUSHC  AL,4
+=== Massage Scheme POPK(1)
+b:         018A2810 P 33 0000  VAL PUSHC  AL,4
+a:         018A268C P 33 0000  ANY POPK   1
+Remove:    018A268C P 33 0000  ANY POPK   1
+Remove:    018A2810 P 33 0000  VAL PUSHC  AL,4
+StoQ:      018A2810 P 33 0000  VAL LOADC  DL,==>            MOV    DL,4
+          Read:None  Write:DL  Mind:DL:ESP:EBP:M
+StoQ:      018A26F8 P 33 0000  VAL POPR   AL ==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:AL:DL:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A296C P 33 0000  VAL PUSHM  1,[EBX]
+=== Massage Scheme POPR(5)
+b:         018A296C P 33 0000  VAL PUSHM  1,[EBX]
+           018A2810 P 33 0000  VAL LOADC  DL,4
+a:         018A26F8 P 33 0000  VAL POPR   AL
+Insert:    018A2998 P 33 0000  VAL LOAD   AL,==>            MOV    AL,[EBX]
+          Read:EBX:M  Write:AL
+Remove:    018A296C P 33 0000  VAL PUSHM  1,[EBX]
+Remove:    018A26F8 P 33 0000  VAL POPR   AL
+ReMass:    018A2998 P 33 0000  VAL LOAD   AL,[EBX],0,0
+StoQ:      018A268C P 33 0000  VAL CMP    AL,==>            CMP    AL,DL
+          Read:AL:DL  Write:F  Mind:ESP:EBP:F:M
+=== Massage Scheme DYADR(2)
+b:         018A2810 P 33 0000  VAL LOADC  DL,4
+           018A2998 P 33 0000  VAL LOAD   AL,[EBX],0,0
+a:         018A268C P 33 0000  VAL CMP    AL,DL
+Insert:    018A27C4 P 33 0000  VAL CMP    AL,==>            CMP    AL,4
+          Read:AL  Write:F
+Remove:    018A268C P 33 0000  VAL CMP    AL,DL
+Remove:    018A2810 P 33 0000  VAL LOADC  DL,4
+ReMass:    018A27C4 P 33 0000  VAL CMP    AL,4
+Insert:    018A296C P 33 0000  VAL CMP    BYT==>            CMP    BYTE PTR [EBX],4
+          Read:EBX:M  Write:F:M
+Remove:    018A27C4 P 33 0000  VAL CMP    AL,4
+Remove:    018A2998 P 33 0000  VAL LOAD   AL,[EBX],0,0
+ReMass:    018A296C P 33 0000  VAL CMP    BYTE PTR [EBX],4
+StoQ:      018A29E4 P 33 0000  ANY JMP    WEQ==>            JE     NEAR PTR ?FIX7
+          Read:ESP:EBP:F:M  Write:ALL  Mind:ESP:EBP:M
+PUSHLEN
+StoQ:      018A27C4 P 33 0000  VAL PUSHC  EAX==>            PUSH   12
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ASSCALL       T533:
+FindPushx: 018A27C4 P 33 0000  VAL PUSHC  EAX,12
+Insert:    018A2810 P 33 0000  STP SUB    ESP==>            PUSH   EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+CALL          T534:
+StoQ:      018A2A74 P 33 0000  ANY CALL   0,0==>            CALL   R06@PRESAV
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+StoQ:      018A268C P 33 0000  ANY ADJST  4  ==>
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+SAVE
+ D    0000                                                  DB 0,0
+StoQ:      018A26F8 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+FindPush2: 00000000
+          PreRead:None  PreMind:EBX:ESP:EBP:M  NotMind:None
+StoQ:      018A2A9C P 33 0000  ANY POPM   AL,==>            POP    [EBX]+4
+          Read:EBX:ESP  Write:ESP:M  Mind:EBX:ESP:EBP:M
+FindPush2: 00000000
+          PreRead:None  PreMind:EBX:ESP:EBP:M  NotMind:None
+StoQ:      018A2AC8 P 33 0000  ANY POPM   AL,==>            POP    [EBX]+8
+          Read:EBX:ESP  Write:ESP:M  Mind:EBX:ESP:EBP:M
+FindPush2: 00000000
+FindPush2: 00000000
+StoQ:      018A2AF4 P 33 0000  OBJ MOVMC  DWO==>            MOV    DWORD PTR [EBX],OFFSET SEG2
+          Read:EBX  Write:M  Mind:ESP:EBP:M
+PUSHV         T57:
+StoQ:      018A2B28 P 33 0000  OBJ PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTE        T1067:
+DEREF
+StoQ:      018A2B54 P 33 0000  VAL PUSHC  EAX==>            PUSH   24
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ASSCALL       T784:
+StoQ:      018A2B70 P 33 0000  ADR POPR   EAX==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:EAX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2B54 P 33 0000  VAL PUSHC  EAX,24
+=== Massage Scheme POPR(1)
+b:         018A2B54 P 33 0000  VAL PUSHC  EAX,24
+a:         018A2B70 P 33 0000  ADR POPR   EAX
+Insert:    018A2B88 P 33 0000  ADR LOADC  EAX==>            MOV    EAX,24
+          Read:None  Write:EAX
+Remove:    018A2B54 P 33 0000  VAL PUSHC  EAX,24
+Remove:    018A2B70 P 33 0000  ADR POPR   EAX
+ReMass:    018A2B88 P 33 0000  ADR LOADC  EAX,24
+StoQ:      018A2B70 P 33 0000  ADR POPR   ECX==>            POP    ECX
+          Read:ESP  Write:ECX:ESP  Mind:EAX:ECX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2B28 P 33 0000  OBJ PUSHM  4,G@CURINS
+=== Massage Scheme POPR(5)
+b:         018A2B28 P 33 0000  OBJ PUSHM  4,G@CURINS
+           018A2B88 P 33 0000  ADR LOADC  EAX,24
+a:         018A2B70 P 33 0000  ADR POPR   ECX
+Insert:    018A2998 P 33 0000  ADR LOAD   ECX==>            MOV    ECX,G@CURINS
+          Read:M  Write:ECX
+Remove:    018A2B28 P 33 0000  OBJ PUSHM  4,G@CURINS
+Remove:    018A2B70 P 33 0000  ADR POPR   ECX
+ReMass:    018A2998 P 33 0000  ADR LOAD   ECX,G@CURINS,0,0
+G@CURINS) -- YES*** SameMemPart([EBX]+32,[EBX]+40) -- NO*** SameMemPart([EBX],
+G@CURINS) -- NO*** SameMemPart([EBX]+8,G@CURINS) -- NO*** SameMemPart([EBX]+4,
+StoQ:      018A2B70 P 33 0000  ADR PUSHR  ECX==>            PUSH   ECX
+          Read:ECX:ESP  Write:ESP  Mind:EAX:ESP:EBP:M
+Insert:    018A2B28 P 33 0000  ADR PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP
+Remove:    018A2B70 P 33 0000  ADR PUSHR  ECX
+Remove:    018A2998 P 33 0000  ADR LOAD   ECX,G@CURINS,0,0
+ReMass:    018A2B28 P 33 0000  ADR PUSHM  4,G@CURINS
+StoQ:      018A2B70 P 33 0000  ADR PUSHR  EAX==>            PUSH   EAX
+          Read:EAX:ESP  Write:ESP  Mind:ESP:EBP:M
+CALL          T785:
+StoQ:      018A2BA4 P 33 0000  ANY CALL   1,0==>            CALL   R10@BNPASS
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+PRECALL       T535:
+CALL          T536:
+StoQ:      018A2BCC P 33 0000  ANY CALL   0,0==>            CALL   R06@RESTOR
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+PUSH          T81:
+RESTORE
+StoQ:      018A2BF4 P 33 0000  OBJ PUSHM  4,R==>            PUSH   R01@rt+60
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+StoQ:      018A2C20 P 33 0000  OBJ POPR   EBX==>            POP    EBX
+          Read:ESP  Write:EBX:ESP  Mind:EBX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2BF4 P 33 0000  OBJ PUSHM  4,R01@rt+60
+=== Massage Scheme POPR(5)
+b:         018A2BF4 P 33 0000  OBJ PUSHM  4,R01@rt+60
+a:         018A2C20 P 33 0000  OBJ POPR   EBX
+Insert:    018A2998 P 33 0000  OBJ LOAD   EBX==>            MOV    EBX,R01@rt+60
+          Read:M  Write:EBX
+Remove:    018A2BF4 P 33 0000  OBJ PUSHM  4,R01@rt+60
+Remove:    018A2C20 P 33 0000  OBJ POPR   EBX
+ReMass:    018A2998 P 33 0000  OBJ LOAD   EBX,R01@rt+60,0,0
+          PreRead:None  PreMind:EBX:ESP:EBP:M  NotMind:None
+StoQ:      018A2BF4 P 33 0000  ANY PUSHM  4,[==>            PUSH   [EBX]+8
+          Read:EBX:ESP:M  Write:ESP  Mind:EBX:ESP:EBP:M
+          PreRead:None  PreMind:EBX:ESP:EBP:M  NotMind:None
+StoQ:      018A2C38 P 33 0000  ANY PUSHM  4,[==>            PUSH   [EBX]+4
+          Read:EBX:ESP:M  Write:ESP  Mind:EBX:ESP:EBP:M
+PRECALL       T537:
+CALL          T538:
+StoQ:      018A2C64 P 33 0000  ANY CALL   0,0==>            CALL   R06@PRESTO
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+PUSHC
+ONONE
+StoQ:      018A2B54 P 33 0000  VAL PUSHC  EAX==>            PUSH   0
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ELSE
+StoQ:      018A2C8C P 33 0000  ANY JMP    ?FI==>            JMP    NEAR PTR ?FIX8
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+StoQ:      018A2CB4 P 33 0000  ANY FDEST ?FIX==> ?FIX7:
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+PUSHC
+ONONE
+StoQ:      018A2CD8 P 33 0000  VAL PUSHC  EAX==>            PUSH   0
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ENDIF
+StoQ:      018A2D00 P 33 0000  ANY FDEST ?FIX==> ?FIX8:
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+MovingFd:  018A2D00 P 33 0000  ANY FDEST ?FIX==> ?FIX8:
+          Read:ESP:EBP:M  Write:ALL
+Remove:    018A2B54 P 33 0000  VAL PUSHC  EAX,0
+POP
+StoQ:      018A2B54 P 33 0000  ANY POPK   4  ==>            POP    EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2CD8 P 33 0000  VAL PUSHC  EAX,0
+=== Massage Scheme POPK(1)
+b:         018A2CD8 P 33 0000  VAL PUSHC  EAX,0
+a:         018A2B54 P 33 0000  ANY POPK   4
+Remove:    018A2B54 P 33 0000  ANY POPK   4
+Remove:    018A2CD8 P 33 0000  VAL PUSHC  EAX,0
+PUSHV         T57:
+StoQ:      018A2D24 P 33 0000  OBJ PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+REMOTE        T1067:
+DEREF
+StoQ:      018A2CD8 P 33 0000  VAL PUSHC  EAX==>            PUSH   24
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ASSCALL       T846:
+FindPushx: 018A2D24 P 33 0000  OBJ PUSHM  4,G@CURINS
+Insert:    018A2B54 P 33 0000  STP SUB    ESP==>            PUSH   EAX
+                                                            PUSH   EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+StoQ:      018A2C20 P 33 0000  ADR POPR   EAX==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:EAX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2CD8 P 33 0000  VAL PUSHC  EAX,24
+=== Massage Scheme POPR(1)
+b:         018A2CD8 P 33 0000  VAL PUSHC  EAX,24
+a:         018A2C20 P 33 0000  ADR POPR   EAX
+Insert:    018A2D50 P 33 0000  ADR LOADC  EAX==>            MOV    EAX,24
+          Read:None  Write:EAX
+Remove:    018A2CD8 P 33 0000  VAL PUSHC  EAX,24
+Remove:    018A2C20 P 33 0000  ADR POPR   EAX
+ReMass:    018A2D50 P 33 0000  ADR LOADC  EAX,24
+StoQ:      018A2C20 P 33 0000  ADR POPR   ECX==>            POP    ECX
+          Read:ESP  Write:ECX:ESP  Mind:EAX:ECX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2D24 P 33 0000  OBJ PUSHM  4,G@CURINS
+=== Massage Scheme POPR(5)
+b:         018A2D24 P 33 0000  OBJ PUSHM  4,G@CURINS
+           018A2D50 P 33 0000  ADR LOADC  EAX,24
+a:         018A2C20 P 33 0000  ADR POPR   ECX
+Insert:    018A2D6C P 33 0000  ADR LOAD   ECX==>            MOV    ECX,G@CURINS
+          Read:M  Write:ECX
+Remove:    018A2D24 P 33 0000  OBJ PUSHM  4,G@CURINS
+Remove:    018A2C20 P 33 0000  ADR POPR   ECX
+ReMass:    018A2D6C P 33 0000  ADR LOAD   ECX,G@CURINS,0,0
+StoQ:      018A2C20 P 33 0000  ADR PUSHR  ECX==>            PUSH   ECX
+          Read:ECX:ESP  Write:ESP  Mind:EAX:ESP:EBP:M
+Insert:    018A2D24 P 33 0000  ADR PUSHM  4,G==>            PUSH   G@CURINS
+          Read:ESP:M  Write:ESP
+Remove:    018A2C20 P 33 0000  ADR PUSHR  ECX
+Remove:    018A2D6C P 33 0000  ADR LOAD   ECX,G@CURINS,0,0
+ReMass:    018A2D24 P 33 0000  ADR PUSHM  4,G@CURINS
+StoQ:      018A2C20 P 33 0000  ADR PUSHR  EAX==>            PUSH   EAX
+          Read:EAX:ESP  Write:ESP  Mind:ESP:EBP:M
+CALL          T847:
+StoQ:      018A2D9C P 33 0000  ANY CALL   0,0==>            CALL   R10@E_NPA
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+StoQ:      018A2CD8 P 33 0000  ANY ADJST  8  ==>
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ENDIF
+StoQ:      018A2DC4 P 33 0000  ANY FDEST ?FIX==> ?FIX6:
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+ASSPAR
+StoQ:      018A2DE8 P 33 0000  ADR POPR   EAX==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:EAX:ESP:EBP:M
+FindPush2: 00000000
+StoQ:      018A2E00 P 33 0000  ADR POPR   ECX==>            POP    ECX
+          Read:ESP  Write:ECX:ESP  Mind:EAX:ECX:ESP:EBP:M
+FindPush2: 00000000
+StoQ:      018A2E18 P 33 0000  ADR PUSHR  ECX==>            PUSH   ECX
+          Read:ECX:ESP  Write:ESP  Mind:EAX:ESP:EBP:M
+Remove:    018A2E18 P 33 0000  ADR PUSHR  ECX
+Remove:    018A2E00 P 33 0000  ADR POPR   ECX
+StoQ:      018A2E00 P 33 0000  ADR PUSHR  EAX==>            PUSH   EAX
+          Read:EAX:ESP  Write:ESP  Mind:ESP:EBP:M
+Remove:    018A2E00 P 33 0000  ADR PUSHR  EAX
+Remove:    018A2DE8 P 33 0000  ADR POPR   EAX
+StoQ:      018A2DE8 P 33 0000  ADR POPR   EAX==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:EAX:ESP:EBP:M
+FindPush2: 00000000
+StoQ:      018A2E00 P 33 0000  ADR POPR   EDX==>            POP    EDX
+          Read:ESP  Write:EDX:ESP  Mind:EAX:EDX:ESP:EBP:M
+FindPush2: 00000000
+StoQ:      018A2E30 P 33 0000  ADR ADD    EAX==>            ADD    EAX,EDX
+          Read:EAX:EDX  Write:EAX:F  Mind:EAX:ESP:EBP:M
+StoQ:      018A2E18 P 33 0000  ADR PUSHR  EAX==>            PUSH   EAX
+          Read:EAX:ESP  Write:ESP  Mind:ESP:EBP:M
+PUSHC
+C-INT         7
+StoQ:      018A2E4C P 33 0000  VAL PUSHC  AL,==>            PUSH   7
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ASSPAR
+StoQ:      018A2E68 P 33 0000  ANY POPK   1  ==>            POP    EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2E4C P 33 0000  VAL PUSHC  AL,7
+=== Massage Scheme POPK(1)
+b:         018A2E4C P 33 0000  VAL PUSHC  AL,7
+a:         018A2E68 P 33 0000  ANY POPK   1
+Remove:    018A2E68 P 33 0000  ANY POPK   1
+Remove:    018A2E4C P 33 0000  VAL PUSHC  AL,7
+StoQ:      018A2E4C P 33 0000  VAL PUSHC  EAX==>            PUSH   7
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+CALL          T1056:
+StoQ:      018A2E68 P 33 0000  STP MOV    EDI==>            MOV    EDI,ESP
+          Read:ESP  Write:EDI  Mind:ESP:EBP:EDI:M
+          PreRead:None  PreMind:ESP:EBP:EDI:M  NotMind:None
+StoQ:      018A2E84 P 33 0000  VAL PUSHM  4,[==>            PUSH   [EDI]
+          Read:ESP:EDI:M  Write:ESP  Mind:ESP:EBP:EDI:M
+          PreRead:None  PreMind:ESP:EBP:EDI:M  NotMind:None
+StoQ:      018A2EB0 P 33 0000  ADR PUSHM  8,[==>            PUSH   [EDI]+8
+                                                            PUSH   [EDI]+4
+          Read:ESP:EDI:M  Write:ESP  Mind:ESP:EBP:EDI:M
+          PreRead:None  PreMind:ESP:EBP:EDI:M  NotMind:None
+StoQ:      018A2EDC P 33 0000  VAL PUSHM  4,[==>            PUSH   [EDI]+12
+          Read:ESP:EDI:M  Write:ESP  Mind:ESP:EBP:EDI:M
+StoQ:      018A2F08 P 33 0000  STP MOV    ESI==>            MOV    ESI,ESP
+          Read:ESP  Write:ESI  Mind:ESP:EBP:ESI:EDI:M
+StoQ:      018A2F24 P 33 0000  VAL LOADC  ECX==>            MOV    ECX,4
+          Read:None  Write:ECX  Mind:ECX:ESP:EBP:ESI:EDI:M
+StoQ:      018A2F40 P 33 0000  ANY RMOV   ,CL==>            REP    MOVSW
+          Read:ECX:ESI:EDI:M  Write:ECX:ESI:EDI:M  Mind:ESP:EBP:M
+StoQ:      018A2F5C P 33 0000  STP ADD    ESP==>            ADD    ESP,16
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+StoQ:      018A2F78 P 33 0000  ANY CALL   4,0==>            CALL   _many
+                                                            ADD    ESP,16
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+PRECALL       T471:
+CALL          T472:
+StoQ:      018A2FA0 P 33 0000  ANY CALL   1,0==>            CALL   R06@E_PRO
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+ESEG
+StoQ:      018A2FC8 P 33 0000  ANY INT    1  ==>            INT    1
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+****** Begin - Exhaust MAIN1_TEXT, ALL, Count:60 ******
+ P 33 0000  ANY                                  ;     SOURCE LINE 7
+ P 33 0000  ANY     LABEL 4                  ==> ?FIX4      LABEL  NEAR
+ P 33 0000  ANY                                  ;     STATEMENT LINE 8
+ P 33 0000  VAL     PUSHC  EAX,1             ==>            PUSH   1
+ P 33 0002  OBJ     LOAD   EBX,G@CURINS,1,0  ==>            MOV    EBX,G@CURINS
+                                                            MOV    EBX,[EBX]+0
+ P 33 000A  VAL     PUSHM  4,[EBX]+24        ==>            PUSH   [EBX]+24
+ P 33 000D  OBJ     LOAD   EBX,G@CURINS,0,0  ==>            MOV    EBX,G@CURINS
+ P 33 0013  VAL     CMP    BYTE PTR [EBX]+36,==>            CMP    BYTE PTR [EBX]+36,255
+ P 33 0017  ANY     JMP    WNE,?FIX5,FIX5    ==>            JNE    NEAR PTR ?FIX5
+ P 33 0019  OBJ     LOAD   EBX,G@CURINS,0,0  ==>            MOV    EBX,G@CURINS
+ P 33 001F  OBJ     PUSHM  4,[EBX]+32        ==>            PUSH   [EBX]+32
+ P 33 0022  VAL     PUSHM  4,[EBX]+40        ==>            PUSH   [EBX]+40
+ P 33 0025  ANY     JMP    ?FIX6,FIX6        ==>            JMP    NEAR PTR ?FIX6
+ P 33 0027  ANY     FDEST ?FIX5              ==> ?FIX5:
+ P 33 0027  OBJ     LOAD   EBX,G@CURINS,1,28 ==>            MOV    EBX,G@CURINS
+                                                            MOV    EBX,[EBX]+28
+ P 33 0030  VAL     CMP    BYTE PTR [EBX],4  ==>            CMP    BYTE PTR [EBX],4
+ P 33 0033  ANY     JMP    WEQ,?FIX7,FIX7    ==>            JE     NEAR PTR ?FIX7
+ P 33 0035  STP     SUB    ESP,4             ==>            PUSH   EAX
+ P 33 0036  VAL     PUSHC  EAX,12            ==>            PUSH   12
+ P 33 0038  ANY     CALL   0,0,8,R06@PRESAV  ==>            CALL   R06@PRESAV
+ P 33 003D  ANY     ADJST  4                 ==>
+ P 33 003D  OBJ     POPR   EBX               ==>            POP    EBX
+ P 33 003E  ANY     POPM   AL,4,[EBX]+4      ==>            POP    [EBX]+4
+ P 33 0041  ANY     POPM   AL,4,[EBX]+8      ==>            POP    [EBX]+8
+ P 33 0044  OBJ     MOVMC  DWORD PTR  [EBX],O==>            MOV    DWORD PTR [EBX],OFFSET SEG2
+ P 33 004A  ADR     LOADC  EAX,24            ==>            MOV    EAX,24
+ P 33 004F  ADR     PUSHM  4,G@CURINS        ==>            PUSH   G@CURINS
+ P 33 0055  ADR     PUSHR  EAX               ==>            PUSH   EAX
+ P 33 0056  ANY     CALL   1,0,8,R10@BNPASS  ==>            CALL   R10@BNPASS
+ P 33 005B  ANY     CALL   0,0,0,R06@RESTOR  ==>            CALL   R06@RESTOR
+ P 33 0060  OBJ     LOAD   EBX,R01@rt+60,0,0 ==>            MOV    EBX,R01@rt+60
+ P 33 0066  ANY     PUSHM  4,[EBX]+8         ==>            PUSH   [EBX]+8
+ P 33 0069  ANY     PUSHM  4,[EBX]+4         ==>            PUSH   [EBX]+4
+ P 33 006C  ANY     CALL   0,0,0,R06@PRESTO  ==>            CALL   R06@PRESTO
+ P 33 0071  ANY     JMP    ?FIX8,FIX8        ==>            JMP    NEAR PTR ?FIX8
+ P 33 0073  ANY     FDEST ?FIX7              ==> ?FIX7:
+ P 33 0073  ANY     FDEST ?FIX8              ==> ?FIX8:
+ P 33 0073  STP     SUB    ESP,8             ==>            PUSH   EAX
+                                                            PUSH   EAX
+ P 33 0075  ADR     LOADC  EAX,24            ==>            MOV    EAX,24
+ P 33 007A  ADR     PUSHM  4,G@CURINS        ==>            PUSH   G@CURINS
+ P 33 0080  ADR     PUSHR  EAX               ==>            PUSH   EAX
+ P 33 0081  ANY     CALL   0,0,16,R10@E_NPA  ==>            CALL   R10@E_NPA
+ P 33 0086  ANY     ADJST  8                 ==>
+ P 33 0086  ANY     FDEST ?FIX6              ==> ?FIX6:
+ P 33 0086  ADR     POPR   EAX               ==>            POP    EAX
+ P 33 0087  ADR     POPR   EDX               ==>            POP    EDX
+ P 33 0088  ADR     ADD    EAX,EDX           ==>            ADD    EAX,EDX
+ P 33 008A  ADR     PUSHR  EAX               ==>            PUSH   EAX
+ P 33 008B  VAL     PUSHC  EAX,7             ==>            PUSH   7
+ P 33 008D  STP     MOV    EDI,ESP           ==>            MOV    EDI,ESP
+ P 33 008F  VAL     PUSHM  4,[EDI]           ==>            PUSH   [EDI]
+ P 33 0091  ADR     PUSHM  8,[EDI]+4         ==>            PUSH   [EDI]+8
+                                                            PUSH   [EDI]+4
+ P 33 0097  VAL     PUSHM  4,[EDI]+12        ==>            PUSH   [EDI]+12
+ P 33 009A  STP     MOV    ESI,ESP           ==>            MOV    ESI,ESP
+ P 33 009C  VAL     LOADC  ECX,4             ==>            MOV    ECX,4
+ P 33 00A1  ANY     RMOV   ,CLD,REP          ==>            REP    MOVSW
+ P 33 00A3  STP     ADD    ESP,16            ==>            ADD    ESP,16
+ P 33 00A6  ANY     CALL   4,0,16,_many      ==>            CALL   _many
+                                                            ADD    ESP,16
+ P 33 00AE  ANY     CALL   1,0,0,R06@E_PRO   ==>            CALL   R06@E_PRO
+ P 33 00B3  ANY     INT    1                 ==>            INT    1
+****** End - Exhaust MAIN1_TEXT, ALL ******
+EMPTY
+CONST         T1070: T377:
+FIXREP        8
+ D    0002                                                  DW 0
+TreatValue(9)
+C-RECORD      T377:
+EmitStructValue(9)
+ATTR          T378: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         8
+ D    0004                                                  DB 8
+ATTR          T379: T2:
+Attribute CHAR <== CHAR
+TreatValue(1)
+TEXT          8 "callmany"
+ D    0005                                                  DB 99,97,108,108,109,97,110,121
+ENDRECORD
+CONST         T1071: T372:
+ D    000D                                                  DB 3 DUP(0)
+TreatValue(16)
+C-RECORD      T372:
+EmitStructValue(16)
+ATTR          T373: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1070:
+ D    0010                                                  DD SEG2+4
+ATTR          T374: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1051:
+ D    0014                                                  DD ?FIX9
+ATTR          T375: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    0018                                                  DD 0
+ATTR          T376: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         2
+ D    001C                                                  DB 2
+ENDRECORD
+ D    001D                                                  DB 3 DUP(0)
+CONST         T1072: T101:
+FIXREP        1
+TreatValue(8)
+C-RECORD      T101:
+EmitStructValue(8)
+ATTR          T102: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         0
+ D    0020                                                  DB 0
+ATTR          T103: T3:
+Attribute BYT2 <== WRD4
+ D    0021                                                  DB 0
+TreatValue(2)
+C-INT         1
+ D    0022                                                  DW 1
+ATTR          T104: T7:
+Attribute AADDR <== AADDR
+TreatValue(4)
+C-DOT         T1067:
+C-AADDR       T347:
+ D    0024                                                  DW 32
+ D    0026                                                  DW 0
+ENDRECORD
+CONST         T1073: T377:
+FIXREP        1
+TreatValue(2)
+C-RECORD      T377:
+EmitStructValue(2)
+ATTR          T378: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         1
+ D    0028                                                  DB 1
+ATTR          T379: T2:
+Attribute CHAR <== CHAR
+TreatValue(1)
+TEXT          1 "x"
+ D    0029                                                  DB 120
+ENDRECORD
+CONST         T1068: T124:
+ D    002A                                                  DW 0
+TreatValue(12)
+C-RECORD      T124:
+EmitStructValue(12)
+ATTR          T125: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1073:
+ D    002C                                                  DD SEG2+40
+ATTR          T126: T7:
+Attribute AADDR <== AADDR
+TreatValue(4)
+C-AADDR       T1067:
+ D    0030                                                  DW 24
+ D    0032                                                  DW 0
+ATTR          T127: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         2
+ D    0034                                                  DB 2
+ATTR          T128: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         0
+ D    0035                                                  DB 0
+ATTR          T129: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         4
+ D    0036                                                  DB 4
+ENDRECORD
+ D    0037                                                  DB 0
+CONST         T1074: T121:
+FIXREP        1
+TreatValue(8)
+C-RECORD      T121:
+EmitStructValue(8)
+ATTR          T122: T3:
+Attribute BYT2 <== WRD4
+TreatValue(2)
+C-INT         1
+ D    0038                                                  DW 1
+ATTR          T123: T8:
+Attribute OADDR <== OADDR
+ D    003A                                                  DW 0
+TreatValue(4)
+C-OADDR       T1068:
+ D    003C                                                  DD SEG2+44
+ENDRECORD
+CONST         T1065: T91:
+TreatValue(24)
+C-RECORD      T91:
+EmitStructValue(24)
+ATTR          T85: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1072:
+ D    0040                                                  DD SEG2+32
+ATTR          T86: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    0044                                                  DD 0
+ATTR          T87: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1071:
+ D    0048                                                  DD SEG2+16
+ATTR          T88: T12:
+Attribute SIZE <== SIZE
+TreatValue(4)
+C-SIZE        T1069:
+ D    004C                                                  DW 48
+ D    004E                                                  DW 0
+ATTR          T92: T10:
+Attribute PADDR <== PADDR
+TreatValue(4)
+C-PADDR       T1066:
+ D    0050                                                  DD SEG3
+ATTR          T93: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1074:
+ D    0054                                                  DD SEG2+56
+ENDRECORD
+STMT          10
+StoQ:      018A2FC8 P B2 0000  ANY               ;     STATEMENT LINE 10
+          Read:None  Write:None  Mind:ESP:EBP:M
+PRECALL       T471:
+CALL          T472:
+StoQ:      018A2FA0 P B2 0000  ANY CALL   1,0==>            CALL   R06@E_PRO
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+LABEL         T1054:
+StoQ:      018A2DC4 P B2 0000  ANY LABEL 2   ==> ?FIX2      LABEL  NEAR
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+CONST         T1075: T377:
+FIXREP        4
+TreatValue(5)
+C-RECORD      T377:
+EmitStructValue(5)
+ATTR          T378: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         4
+ D    0058                                                  DB 4
+ATTR          T379: T2:
+Attribute CHAR <== CHAR
+TreatValue(1)
+TEXT          4 "many"
+ D    0059                                                  DB 109,97,110,121
+ENDRECORD
+CONST         T1076: T377:
+FIXREP        1
+ D    005D                                                  DB 3 DUP(0)
+TreatValue(2)
+C-RECORD      T377:
+EmitStructValue(2)
+ATTR          T378: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         1
+ D    0060                                                  DB 1
+ATTR          T379: T2:
+Attribute CHAR <== CHAR
+TreatValue(1)
+TEXT          1 "i"
+ D    0061                                                  DB 105
+ENDRECORD
+CONST         T1077: T124:
+ D    0062                                                  DW 0
+TreatValue(12)
+C-RECORD      T124:
+EmitStructValue(12)
+ATTR          T125: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1075:
+ D    0064                                                  DD SEG2+88
+ATTR          T126: T7:
+Attribute AADDR <== AADDR
+TreatValue(4)
+ANONE
+ D    0068                                                  DW 0
+ D    006A                                                  DW 0
+ATTR          T127: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         4
+ D    006C                                                  DB 4
+ATTR          T128: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         1
+ D    006D                                                  DB 1
+ATTR          T129: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         0
+ D    006E                                                  DB 0
+ENDRECORD
+ D    006F                                                  DB 0
+CONST         T1078: T124:
+TreatValue(12)
+C-RECORD      T124:
+EmitStructValue(12)
+ATTR          T125: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1076:
+ D    0070                                                  DD SEG2+96
+ATTR          T126: T7:
+Attribute AADDR <== AADDR
+TreatValue(4)
+C-AADDR       T1062:
+ D    0074                                                  DW 24
+ D    0076                                                  DW 0
+ATTR          T127: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         3
+ D    0078                                                  DB 3
+ATTR          T128: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         0
+ D    0079                                                  DB 0
+ATTR          T129: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         4
+ D    007A                                                  DB 4
+ENDRECORD
+ D    007B                                                  DB 0
+CONST         T1079: T124:
+TreatValue(12)
+C-RECORD      T124:
+EmitStructValue(12)
+ATTR          T125: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1070:
+ D    007C                                                  DD SEG2+4
+ATTR          T126: T7:
+Attribute AADDR <== AADDR
+TreatValue(4)
+ANONE
+ D    0080                                                  DW 0
+ D    0082                                                  DW 0
+ATTR          T127: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         3
+ D    0084                                                  DB 3
+ATTR          T128: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         1
+ D    0085                                                  DB 1
+ATTR          T129: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         0
+ D    0086                                                  DB 0
+ENDRECORD
+ D    0087                                                  DB 0
+CONST         T1080: T121:
+FIXREP        3
+TreatValue(16)
+C-RECORD      T121:
+EmitStructValue(16)
+ATTR          T122: T3:
+Attribute BYT2 <== WRD4
+TreatValue(2)
+C-INT         3
+ D    0088                                                  DW 3
+ATTR          T123: T8:
+Attribute OADDR <== OADDR
+ D    008A                                                  DW 0
+TreatValue(4)
+C-OADDR       T1077:
+ D    008C                                                  DD SEG2+100
+C-OADDR       T1078:
+ D    0090                                                  DD SEG2+112
+C-OADDR       T1079:
+ D    0094                                                  DD SEG2+124
+ENDRECORD
+CONST         T1081: T372:
+TreatValue(16)
+C-RECORD      T372:
+EmitStructValue(16)
+ATTR          T373: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    0098                                                  DD 0
+ATTR          T374: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1051:
+ D    009C                                                  DD ?FIX9
+ATTR          T375: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1080:
+ D    00A0                                                  DD SEG2+136
+ATTR          T376: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         0
+ D    00A4                                                  DB 0
+ENDRECORD
+ D    00A5                                                  DB 3 DUP(0)
+                                                 ?FIX3      LABEL  WORD
+CONST         T1053: T89:
+TreatValue(20)
+C-RECORD      T89:
+EmitStructValue(20)
+ATTR          T85: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    00A8                                                  DD 0
+ATTR          T86: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    00AC                                                  DD 0
+ATTR          T87: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1081:
+ D    00B0                                                  DD SEG2+152
+ATTR          T88: T12:
+Attribute SIZE <== SIZE
+TreatValue(4)
+C-SIZE        T1052:
+ D    00B4                                                  DW 28
+ D    00B6                                                  DW 0
+ATTR          T90: T10:
+Attribute PADDR <== PADDR
+TreatValue(4)
+C-PADDR       T1054:
+ D    00B8                                                  DD ?FIX2
+ENDRECORD
+CONST         T1082: T377:
+FIXREP        12
+TreatValue(13)
+C-RECORD      T377:
+EmitStructValue(13)
+ATTR          T378: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         12
+ D    00BC                                                  DB 12
+ATTR          T379: T2:
+Attribute CHAR <== CHAR
+TreatValue(1)
+TEXT          12 "multipar.sim"
+ D    00BD                                                  DB 109,117,108,116,105,112,97,114,46
+                                                            DB 115,105,109
+ENDRECORD
+CONST         T1051: T380:
+ D    00C9                                                  DB 3 DUP(0)
+                                                 ?FIX9      LABEL  WORD
+TreatValue(28)
+C-RECORD      T380:
+EmitStructValue(28)
+ATTR          T381: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    00CC                                                  DD 0
+ATTR          T382: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    00D0                                                  DD 0
+ATTR          T383: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+C-OADDR       T1082:
+ D    00D4                                                  DD SEG2+188
+ATTR          T384: T8:
+Attribute OADDR <== OADDR
+TreatValue(4)
+ONONE
+ D    00D8                                                  DD 0
+ATTR          T385: T3:
+Attribute WRD4 <== WRD4
+TreatValue(4)
+C-INT         0
+ D    00DC                                                  DB 0,0,0,0
+ATTR          T386: T3:
+Attribute BYT2 <== WRD4
+TreatValue(2)
+C-INT         108
+ D    00E0                                                  DW 108
+ATTR          T387: T3:
+Attribute BYT2 <== WRD4
+TreatValue(2)
+C-INT         108
+ D    00E2                                                  DW 108
+ATTR          T388: T3:
+Attribute BYT1 <== WRD4
+TreatValue(1)
+C-INT         2
+ D    00E4                                                  DB 2
+ENDRECORD
+ D    00E5                                                  DB 3 DUP(0)
+PRECALL       T1045:
+PUSHC
+C-INT         0
+StoQ:      018A2F5C P B2 0000  VAL PUSHC  AL,==>            PUSH   0
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+ASSPAR
+StoQ:      018A2F40 P B2 0000  ANY POPK   1  ==>            POP    EAX
+          Read:ESP  Write:ESP:F  Mind:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2F5C P B2 0000  VAL PUSHC  AL,0
+=== Massage Scheme POPK(1)
+b:         018A2F5C P B2 0000  VAL PUSHC  AL,0
+a:         018A2F40 P B2 0000  ANY POPK   1
+Remove:    018A2F40 P B2 0000  ANY POPK   1
+Remove:    018A2F5C P B2 0000  VAL PUSHC  AL,0
+StoQ:      018A2F5C P B2 0000  VAL PUSHC  EAX==>            PUSH   0
+          Read:ESP  Write:ESP  Mind:ESP:EBP:M
+PUSHV         T77:
+StoQ:      018A2EDC P B2 0000  ANY PUSHM  4,R==>            PUSH   R01@rt+28
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+StoQ:      018A2EB0 P B2 0000  ANY PUSHM  4,R==>            PUSH   R01@rt+24
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+StoQ:      018A2E84 P B2 0000  ANY PUSHM  4,R==>            PUSH   R01@rt+20
+          Read:ESP:M  Write:ESP  Mind:ESP:EBP:M
+ASSPAR
+StoQ:      018A2E18 P B2 0000  ANY POPR   EAX==>            POP    EAX
+          Read:ESP  Write:EAX:ESP  Mind:EAX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2E84 P B2 0000  ANY PUSHM  4,R01@rt+20
+=== Massage Scheme POPR(5)
+b:         018A2E84 P B2 0000  ANY PUSHM  4,R01@rt+20
+a:         018A2E18 P B2 0000  ANY POPR   EAX
+Insert:    018A2998 P B2 0000  ANY LOAD   EAX==>            MOV    EAX,R01@rt+20
+          Read:M  Write:EAX
+Remove:    018A2E84 P B2 0000  ANY PUSHM  4,R01@rt+20
+Remove:    018A2E18 P B2 0000  ANY POPR   EAX
+ReMass:    018A2998 P B2 0000  ANY LOAD   EAX,R01@rt+20,0,0
+G@CURINS) -- NO*** SameMemPart(R01@rt+24,R01@rt+20) -- NO*** SameMemPart(R01@rt
+StoQ:      018A2E18 P B2 0000  ANY POPR   ECX==>            POP    ECX
+          Read:ESP  Write:ECX:ESP  Mind:EAX:ECX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2EB0 P B2 0000  ANY PUSHM  4,R01@rt+24
+=== Massage Scheme POPR(5)
+b:         018A2EB0 P B2 0000  ANY PUSHM  4,R01@rt+24
+           018A2998 P B2 0000  ANY LOAD   EAX,R01@rt+20,0,0
+a:         018A2E18 P B2 0000  ANY POPR   ECX
+Insert:    018A28F0 P B2 0000  ANY LOAD   ECX==>            MOV    ECX,R01@rt+24
+          Read:M  Write:ECX
+Remove:    018A2EB0 P B2 0000  ANY PUSHM  4,R01@rt+24
+Remove:    018A2E18 P B2 0000  ANY POPR   ECX
+ReMass:    018A28F0 P B2 0000  ANY LOAD   ECX,R01@rt+24,0,0
++28,R01@rt+20) -- NO*** SameMemPart(R01@rt+20,R01@rt+24) -- NO*** SameMemPart(
+StoQ:      018A2E18 P B2 0000  ANY POPR   EDX==>            POP    EDX
+          Read:ESP  Write:EDX:ESP  Mind:EAX:ECX:EDX:ESP:EBP:M
+*** FindPush2: s=4, t=0, n=4
+FindPush2: 018A2EDC P B2 0000  ANY PUSHM  4,R01@rt+28
+=== Massage Scheme POPR(5)
+b:         018A2EDC P B2 0000  ANY PUSHM  4,R01@rt+28
+           018A2998 P B2 0000  ANY LOAD   EAX,R01@rt+20,0,0
+           018A28F0 P B2 0000  ANY LOAD   ECX,R01@rt+24,0,0
+a:         018A2E18 P B2 0000  ANY POPR   EDX
+Insert:    018A27E0 P B2 0000  ANY LOAD   EDX==>            MOV    EDX,R01@rt+28
+          Read:M  Write:EDX
+Remove:    018A2EDC P B2 0000  ANY PUSHM  4,R01@rt+28
+Remove:    018A2E18 P B2 0000  ANY POPR   EDX
+ReMass:    018A27E0 P B2 0000  ANY LOAD   EDX,R01@rt+28,0,0
+R01@rt+28,R01@rt+24) -- NO*** SameMemPart(R01@rt+24,R01@rt+28) -- NO
+StoQ:      018A2E18 P B2 0000  ANY PUSHR  EDX==>            PUSH   EDX
+          Read:EDX:ESP  Write:ESP  Mind:EAX:ECX:ESP:EBP:M
+Insert:    018A2EDC P B2 0000  ANY PUSHM  4,R==>            PUSH   R01@rt+28
+          Read:ESP:M  Write:ESP
+Remove:    018A2E18 P B2 0000  ANY PUSHR  EDX
+Remove:    018A27E0 P B2 0000  ANY LOAD   EDX,R01@rt+28,0,0
+ReMass:    018A2EDC P B2 0000  ANY PUSHM  4,R01@rt+28
+StoQ:      018A2E18 P B2 0000  ANY PUSHR  ECX==>            PUSH   ECX
+          Read:ECX:ESP  Write:ESP  Mind:EAX:ESP:EBP:M
+Insert:    018A2EB0 P B2 0000  ANY PUSHM  4,R==>            PUSH   R01@rt+24
+          Read:ESP:M  Write:ESP
+Remove:    018A2E18 P B2 0000  ANY PUSHR  ECX
+Remove:    018A28F0 P B2 0000  ANY LOAD   ECX,R01@rt+24,0,0
+ReMass:    018A2EB0 P B2 0000  ANY PUSHM  4,R01@rt+24
+StoQ:      018A2E18 P B2 0000  ANY PUSHR  EAX==>            PUSH   EAX
+          Read:EAX:ESP  Write:ESP  Mind:ESP:EBP:M
+Insert:    018A2E84 P B2 0000  ANY PUSHM  4,R==>            PUSH   R01@rt+20
+          Read:ESP:M  Write:ESP
+Remove:    018A2E18 P B2 0000  ANY PUSHR  EAX
+Remove:    018A2998 P B2 0000  ANY LOAD   EAX,R01@rt+20,0,0
+ReMass:    018A2E84 P B2 0000  ANY PUSHM  4,R01@rt+20
+CALL          T1046:
+StoQ:      018A2F78 P B2 0000  ANY CALL   0,0==>            CALL   R14@E_PROG
+          Read:ESP:M  Write:ALL but BP  Mind:ESP:EBP:M
+ENDPROGRAM
+StoQ:      018A2F40 P B2 0000  ANY RET    0  ==>            RET    0
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+StoQ:      018A2D00 P B2 0000  ANY LABEL EPRO==> SIM_MAIN   ENDP
+          Read:ESP:EBP:M  Write:ALL  Mind:ESP:EBP:M
+****** Begin - Exhaust MAIN_TEXT, ALL, Count:18 ******
+ P B2 0000  ANY     LABEL BPROC,1            ==> SIM_MAIN   PROC  FAR
+                                                             PUBLIC   SIM_MAIN
+ P B2 0000  OBJ     MOVMC  DWORD PTR  G@PRGIN==>            MOV    DWORD PTR G@PRGINF,OFFSET SEG8
+ P B2 000A  ANY                                  ;     SOURCE LINE 1
+ P B2 000A  ANY     CALL   1,0,0,R14@B_PROG  ==>            CALL   R14@B_PROG
+ P B2 000F  ANY                                  ;     STATEMENT LINE 1
+ P B2 000F  OBJ     PUSHC  EAX,OFFSET SEG2   ==>            PUSH   OFFSET SEG2
+ P B2 0014  ANY     CALL   0,0,4,R06@B_SUB   ==>            CALL   R06@B_SUB
+ P B2 0019  ANY                                  ;     DECLARATION LINE 7
+ P B2 0019  ANY                                  ;     STATEMENT LINE 10
+ P B2 0019  ANY     CALL   1,0,0,R06@E_PRO   ==>            CALL   R06@E_PRO
+ P B2 001E  ANY     LABEL 2                  ==> ?FIX2      LABEL  NEAR
+ P B2 001E  VAL     PUSHC  EAX,0             ==>            PUSH   0
+ P B2 0020  ANY     PUSHM  4,R01@rt+28       ==>            PUSH   R01@rt+28
+ P B2 0026  ANY     PUSHM  4,R01@rt+24       ==>            PUSH   R01@rt+24
+ P B2 002C  ANY     PUSHM  4,R01@rt+20       ==>            PUSH   R01@rt+20
+ P B2 0032  ANY     CALL   0,0,16,R14@E_PROG ==>            CALL   R14@E_PROG
+ P B2 0037  ANY     RET    0                 ==>            RET    0
+ P B2 003A  ANY     LABEL EPROC,1            ==> SIM_MAIN   ENDP
+****** End - Exhaust MAIN_TEXT, ALL ******
+                                                 #8
+ D    0000                                                  DD ?FIX10
+ D    0004                                                  DB 4
+ D    0005                                                  DB 77
+ D    0006                                                  DB 65
+ D    0007                                                  DB 73
+ D    0008                                                  DB 78
+ D    0009                                                  DB 49
+ D    000A                                                  DB 95
+ D    000B                                                  DB 84
+ D    000C                                                  DD 0
+                                                 ?FIX10     LABEL  WORD
+ D    0010                                                  DD SEG3
+ D    0014                                                  DW 181
+ D    0016                                                  DW 2
+ D    0018                                                  DW 7
+ D    001A                                                  DW 0
+ D    001C                                                  DW 8
+ D    001E                                                  DW 0
+ D    0020                                                  DD SEG7
+ D    0024                                                  DW 58
+ D    0026                                                  DW 4
+ D    0028                                                  DW 1
+ D    002A                                                  DW 10
+ D    002C                                                  DW 1
+ D    002E                                                  DW 15
+ D    0030                                                  DW 7
+ D    0032                                                  DW 25
+ D    0034                                                  DW 10
+ D    0036                                                  DW 25
+ D    0038                                                  DD 0
+Location Counters:     MAIN_GLOBAL=00E8  MAIN1_TEXT=00B8
+                       MAIN_TEXT=003C  MAIN_LINE=003C
+External References:   _DATA:G@CURINS  cent_TEXT:R06@PRESAV
+                       form_TEXT:R10@BNPASS  cent_TEXT:R06@RESTOR
+                       rt_GLOBAL:R01@rt  cent_TEXT:R06@PRESTO
+                       form_TEXT:R10@E_NPA  :_many  cent_TEXT:R06@E_PRO
+                       _DATA:G@PRGINF  mntr_TEXT:R14@B_PROG
+                       cent_TEXT:R06@B_SUB  mntr_TEXT:R14@E_PROG
+
+Public Definitions:    S@MAIN=MAIN_GLOBAL  SIM_MAIN=MAIN_TEXT
+
+FIXUP Definitions:     FIXUP(0)=SEG8:S@MAIN@1:Unmatched(line 0)
+                       FIXUP(1)=SEG7:0(line 0)
+                       FIXUP(2)=SEG7:30(line 1)
+                       FIXUP(3)=SEG2:168(line 1)
+                       FIXUP(4)=SEG3:0(line 7)
+                       FIXUP(5)=SEG3:39(line 8)
+                       FIXUP(6)=SEG3:134(line 8)
+                       FIXUP(7)=SEG3:115(line 8)
+                       FIXUP(8)=SEG3:115(line 8)
+                       FIXUP(9)=SEG2:204(line 8)
+                       FIXUP(10)=SEG8:16(line 10)
+
+SIM: exit
+EXIT  SIMULA

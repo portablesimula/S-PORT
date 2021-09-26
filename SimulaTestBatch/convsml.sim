@@ -1,0 +1,26 @@
+begin ref(infile) inf; ref(outfile) outf; character ch; long real lr;
+RIN:  outtext("Input: "); breakoutimage; inimage;
+      inf:-new infile(sysin.image.strip);
+      if not inf.open(blanks(150)) then goto RIN;
+ROUT: outtext("Output: "); breakoutimage; inimage;
+      outf:-new outfile(sysin.image.strip);
+      if not outf.open(blanks(150)) then goto ROUT;
+      inspect outf do inspect inf do begin
+         while not endfile do begin
+            inimage;
+            if image.strip<>"r" and then image.strip<>"d-o-p"
+               and then image.strip<>"d-a id"
+            then begin
+               while image.more do begin
+                  ch:=image.getchar;
+                  if digit(ch) then begin
+                     image.setpos(image.pos-1);
+                     lr:=inreal; outint(lr,4); end
+                  else outchar(ch);
+               end;
+               outimage;
+            end;
+         end;
+         close; outf.close;
+      end;
+end;

@@ -1,0 +1,11 @@
+set -kv
+zim109.x32 <<endc
+set sys sport
+debug 3
+in cp.o
+set sk1lin 4
+set sk1trc 221001
+com cproc.sim
+CC load
+exit
+endc

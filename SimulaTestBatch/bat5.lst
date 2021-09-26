@@ -1,0 +1,103 @@
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst50.sim
+Note!: (l. 42) 'WHEN e'-branch will never be executed
+Note!: (l. 46) 'WHEN d'-branch will never be executed
+SIM: load
+simtst50 loaded
+SIM: simtst50 /w1
+--- START Simula a.s. TEST 50
+--- Test binding of when-clause and otherwise-clause in connection
+--- statement, and qualification of the connection block.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 50
+SIM: compile src/simtst51.sim
+SIM: load
+simtst51 loaded
+SIM: simtst51 /w1
+--- START Simula a.s. TEST 51
+--- Test 'inner'
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 51
+SIM: compile src/simtst52.sim
+SIM: load
+simtst52 loaded
+SIM: simtst52 /w1
+--- START Simula a.s. TEST 52
+--- Test 'inner'.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 52
+SIM: compile src/simtst53.sim
+SIM: load
+simtst53 loaded
+SIM: simtst53 /w1
+--- START Simula a.s. TEST 53
+--- Test simple virtual
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 53
+SIM: compile src/simtst54.sim
+FATAL: (l. 19) SORRY, switch element requiring thunk IS NOT IMPLEMENTED
+*** COMPILATION ABORTED ***
+SIM: CC simtst54 has complex switch - error during compile
+SIM: CC load
+SIM: CC simtst54 /w1
+SIM: compile src/simtst55.sim
+SIM: load
+simtst55 loaded
+SIM: simtst55 /w1
+--- START Simula a.s. TEST 55
+--- Test virtual procedures.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 55
+SIM: compile src/simtst56.sim
+SIM: load
+simtst56 loaded
+SIM: simtst56 /w1
+--- START Simula a.s. TEST 56
+--- Test virtual procedures.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 56
+SIM: compile src/simtst57.sim
+SIM: load
+simtst57 loaded
+SIM: simtst57 /w1
+--- START Simula a.s. TEST 57
+--- Test virtual procedure - different number of parameters
+--- in the matching procedures in two subclasses (not of each
+--- other) of the prefix class which contains the virtual part.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 57
+SIM: compile src/simtst58.sim
+SIM: load
+simtst58 loaded
+SIM: simtst58 /w1
+--- START Simula a.s. TEST 58
+--- Test goto statement within a connection block where the
+--- destination is in the corresponding otherwise-clause.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 58
+SIM: compile src/c59.sim
+SIM: compile src/simtst59.sim
+SIM: load
+simtst59 loaded
+SIM: simtst59 /w1
+--- START Simula a.s. TEST 59
+--- Test virtual label in external class.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 59
+SIM: exit
+EXIT  SIMULA

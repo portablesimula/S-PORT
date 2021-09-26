@@ -1,0 +1,3 @@
+set -kv
+tar cv2 alltest.xnx bat0.xnx bat1.xnx bat2.xnx bat3.xnx bat4.xnx \
+        bat5.xnx bat6.xnx bat7.xnx bat8.xnx bat9.xnx ./src

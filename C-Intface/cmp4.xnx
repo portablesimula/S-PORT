@@ -1,0 +1,70 @@
+cat >text.c <<endcat
+void outstring(s)
+  char *s;
+{
+
+  printf("%s\n",s);
+
+}
+endcat
+cc -c text.c
+# ================================================
+cat >testtext.sim <<endcat
+%   select N:  text by name
+%   select V:  text by value
+begin text param1,param2;
+external C procedure outstring is procedure outstring(t);
+%+N        name t;
+%+V        value t;
+           text t; ;
+%-NV outstring("Hello world!0!");
+%-NV outstring("Hello world");
+
+%+V param1:- "Hello VALUE world";
+%+V param2:- param1.sub(7,5);
+%+V outstring(param1);
+%+V outstring(param2);
+
+%+N param1:- copy("Hello NAME world!0!");
+%+N outstring(param1);
+end
+endcat
+sim$SREL.x32 <<endc
+set opt M
+set sys sport
+set ver 1
+set sk1lin 1
+set sk1trc 1
+CC set select -- default
+include text.o
+com testtext.sim
+load
+testtext
+exit
+endc
+sim$SREL.x32 <<endc
+set opt M
+set sys sport
+set ver 1
+set sk1lin 1
+set sk1trc 1
+set select N -- by name
+include text.o
+com testtext.sim
+load
+testtext
+exit
+endc
+sim$SREL.x32 <<endc
+set opt M
+set sys sport
+set ver 1
+set sk1lin 1
+set sk1trc 1
+set select V -- by value
+include text.o
+com testtext.sim
+load
+testtext
+exit
+endc

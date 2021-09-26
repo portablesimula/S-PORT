@@ -1,0 +1,11 @@
+external class a;
+a begin external class b; ref(b) bref;
+        text t;
+        t:-"xcxccxcx!0!"; bref:-new b;
+        outstring(t);
+        bref.outstring(t);
+        bref.outstring(t.sub(1,3).sub(1,2));
+        t:-t.sub(1,2);
+        outstring(t);
+        bref.outstring("en konstant!0!");
+end

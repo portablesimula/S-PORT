@@ -1,0 +1,17 @@
+%   select N:  text by name
+%   select V:  text by value
+begin text param1,param2,param3; integer i;
+external C procedure outstring is procedure outstring(t1,t2,t3);
+           name t1; value t2,t3;
+           text t1,t2,t3; ;
+
+  while i<10000 do begin i:=i+1;
+    outtext("C-start"); outimage;
+    param1:- "Hello NAME world!0!";
+    param2:- param1.sub(7,4);
+    param3:- " - End of VALUE";
+
+    outstring("Param 1 const!0!", !param1,; param2,param3);
+    outtext("C-END"); outimage;
+ end;
+end

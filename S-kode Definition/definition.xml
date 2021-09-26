@@ -1,0 +1,41 @@
+<?xml version = "1.0"?>
+
+<!-- Fig. 28.2: definition.xml               -->
+<!-- Definition document formatted with XML  -->
+
+<!DOCTYPE definition SYSTEM "definition.dtd">
+
+<definition>
+
+   <contact type = "from">
+      <name>John Doe</name>
+      <address1>123 Main St.</address1>
+      <address2></address2>
+      <city>Anytown</city>
+      <state>Anystate</state>
+      <zip>12345</zip>
+      <phone>555-1234</phone>
+      <flag id = "P"/>
+   </contact>
+
+   <contact type = "to">
+      <name>Joe Schmoe</name>
+      <address1>Box 12345</address1>
+      <address2>15 Any Ave.</address2>
+      <city>Othertown</city>
+      <state>Otherstate</state>
+      <zip>67890</zip>
+      <phone>555-4321</phone>
+      <flag id = "B"/>
+   </contact>
+
+   <paragraph>Dear Sir,</paragraph>
+
+   <paragraph>It is our privilege to inform you about our new
+      database managed with XML. This new system will allow
+      you to reduce the load of your inventory list server by
+      having the client machine perform the work of sorting
+      and filtering the data.</paragraph>
+   <paragraph>Sincerely, Mr. Doe</paragraph>
+
+</definition>

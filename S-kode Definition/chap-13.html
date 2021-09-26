@@ -1,0 +1,428 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>13</title>
+</head>
+
+<body>
+
+<h2>13.  <strong>ROUTINES</strong></h2>
+
+&nbsp;
+<p>Routines in S-code correspond to subroutines in other languages but with certain
+restrictions: </p>
+
+<ul>
+  <li>All parameters are passed to and from the routines by value.</li>
+  <li>Routines are not recursive (but the routine may possibly contain calls of the routine
+itself. In that case the body of the routine will explicitly store and reload the
+necessary values around such recursive calls).</li>
+  <li>Any routine must exit through its <u>endroutine</u>, it is not possible to exit via any explicit
+jump.</li>
+  <li>The return address may be made available to the routine (by means of an <u>exit</u>
+definition), thus allowing the return address to be changed by the routine itself.</li>
+</ul>
+<p>The definition of a routine creates two descriptors (of type VOID), describing the routine
+<u>profile</u> and the routine <u>body</u>. In certain cases to be described later no body occurs in the
+program.</p>
+
+<p>The profile defines the parameter and exit descriptors for the routine, while the body
+defines the local descriptors as well as the instruction sequence to be executed when the
+routine is activated. Each routine body must have exactly one routine profile associated
+with it, whereas a &quot;non-peculiar&quot; profile may be associated with several routine bodies. It
+is not allowed for the same profile to be associated with more than one body in any
+dynamic sequence of routines calling routines, since this would imply re-use of the (static)
+allocation record defined by the profile.</p>
+
+<p>The activation sequence for a routine is generated on the basis of the call instruction
+treated in section 4 below.</p>
+
+&nbsp;
+<h3>13.1.  <u>Routine profiles</u></h3>
+
+&nbsp;
+<p>	routine_profile</p>
+
+<p>		::=	<u>profile</u>	profile:newtag  &lt;peculiar&gt;?</p>
+
+<p>			  &lt;import_definition&gt;*  &lt;export or exit&gt;?</p>
+
+<p>			<u>endprofile</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	peculiar</p>
+
+<p>		::=	<u>known</u>	body:newtag  kid:string</p>
+
+<p>		::=	<u>system</u>	body:newtag  sid:string</p>
+
+<p>		::=	<u>external</u>	body:newtag  nature:string  xid:string</p>
+
+<p>		::=	<u>interface</u>	pid:string</p>
+
+&nbsp;
+<p>	import_definition</p>
+
+<p>		::=	<u>import</u>	parm:newtag  quantity_descriptor</p>
+
+&nbsp;
+<p>	export_or_exit</p>
+
+<p>		::=	<u>export</u>	parm:newtag  resolved_type</p>
+
+<p>		::=	<u>exit</u>		return:newtag</p>
+
+&nbsp;
+<p>The import (input) parameters and the export (return) parameter are transmitted &quot;by
+value&quot;. Each <u>import</u> (<u>export</u>) definition will declare a quantity local to the routine body
+(bodies) later associated with the profile. The order in which the parameters are given in
+the profile will define the correspondence between the formal parameter locations and the
+assignment of the parameter value (<u>asspar</u> in the call instruction); the tag values (used in
+the associated bodies) will also be allocated in this sequence.</p>
+
+<p>An import parameter defined as a repetition must correspond to an <u>assrep</u> in the call, the
+count specifies the maximum permissible number of values to be transferred. Note that
+the actual count is not transferred, it should be defined as a separate import parameter.</p>
+
+<p>An <u>exit</u> definition identifies a descriptor for the area containing the return address of the
+routine. If no exit definition is given an an-onymous descriptor will be created for the same
+area. The exit des-criptor is of the basic form (REF, PADDR, ...) and exists for the use of
+<u>endroutine</u> (q.v.). If the descriptor is identified through <u>exit</u> it becomes accessible to the
+routine exactly as any other local quantity, and in that case it will be possible for the
+routine to change its return address. Such a routine cannot be called from other routines.</p>
+
+<p>In general, only the profile:newtag and a possible body:newtag (in case the routine is
+peculiar) are visible outwith any routine body associated with the profile. Observe that
+routine parameters and exit tags are local quantities.</p>
+
+<p>The parameter tags may, however, occur in the tag list of a module (see chapter 14).</p>
+
+<p>Remark:	The above sentence was included for the time being, because of special
+implementation strategy chosen by a subimplementor. The number of the
+external tags in the run-time system will be drastically reduced when these
+tags are removed from the tag list.</p>
+
+&nbsp;
+<h3>13.2.  <u>Peculiar routines</u></h3>
+
+&nbsp;
+<p>&quot;Peculiar&quot; provides information about routines whose bodies either will not be defined in
+any S-program, or in the case of known routines may be safely skipped by the S-compiler.
+Except for known no body may be associated with the profile; it uniquely defines one
+routine. The body tag so specified will be used to refer to the routine in subsequent call
+statements.</p>
+
+<p>Peculiar routines are described in this way to permit the S-compiler to handle each one in
+the most convenient system- and routine- dependent manner. In particular it is common
+for system-provided routines to return the result in specific registers and not in store
+locations. In these cases the use of peculiar routines will ensure that the export
+descriptor, stacked following the <u>call</u>, describe the appropriate registers.</p>
+
+<p>All peculiar routines are identified by a string (kid, sid, xid or pid) in the profile, since the
+actual tags associated with such a routine will vary from S-program to S-program. The
+string contains at most 6 characters with the case of any character being insignificant (e.g.
+&quot;a&quot; is equivalent to &quot;A&quot;). All id strings for peculiar routine profiles contain only
+alphanumeric characters, the first of which is a letter.</p>
+
+&nbsp;
+<p><u>known</u>  body:newtag  kid:string</p>
+
+&nbsp;
+<p>	A known routine has a body defined in S-code. The S-compiler may know the
+working of the routine and may thus replace the body with an optimised code
+sequence. It is intended to be used in cases where a standard S-code routine will
+be in danger of being inefficient in some implementations, or when the routine call
+can be replaced by an in-line code sequence at each call.</p>
+
+<p>It should however be noted that it is necessary to simulate (in the S-compiler) a routine
+spec for the body tag when processing <u>known</u> profiles.</p>
+
+&nbsp;
+<p><u>system</u>  body:newtag  sid:string</p>
+
+&nbsp;
+<p>	System profiles provide the interface to the run time environment of the program, or
+they represent routines which are impossible to program in S-code (or potentially
+prohibitively inefficient in all implementations). Thus no body will be given. Such
+routines (e.g. date_and_time) are typically provided by the operating system on the
+target machine, and may require special intervention from the S-compiler, since the
+calling conventions and parameter passing mechanisms will be system-dependent.</p>
+
+&nbsp;
+<p><u>external</u>  body:newtag  nature:string  xid:string</p>
+
+&nbsp;
+<p>	External routines are routines written in other languages. The exact nature of the
+routine is specified by the nature:string. External routines are implementation
+dependent.</p>
+
+&nbsp;
+<p><u>interface</u>  pid:string</p>
+
+&nbsp;
+<p>	Interface profiles may occur in the head of the interface module only. The profile
+becomes visible from the run time environment through the identifying string.</p>
+
+<p>	Every profile associated to a routine address evaluation which is an actual
+parameter to a system routine should be specified as an interface profile. An
+interface profile cannot have more than ony body.</p>
+
+<p>	In fact, the interface specification is redundant, but can be used to simplify code
+production for routine address values.</p>
+
+<p>	Interface routines cannot have more than one body.</p>
+
+&nbsp;
+<p>Note that when processing a <u>known</u> profile it is necessary to simulate a routine-spec for
+the body tag in the S-compiler.</p>
+
+<p>&nbsp;</p>
+<h3>13.3.  <u>Routine bodies</u></h3>
+
+&nbsp;
+<p>	routine_specification</p>
+
+<p>		::=  <u>routinespec</u>  body:newtag  profile:tag</p>
+
+&nbsp;
+<p>	routine_definition</p>
+
+<p>		::=  <u>routine</u>  body:spectag  profile:tag</p>
+
+<p>			&lt;local_quantity&gt;* &lt;instruction&gt;*  <u>endroutine</u></p>
+
+&nbsp;
+<p>	local_quantity</p>
+
+<p>		::=  <u>local</u>  var:newtag  quantity_descriptor</p>
+
+&nbsp;
+<p>The body:newtag identifies the routine body and is used as an argument to <u>call</u>, while
+profile:tag connects the body to the relevant routine profile and is used as an argument to
+<u>precall</u>, <u>asscall</u> or <u>repcall</u>.</p>
+
+<p>Routine specification is used in cases where it is necessary to call an as yet undefined
+routine, and in module heads.</p>
+
+<p>A routine body will be compiled into a sequence of instructions to be executed when
+activated by a call statement referencing the body tag. No quantities or descriptors
+defined in the body are visible outwith that body; all such tags are destroyed at <u>endroutine</u>
+and made available for re-use. As a consequence the syntax restricts the use of certain
+constructs inside the routine body:</p>
+
+<ul>
+  <li>constants and general labels cannot be defined inside the routine,</li>
+  <li>external modules cannot be inserted into routine bodies (see 14.3),</li>
+  <li>routines cannot be nested, i.e. routine specifications or definitions cannot occur in
+a body,</li>
+  <li>all jump/destination sets must be fully enclosed within the body, except for
+destinations of <u>goto</u> jumps.</li>
+  <li>protect statements are not allowed inside routines.</li>
+  <li>if, skip, and segment constructions are restricted when used inside routine bodies,
+the restriction is syntactically specified as e.g. &quot;if_statement&quot; (invalid) versus
+&quot;if_instruction&quot; (valid). The constructions are simply restricted so as not to allow
+any of the above restrictions be violated.</li>
+</ul>
+&nbsp;
+<p><u>local</u>  var:newtag  quantity_descriptor</p>
+
+&nbsp;
+<p>	The local quantities constitute the local variables for the routine. Conceptually they
+are static quantities, i.e. the descriptors will be complete. An implementation may
+choose to make them dynamic, that is created each time the routine is activated,
+and destroyed at routine exit.</p>
+
+<p>	While the tags identifying the local variables not necessarily are generated in strict
+sequence, they will at <u>endroutine</u> comprise an interval.</p>
+
+&nbsp;
+<p><u>routine</u>  body:spectag  profile:tag</p>
+
+&nbsp;
+<p>	An implied <u>bseg</u> (see chapter 12) is performed.</p>
+
+<p>	The scope to the parameter tags defined in the associated profile is opened, and
+all defined destination indices and label tags will temporarily lose their meaning.</p>
+
+&nbsp;
+<p><u>endroutine</u></p>
+
+&nbsp;
+<p>	All destination indices must be undefined, and the stack must be empty, otherwise:
+error.</p>
+
+<p>	An implicit <u>eval</u> is performed. Code is generated to transfer control to the program
+point described by the exit descriptor, the scope to the profile is closed, and an
+implicit <u>delete</u> is performed with the minimum local tag value defined in the routine
+as argument. The label tags and the destination indices defined before <u>routine</u> was
+evaluated regain their meaning. Observe, that since routines cannot be lexically
+nested, it is sufficient to use (the equivalence of) two destination index vectors.
+Finally an implied <u>eseg</u> is performed.</p>
+
+<p>&nbsp;</p>
+<h3>13.4.  <u>Routine activation</u></h3>
+
+&nbsp;
+<p>	call_instruction</p>
+
+<p>		::=	connect_profile  &lt;parameter eval&gt;*  connect_routine</p>
+
+&nbsp;
+<p>	connect_profile</p>
+
+<p>		::=	<u>precall</u>  profile:tag</p>
+
+<p>		::=	<u>asscall</u>  profile:tag</p>
+
+<p>		::=	<u>repcall</u>  n:byte  profile:tag</p>
+
+&nbsp;
+<p>	connect_routine</p>
+
+<p>		::=	<u>call</u>  body:tag   !   &lt;instruction&gt;+  <u>call-tos</u></p>
+
+&nbsp;
+<p>	parameter eval</p>
+
+<p>		::=	&lt;instruction&gt;+  <u>asspar</u></p>
+
+<p>		::=	&lt;instruction&gt;+  <u>assrep</u>  n:byte</p>
+
+&nbsp;
+<p>The call instruction causes generation of the activation sequence for a routine. First the
+profile is connected, this will provide information about the number and types of the
+parameters. Following this the parameter values are evaluated and transferred, and finally
+the actual routine to be activated is connected, either explicitly by giving the tag or
+implicitly by taking its RADDR value from TOS.</p>
+
+<p>&nbsp;</p>
+<p><u>precall</u>  profile:tag</p>
+
+&nbsp;
+<p>	A copy of the profile descriptor is pushed onto the stack. This descriptor defines the
+number and types of the parameters required and where they are to be placed.
+Initially it identifies the first <u>import</u> parameter (if any). The descriptor will be
+modified during the further processing of the call instruction.</p>
+
+<p>	For each import parameter a parameter evaluation sequence follows, specifying
+instructions which result in a descriptor of the actual parameter value on top of the
+stack.</p>
+
+&nbsp;
+<p><u>call</u>  body:tag</p>
+
+&nbsp;
+<p>	The profile descriptor must now be in TOS, and it must not describe any import
+parameter, otherwise: error.</p>
+
+<p>	The generated code will transfer any parameters from the temporary area to the
+parameter locations, and then perform a subroutine call to the body. The return
+address (the current program point) will be remembered in the (explicitly named or
+implicitly defined) exit area. How and when this remembering is done, is
+implementation dependent.</p>
+
+<p>	The profile descriptor is popped. If it indicates an <u>export</u> parameter, the
+corresponding descriptor is pushed onto the stack as  (VAL, export.TYPE, ...).</p>
+
+<p>&nbsp;</p>
+<p><u>asscall</u>  profile:tag</p>
+
+&nbsp;
+<p>	TOS must describe a quantity of the same type as the first import parameter to the
+given profile, otherwise: error.</p>
+
+<p>	<u>asscall</u> makes it possible to call a routine when the first import parameter is already
+on the stack. The evaluation of this construction will take place as if the TOS
+element first is moved off the stack into some anonymous location, and then a
+<u>precall</u> is simulated. Following this the former TOS is moved back to the stack on
+top of the profile descriptor, and finally an <u>asspar</u> is simulated.</p>
+
+&nbsp;
+<p><u>repcall</u>  N:byte  profile:tag</p>
+
+&nbsp;
+<p>	TOS must describe a quantity of the same type as the first import parameter to the
+given profile. This must be a repetition.</p>
+
+<p>	<u>repcall</u> makes it possible to call a routine when the first import parameter is already
+on the stack, and this is a repetition. The argument N must be less than or equal to
+the number of elements in the repetition, and the type of the 'N' uppermost stack
+descriptors must be identical to the type specified for the parameter. If these
+conditions are not satisfied, the S- program is in error.</p>
+
+<p>	The evaluation of this construction will take place as if the N uppermost elements of
+the stack are first moved into some anonymous location, and then a <u>precall</u> is
+simulated. Following this the former N stack elements are moved back to the stack
+on top of the profile descriptor, and finally an <u>assrep</u> is simulated.</p>
+
+&nbsp;
+<p><u>asspar</u></p>
+
+&nbsp;
+<p>	At this stage SOS must be the connected descriptor (possibly modified by earlier
+parameter assignments) and it must describe an <u>import</u> parameter of the same type
+as TOS, otherwise error.</p>
+
+<p>	The generated code will move the value of TOS into the temporary area. The stack
+is popped and the profile descriptor is modified to describe the next parameter.
+After a parameter assign the profile descriptor will remain on top of the stack.</p>
+
+&nbsp;
+<p><u>assrep</u>  N:byte</p>
+
+&nbsp;
+<p>	The profile descriptor in stack element number N+1 from the top must describe an
+import parameter, which must be a repetition. The argument N must be less than or
+equal to the number of elements in the repetition, and the types of the 'N'
+uppermost stack descriptors must be identical to the type specified for the
+parameter. If these conditions are not satisfied, it is an error.</p>
+
+<p>	The 'N' values described by the top elements in the stack are assigned to the
+elements of the repetition in the following order:</p>
+
+<p>		The top element is assigned to the N'th element of the repetition and then
+popped; then the new top element is assigned to the (N-1)'th repetition
+element and popped, and so on until the N stack elements in question have
+been assigned to the N first elements of the repetitive parameter.</p>
+
+<p>	These assignments imply generation of deferred code. TOS will now be the routine
+descriptor, which is modified to describe the next parameter.</p>
+
+<p>	This facility is intended to be used to pass a variable number of parameters of the
+same type to certain routines, in particular to routines associated with array
+accessing.</p>
+
+&nbsp;
+<p><u>call-tos</u></p>
+
+&nbsp;
+<p>	TOS must be of type RADDR, and SOS must be the (modified) connected profile
+descriptor, which does not describe any import parameters, otherwise: error.</p>
+
+<p>	This is equivalent to &quot;call TOS&quot;, i.e. the routine address popped off the stack
+identifies the entry point to a routine to be connected. It will normally not be
+possible for the S-compiler to check, whether TOS actually is associated with the
+profile. However, the value nobody should lead to a run time error.</p>
+
+&nbsp;
+<h3>13.5.  <u>Parameter transmission</u></h3>
+
+&nbsp;
+<p>Since OADDR and GADDR values are permitted as routine parameters, the transmission
+of the parameters cannot in the general case take place directly into the parameter
+locations. In order to make it possible for the garbage collector to identify such values, if
+the g.c. is activated during parameter transmission, the values must be transmitted as
+intermediate results, i.e. in the temporary area. All calls to the g.c. will be preceded by
+<u>save</u>, thus consistency will be ensured.</p>
+
+<p>The actual transfer of the values from the temporaries to the parameter locations
+associated with the profile cannot take place before <u>call</u>.</p>
+
+<p>&nbsp;</p>
+
+</body>
+
+</html>

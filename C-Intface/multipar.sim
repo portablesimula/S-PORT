@@ -1,0 +1,10 @@
+begin !*** test parameter reversal ***;
+      external C procedure many is
+      procedure many(i,j,k,l); value i,j,l; name k;
+      integer i,j,k,l; ;
+
+      integer i;
+      procedure callmany(x); name x; integer x;
+      begin many(1,i,x,7); end;
+
+end;

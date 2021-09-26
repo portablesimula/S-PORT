@@ -1,0 +1,112 @@
+class lib2;
+begin
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1989 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches: D                                    ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       -----------------------------------------------------------------
+
+      External Library Procedure OsStat="E@UUSTAT" is
+      Short Integer Procedure OsStat; ;
+      !*** Deliver current value of the status variable of the OS ***;
+
+
+      External Library Procedure Exit="E@UUEXIT" is
+      Procedure Exit(RetCode); short integer RetCode; ;
+      !*** Exit to OS,  set the return code to the parameter value ***;
+
+
+      External Simuletta Procedure System="E@UUCMND" is
+      Procedure System(cmd); text cmd; ;
+      !*** Perform cmd in a shell  ***;
+
+
+      External Simuletta Procedure OsIdent="E@UUOSID" is
+      Text Procedure OsIdent(val); !***value val; text val; ;
+      !*** Return a string identifying the OS, as a subtext of val ***;
+      !*** (or of a copy, if "value val;" is included above)       ***;
+
+
+      External Simuletta Procedure getenv="E@UUGENV" is
+      Text Procedure getenv(nam,val); !***value val; text nam,val; ;
+      !*** Return the environment string as a subtext of val       ***;
+      !*** (or of a copy, if "value val;" is included above)       ***;
+
+
+      External Simuletta Procedure getarg="E@UUGARG" is
+      Text Procedure getarg(n,val); !*** value val;
+           short integer n; text val;;
+      !*** Return the n'th parameter to program call as a subtext  ***;
+      !*** of val (or of a copy, if "value val;" is included above)***;
+
+      External Library Procedure getdrv="E@UUGDRV" is
+      Short Integer Procedure getdrv; ;
+      !*** Return a number identifying the current drive           ***;
+      !*** (or zero if OS is not DOS or OS/2)                      ***;
+
+
+      External Simuletta Procedure getdir="E@UUGDIR" is
+      Text Procedure getdir(drv,val); !*** value val;
+           short integer drv; text val; ;
+      !*** Return the name of the current directory as a subtext   ***;
+      !*** of val (or of a copy, if "value val;" is included above)***;
+      !*** Note: the drive number 'drv' is ignored by XENIX/UNIX   ***;
+
+
+%title ***  B a s i c    U t i l i e s  ***
+
+      External Library Procedure wNOT="E@UUBNOT" is
+      Short Integer Procedure wNOT(i); short integer i; ;
+      !*** Flip all bits of i (i.e. 0=>1 , 1=>0) ***;
+
+
+      External Library Procedure wAND="E@UUWAND" is
+      Short Integer Procedure wAND(i,j); short integer i,j; ;
+      !*** Bitwise AND between the parameters ***;
+
+
+      External Library Procedure wOR="E@UUWOR" is
+      Short Integer Procedure wOR(i,j); short integer i,j; ;
+      !*** Bitwise OR between the parameters ***;
+
+
+      External Library Procedure wXOR="E@UUWXOR" is
+      Short Integer Procedure wXOR(i,j); short integer i,j; ;
+      !*** Bitwise XOR between the parameters ***;
+
+
+--- External Library Procedure wSHL="E@UUWSHL" is
+--- Short Integer Procedure wSHL(i,j); short integer i,j; ;
+Visible Routine UUWSHL; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=wSHL(i,j) end;
+
+--- External Library Procedure dSHL="E@UUDSHL" is
+--- Short Integer Procedure dSHL(i,j); short integer i,j; ;
+
+--- External Library Procedure bSHR="E@UUBSHR" is
+--- Short Integer Procedure bSHR(i,j); short integer i,j; ;
+Visible Routine UUBSHR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=bSHR(i,j) end;
+
+--- External Library Procedure wSHR="E@UUWSHR" is
+--- Short Integer Procedure wSHR(i,j); short integer i,j; ;
+Visible Routine UUWSHR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=wSHR(i,j) end;
+
+--- External Library Procedure dSHR="E@UUDSHR" is
+--- Short Integer Procedure dSHR(i,j); short integer i,j; ;
+
+end;

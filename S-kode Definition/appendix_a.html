@@ -1,0 +1,726 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>Appendix A</title>
+</head>
+
+<body>
+
+<h2><strong>Appendix A</strong></h2>
+
+&nbsp;
+<p><u>The syntax of the S-code language</u></p>
+
+&nbsp;
+<p>	(For each production is given reference to its definition)</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	S-program                                                p. 13</p>
+
+<p>		::=	<u>program</u>  program_head:string</p>
+
+<p>                   program_body  <u>endprogram</u></p>
+
+&nbsp;
+<p>	program_body                                             p. 13</p>
+
+<p>		::=  interface_module</p>
+
+<p>		::=  macro_definition_module</p>
+
+<p>		::=  &lt;module_definition&gt;*</p>
+
+<p>		::=  <u>main</u>  &lt;local_quantity&gt;* &lt;program_element&gt;*</p>
+
+&nbsp;
+<p>	program_element                                          p. 13</p>
+
+<p>		::=  instruction</p>
+
+<p>		::=  label_declaration</p>
+
+<p>		::=  routine_profile          !   routine_definition</p>
+
+<p>		::=  skip_statement           !   if_statement</p>
+
+<p>		::=  protect_statement        !   insert_statement</p>
+
+<p>		::=  delete_statement</p>
+
+&nbsp;
+<p>	instruction                                              p. 13</p>
+
+<p>		::=  constant_declaration</p>
+
+<p>		::=  record_descriptor        !   routine_specification</p>
+
+<p>		::=  stack_instruction        !   assign_instruction</p>
+
+<p>		::=  addressing_instruction   !   protect_instruction</p>
+
+<p>		::=  temp_control             !   access_instruction</p>
+
+<p>		::=  arithmetic_instruction   !   convert_instruction</p>
+
+<p>		::=  jump_instruction         !   goto_instruction</p>
+
+<p>		::=  if_instruction           !   skip_instruction</p>
+
+<p>		::=  segment_instruction      !   call_instruction</p>
+
+<p>		::=  area_initialisation      !   eval_instruction</p>
+
+<p>		::=  info_setting             !   macro_call</p>
+
+<p>&nbsp;</p>
+<p>	simple_type                                              p. 15</p>
+
+<p>		::=  BOOL   !   CHAR</p>
+
+<p>		::=  INT    !   REAL   !   LREAL  !  SIZE</p>
+
+<p>		::=  OADDR  !   AADDR  !   GADDR  !  PADDR  !  RADDR</p>
+
+&nbsp;
+<p>	type                                                     p. 15</p>
+
+<p>		::=  structured_type      !  simple_type</p>
+
+&nbsp;
+<p>	resolved_type                                            p. 15</p>
+
+<p>		::=  resolved_structure   !  simple_type</p>
+
+<p>		::=  INT  <u>range</u>  lower:number  upper:number</p>
+
+<p>		::=  SINT</p>
+
+&nbsp;
+<p>	quantity_descriptor                                      p. 18</p>
+
+<p>		::=  resolved_type  &lt; <u>rep</u>  count:number &gt;?</p>
+
+&nbsp;
+<p>	record_descriptor                                        p. 19</p>
+
+<p>		::=  <u>record</u>  record_tag:newtag  &lt;record_info&gt;?</p>
+
+<p>		      &lt;prefix_part&gt;?  common_part</p>
+
+<p>		      &lt;alternate_part&gt;*  <u>endrecord</u></p>
+
+&nbsp;
+<p>	record_info                                              p. 19</p>
+
+<p>		::=  <u>info</u>  &quot;TYPE&quot;  !  <u>info</u>  &quot;DYNAMIC&quot;</p>
+
+&nbsp;
+<p>	prefix_part                                              p. 19</p>
+
+<p>		::=  <u>prefix</u>  resolved_structure</p>
+
+&nbsp;
+<p>	common_part                                              p. 19</p>
+
+<p>		::=  &lt;attribute_definition&gt;*</p>
+
+&nbsp;
+<p>	alternate_part                                           p. 19</p>
+
+<p>		::=  <u>alt</u>  &lt;attribute_definition&gt;*</p>
+
+<p>&nbsp;</p>
+<p>	attribute_definition                                     p. 19</p>
+
+<p>		::=  <u>attr</u>  attr:newtag  quantity_descriptor</p>
+
+&nbsp;
+<p>	resolved_structure                                       p. 19</p>
+
+<p>		::=  structured_type  &lt; <u>fixrep</u>  count:ordinal &gt;?</p>
+
+&nbsp;
+<p>	structured_type                                          p. 19</p>
+
+<p>		::=  record_tag:tag</p>
+
+&nbsp;
+<p>	value                                                    p. 23</p>
+
+<p>		::=  boolean_value            !   character_value</p>
+
+<p>		::=  integer_value            !   size_value</p>
+
+<p>		::=  real_value               !   longreal_value</p>
+
+<p>		::=  attribute_address        !   object_address</p>
+
+<p>		::=  general_address          !   program_address</p>
+
+<p>		::=  routine_address          !   record_value</p>
+
+&nbsp;
+<p>	repetition_value                                         p. 23</p>
+
+<p>		::=  &lt;boolean_value&gt;+</p>
+
+<p>		::=  &lt;character_value&gt;+       !   text_value</p>
+
+<p>		::=  &lt;integer_value&gt;+         !   &lt;size_value&gt;+</p>
+
+<p>		::=  &lt;real_value&gt;+            !   &lt;longreal_value&gt;+</p>
+
+<p>		::=  &lt;attribute_address&gt;+     !   &lt;object_address&gt;+</p>
+
+<p>		::=  &lt;general_address&gt;+       !   &lt;program_address&gt;+</p>
+
+<p>		::=  &lt;routine_address&gt;+       !   &lt;record_value&gt;+</p>
+
+&nbsp;
+<p>	text_value                                               p. 23</p>
+
+<p>		::= <u>text</u> long_string</p>
+
+&nbsp;
+<p>	boolean_value                                            p. 23</p>
+
+<p>		::=  <u>true</u>  !  <u>false</u></p>
+
+&nbsp;
+<p>	character_value                                          p. 23</p>
+
+<p>		::=  <u>c-char</u>  byte</p>
+
+<p>&nbsp;</p>
+<p>	integer_value                                            p. 23</p>
+
+<p>		::=  <u>c-int</u>  integer_literal:string</p>
+
+&nbsp;
+<p>	real_value                                               p. 23</p>
+
+<p>		::=  <u>c-real</u>  real_literal:string</p>
+
+&nbsp;
+<p>	longreal_value                                           p. 23</p>
+
+<p>		::=  <u>c-lreal</u>  real_literal:string</p>
+
+&nbsp;
+<p>	size_value                                               p. 24</p>
+
+<p>		::=  <u>c-size</u>  type   !   <u>nosize</u></p>
+
+&nbsp;
+<p>	attribute_address                                        p. 24</p>
+
+<p>		::=  &lt; <u>c-dot</u>  attribute:tag &gt;*  <u>c-aaddr</u>  attribute:tag</p>
+
+<p>		::=  <u>anone</u></p>
+
+&nbsp;
+<p>	object_address                                           p. 24</p>
+
+<p>		::=  <u>c-oaddr</u>  global_or_const:tag</p>
+
+<p>		::=  <u>onone</u></p>
+
+&nbsp;
+<p>	general_address                                          p. 24</p>
+
+<p>		::=  &lt; <u>c-dot</u>  attr:tag &gt;*  <u>c-gaddr</u>  global_or_const:tag</p>
+
+<p>		::=  <u>gnone</u></p>
+
+&nbsp;
+<p>	program_address                                          p. 25</p>
+
+<p>		::=  <u>c-paddr</u>  label:tag   !   <u>nowhere</u></p>
+
+&nbsp;
+<p>	routine_address                                          p. 25</p>
+
+<p>		::=  <u>c-raddr</u>  body:tag    !   <u>nobody</u></p>
+
+&nbsp;
+<p>	record_value                                             p. 26</p>
+
+<p>		::=  <u>c-record</u>  structured_type</p>
+
+<p>		      &lt;attribute_value&gt;+  <u>endrecord</u></p>
+
+&nbsp;
+<p>	attribute_value                                          p. 26</p>
+
+<p>		::=  <u>attr</u>  attribute:tag  type  repetition_value	 </p>
+
+<p>	constant_declaration                                     p. 27</p>
+
+<p>		::=  constant_specification  !  constant_definition</p>
+
+&nbsp;
+<p>	constant_specification                                   p. 27</p>
+
+<p>		::=  <u>constspec</u>  const:newtag  quantity_descriptor</p>
+
+&nbsp;
+<p>	constant_definition                                      p. 27</p>
+
+<p>		::=  <u>const</u>  const:spectag</p>
+
+<p>		       quantity_descriptor  repetition_value</p>
+
+&nbsp;
+<p>	stack_instruction                                        p. 28</p>
+
+<p>		::=  <u>push</u>   obj:tag   !  <u>pushv</u>  obj:tag</p>
+
+<p>		::=  <u>pushc</u>  value     !  <u>pushlen</u>  !  <u>dup</u>  !  <u>pop</u>  !  <u>empty</u></p>
+
+<p>		::=  <u>popall</u>  byte</p>
+
+&nbsp;
+<p>	assign_instruction                                       p. 28</p>
+
+<p>		::=  <u>assign</u>   !   <u>update</u>   !   <u>rupdate</u></p>
+
+&nbsp;
+<p>	addressing_instruction                                   p. 31</p>
+
+<p>		::=  <u>fetch</u>   !   <u>refer</u>  resolved_type   !   <u>deref</u></p>
+
+<p>		::=  <u>select</u>  attribute:tag  !  <u>selectv</u>  attribute:tag</p>
+
+<p>		::=  <u>remote</u>  attribute:tag  !  <u>remotev</u>  attribute:tag</p>
+
+<p>		::=  <u>index</u>   !   <u>indexv</u></p>
+
+<p>		::=  <u>inco</u>    !   <u>deco</u></p>
+
+<p>		::=  <u>dist</u>    !   <u>dsize</u>  structured_type   !   <u>locate</u></p>
+
+&nbsp;
+<p>	protect_statement                                        p. 37</p>
+
+<p>		::=  <u>save</u>  &lt;program_element&gt;*  <u>restore</u></p>
+
+&nbsp;
+<p>	temp_control                                             p. 37</p>
+
+<p>		::=  <u>t-inito</u>   !   <u>t-geto</u>   !   <u>t-seto</u></p>
+
+<p>&nbsp;</p>
+<p>	access_instruction                                       p. 41</p>
+
+<p>		::=  <u>setobj</u>    !   <u>getobj</u></p>
+
+<p>		::=  <u>access</u>   oindex:byte  attribute:tag</p>
+
+<p>		::=  <u>accessv</u>  oindex:byte  attribute:tag</p>
+
+&nbsp;
+<p>	arithmetic_instruction                                   p. 43</p>
+
+<p>		::=  <u>add</u>  !  <u>sub</u>  !  <u>mult</u>  !  <u>div</u>  !  <u>rem</u>  !  <u>neg</u></p>
+
+<p>		::=  <u>and</u>  !  <u>or</u>   !  <u>xor</u>   !  <u>imp</u>  !  <u>eqv</u>  !  <u>not</u></p>
+
+<p>		::=  <u>compare</u>  relation</p>
+
+&nbsp;
+<p>	relation                                                 p. 45</p>
+
+<p>		::=  <u>?lt</u>  !  <u>?le</u>  !  <u>?eq</u>   !  <u>?ge</u>  !  <u>?gt</u>  !  <u>?ne</u></p>
+
+&nbsp;
+<p>	convert_instruction                                      p. 46</p>
+
+<p>		::=   <u>convert</u>  simple_type</p>
+
+&nbsp;
+<p>	label_declaration                                        p. 48</p>
+
+<p>		::=  label_specification  !  label_definition</p>
+
+&nbsp;
+<p>	label_specification                                      p. 48</p>
+
+<p>		::=  <u>labelspec</u>  label:newtag</p>
+
+&nbsp;
+<p>	label_definition                                         p. 48</p>
+
+<p>		::=  <u>label</u>  label:spectag</p>
+
+&nbsp;
+<p>	goto_instruction                                         p. 48</p>
+
+<p>		::=  <u>goto</u></p>
+
+&nbsp;
+<p>	jump_instruction                                         p. 49</p>
+
+<p>		::=  forward_jump   !   forward_destination</p>
+
+<p>		::=  backward_jump  !   backward_destination</p>
+
+<p>&nbsp;</p>
+<p>	forward_jump                                             p. 49</p>
+
+<p>		::=  <u>switch</u>   switch:newtag  size:number</p>
+
+<p>		::=  <u>fjumpif</u>  relation  destination:newindex</p>
+
+<p>		::=  <u>fjump</u>    destination:newindex</p>
+
+&nbsp;
+<p>	forward_destination                                      p. 49</p>
+
+<p>		::=  <u>sdest</u>    switch:tag  which:number</p>
+
+<p>		::=  <u>fdest</u>    destination:index</p>
+
+&nbsp;
+<p>	backward_jump                                           p. 49</p>
+
+<p>		::=  <u>bjump</u>    destination:index</p>
+
+<p>		::=  <u>bjumpif</u>  relation  destination:index</p>
+
+&nbsp;
+<p>	backward_destination                                     p. 49</p>
+
+<p>		::=  <u>bdest</u>    destination:newindex</p>
+
+&nbsp;
+<p>	skip_statement                                           p. 52</p>
+
+<p>		::=  <u>skipif</u>  relation  &lt;program_element&gt;*  <u>endskip</u></p>
+
+&nbsp;
+<p>	skip_instruction                                         p. 52</p>
+
+<p>		::=  <u>skipif</u>  relation  &lt;instruction&gt;*  <u>endskip</u></p>
+
+&nbsp;
+<p>	if_statement                                             p. 53</p>
+
+<p>		::=  <u>if</u>  relation  &lt;program_element&gt;*  else_part</p>
+
+&nbsp;
+<p>	else_part                                                p. 53</p>
+
+<p>		::=  <u>else</u>  &lt;program_element&gt;*  <u>endif</u></p>
+
+<p>		::=  <u>endif</u></p>
+
+&nbsp;
+<p>	if_instruction                                           p. 53</p>
+
+<p>		::=  <u>if</u>  relation  &lt;instruction&gt;*  i_else_part</p>
+
+&nbsp;
+<p>	i_else_part                                              p. 53</p>
+
+<p>		::=  <u>else</u>  &lt;instruction&gt;*  <u>endif</u></p>
+
+<p>		::=  <u>endif</u></p>
+
+<p>&nbsp;</p>
+<p>	segment_instruction                                      p. 55</p>
+
+<p>		::=  <u>bseg</u>  &lt;program_element&gt;*  <u>eseg</u></p>
+
+&nbsp;
+<p>	routine_profile                                          p. 58</p>
+
+<p>		::=  <u>profile</u>  profile:newtag  &lt;peculiar&gt;?</p>
+
+<p>		      &lt;import_definition&gt;*   &lt;export_or_exit&gt;?</p>
+
+<p>		     <u>endprofile</u></p>
+
+&nbsp;
+<p>	 peculiar                                                 p. 58</p>
+
+<p>		::=  <u>known</u>      body:newtag  kid:string</p>
+
+<p>		::=  <u>system</u>     body:newtag  sid:string</p>
+
+<p>		::=  <u>external</u>   body:newtag  nature:string  xid:string</p>
+
+<p>		::=  <u>interface</u>  pid:string</p>
+
+&nbsp;
+<p>	import_definition                                        p. 58</p>
+
+<p>		::=  <u>import</u>   parm:newtag  quantity_descriptor</p>
+
+&nbsp;
+<p>	export_or_exit                                           p. 58</p>
+
+<p>		::=  <u>export</u>   parm:newtag  export_type</p>
+
+<p>		::=  <u>exit</u>     return:newtag</p>
+
+&nbsp;
+<p>	export_type                                              p. 58</p>
+
+<p>		::=  resolved_type   !   <u>range</u></p>
+
+&nbsp;
+<p>	routine_specification                                    p. 61</p>
+
+<p>		::=  <u>routinespec</u>   body:newtag  profile:tag</p>
+
+&nbsp;
+<p>	routine_definition                                       p. 61</p>
+
+<p>		::=  <u>routine</u>  body:spectag  profile:tag</p>
+
+<p>		      &lt;local_quantity&gt;*  &lt;instruction&gt;*</p>
+
+<p>		     <u>endroutine</u></p>
+
+&nbsp;
+<p>	local_quantity                                           p. 61</p>
+
+<p>		::=  <u>local</u>  var:newtag  quantity_descriptor</p>
+
+<p>&nbsp;</p>
+<p>	call_instruction                                         p. 63</p>
+
+<p>		::=  connect_profile  &lt;parameter eval&gt;*</p>
+
+<p>		       connect_routine</p>
+
+&nbsp;
+<p>	connect_profile                                          p. 63</p>
+
+<p>		::=  <u>precall</u>  profile:tag</p>
+
+<p>		::=  <u>asscall</u>  profile:tag</p>
+
+<p>		::=  <u>repcall</u>  n:byte  profile:tag</p>
+
+&nbsp;
+<p>	 connect_routine                                          p. 63</p>
+
+<p>		::=  <u>call</u>  body:tag   !   &lt;instruction&gt;+  <u>call-tos</u></p>
+
+&nbsp;
+<p>	parameter eval                                           p. 63</p>
+
+<p>		::=  &lt;instruction&gt;+  <u>asspar</u></p>
+
+<p>		::=  &lt;instruction&gt;+  <u>assrep</u>  n:byte</p>
+
+&nbsp;
+<p>	module_definition                                        p. 67</p>
+
+<p>		::=  <u>module</u>  module_id:string  check_code:string</p>
+
+<p>		       visible_existing</p>
+
+<p>		     <u>body</u>  &lt;local_quantity&gt;* &lt;program_element&gt;* <u>endmodule</u></p>
+
+&nbsp;
+<p>	visible_existing</p>
+
+<p>		::=  &lt;visible&gt;* tag_list    !   <u>existing</u></p>
+
+&nbsp;
+<p>	visible                                                  p. 67</p>
+
+<p>		::=  record_descriptor      !   routine_profile</p>
+
+<p>		::=  routine_specification  !   label_specification</p>
+
+<p>		::=  constant_specification !   insert_statement</p>
+
+<p>		::=  info_setting</p>
+
+&nbsp;
+<p>	tag_list                                                 p. 67</p>
+
+<p>		::=  &lt; <u>tag</u>  internal:tag  external:number &gt;+</p>
+
+&nbsp;
+<p>	interface_module                                         p. 68</p>
+
+<p>		::=  <u>global</u> <u>module</u>  module_id:string  checkcode:string</p>
+
+<p>		      &lt;global interface&gt;*  tag_list</p>
+
+<p>		     <u>body</u> &lt; <u>init</u> global:tag type repetition_value &gt;*</p>
+
+<p>		     <u>endmodule</u></p>
+
+&nbsp;
+<p>	global_interface                                         p. 68</p>
+
+<p>		::=  record_descriptor</p>
+
+<p>		::=  constant_definition  &lt; <u>system</u>  sid:string &gt;?</p>
+
+<p>		::=  global_definition    &lt; <u>system</u>  sid:string &gt;?</p>
+
+<p>		::=  routine_profile</p>
+
+<p>		::=  info_setting</p>
+
+&nbsp;
+<p>	global_definition                                        p. 68</p>
+
+<p>		::=  <u>global</u>  internal:newtag  quantity_descriptor</p>
+
+&nbsp;
+<p>	macro_definition_module                                  p. 70</p>
+
+<p>		::=  <u>macro</u>  <u>module</u>  module_id:string  checkcode:string</p>
+
+<p>		      &lt;macro_definition&gt;*  <u>endmodule</u></p>
+
+&nbsp;
+<p>	macro_definition                                         p. 71</p>
+
+<p>		::=  <u>macro</u>  macro_name:byte  macro_parcount:byte</p>
+
+<p>		       <u>known</u>  macro_id:string</p>
+
+<p>		      &lt;macro_body_element&gt;*</p>
+
+<p>		     <u>endmacro</u></p>
+
+&nbsp;
+<p>	macro_body_element                                       p. 71</p>
+
+<p>		::=  <u>mark</u>  macro_sequence:string</p>
+
+<p>		::=  <u>mpar</u>  macro_parnumber:byte</p>
+
+&nbsp;
+<p>	macro_call                                               p. 71</p>
+
+<p>		::=  <u>mcall</u>  macro_name:byte  &lt;actual_parameter:string&gt;*</p>
+
+&nbsp;
+<p>	insert_statement                                         p. 72</p>
+
+<p>		::=  <u>insert</u>  module_id:string  check_code:string</p>
+
+<p>		       external_id:string  tagbase:newtag</p>
+
+<p>		       taglimit:newtag</p>
+
+<p>		::=  <u>sysinsert</u>  module_id:string  check_code:string</p>
+
+<p>		       external_id:string  tagbase:newtag</p>
+
+<p>		       taglimit:newtag</p>
+
+&nbsp;
+<p>	area_initialisation                                      p. 73</p>
+
+<p>		::=  <u>zeroarea</u></p>
+
+<p>		::=  <u>initarea</u>   resolved_type</p>
+
+<p>		::=  <u>dinitarea</u>  structured_type</p>
+
+&nbsp;
+<p>	eval_instruction                                         p. 75</p>
+
+<p>		::=  <u>eval</u></p>
+
+&nbsp;
+<p>	 delete_statement                                         p. 75</p>
+
+<p>		::=  <u>delete</u>  from:tag</p>
+
+&nbsp;
+<p>	info_setting                                             p. 76</p>
+
+<p>		::=  <u>info</u>  string</p>
+
+<p>		::=  <u>decl</u>  line:number</p>
+
+<p>		::=  <u>line</u>  line:number</p>
+
+<p>		::=  <u>stmt</u>  line:number</p>
+
+<p>		::=  <u>setswitch</u>  switch:byte  setting:byte</p>
+
+&nbsp;
+<p>	byte</p>
+
+<p>		::=  an (8-bit) unsigned integer value in the range 0..255.</p>
+
+&nbsp;
+<p>	number</p>
+
+<p>		::=	a two-byte value greater than or equal to zero. A number (or any
+other multi-byte structure) will always be transmitted with the most
+significant byte first. Let the bytes be &lt;B1&gt;&lt;B2&gt; in that sequence; the
+value will be 256 * B1 + B2 .</p>
+
+&nbsp;
+<p>	ordinal</p>
+
+<p>		::=	a number with value greater than zero.</p>
+
+&nbsp;
+<p>	tag</p>
+
+<p>		::=	An ordinal (the &quot;tag-value&quot;) associated with a descriptor. See section
+2.4.</p>
+
+<p>		::=	The number zero followed by an ordinal (the &quot;tag value&quot;) and an
+identifying string. This second form is intended for debugging purposes, and is used to associate an identification to the tag.</p>
+
+&nbsp;
+<p>	newtag</p>
+
+<p>		::=	A tag-value with no association, see section 2.4.</p>
+
+&nbsp;
+<p>	spectag</p>
+
+<p>		::=	a tag-value which, if not undefined, must have been given an
+association in a specification (<u>labelspec</u>, <u>constspec</u>, <u>routinespec</u>), see
+section 2.4.</p>
+
+&nbsp;
+<p>	index</p>
+
+<p>		::=	a byte within an implementation-defined range which identifies an
+internal label. An important side effect of its occurrence is that it
+looses its meaning. Thus an internal label can be the destination of
+exactly one jump-instruction. See section 11.2.</p>
+
+&nbsp;
+<p>	newindex</p>
+
+<p>		::=	an index-byte which is undefined; it becomes defined as an internal
+label through its occurrence. See section 11.2.</p>
+
+&nbsp;
+<p>	string</p>
+
+<p>		::=	a byte with the value N followed by N &quot;data bytes&quot;. The character
+count N must be greater than zero, thus a string cannot be empty
+(neither can a long_string, q.v.).</p>
+
+&nbsp;
+<p>	long_string</p>
+
+<p>		::=	an ordinal with the value N followed by N &quot;data bytes&quot;.</p>
+
+&nbsp;
+
+</body>
+
+</html>

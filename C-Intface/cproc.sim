@@ -1,0 +1,30 @@
+begin external C procedure cp is
+      procedure cp(p); name p; procedure p; ;
+
+      procedure print(t); text t;
+      begin
+            outtext(t);
+            outimage;
+      end;
+
+      procedure p1;
+            print("in P1") ;
+
+      class x;
+      virtual: procedure p;
+      begin procedure p;
+               print("in X");
+      end;
+
+      x class y;
+      begin procedure p;
+               print("in Y");
+      end;
+
+      ref(x) xref,yref;
+      xref:-new x; yref:-new y;
+
+      print("line 27"); cp(p1);
+      print("line 28"); cp(xref.p);
+      print("line 29"); cp(yref.p);
+end;

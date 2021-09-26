@@ -1,0 +1,9 @@
+set -kv
+zim109.x32 <<endc
+set opt M
+set sys sport
+set sk1trc 221001
+set sk1lin 1
+com multipar.sim
+exit
+endc

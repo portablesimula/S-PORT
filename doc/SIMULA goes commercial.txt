@@ -1,0 +1,47 @@
+_SIMULA goes commercial_.             (pj)asu-info:as
+
+For almost twenty years, the Norwegian Computing Center has been involved
+in the construction and distribution of implementations of SIMULA 67. The
+marketing of NCC's systems has during the last ten years been carried out
+mainly by NCC. Especially since the introduction of the Portable SIMULA
+System (S-PORT) these activities have become a significant part of NCC
+activities, and at the same time the character of the work done has shifted
+from Research and Development to software production on a normal industrial
+basis.
+
+It is felt that the SIMULA work now being done does not really fit in with
+NCC's general purpose as a research institution within the framework of the
+Norwegian Research Council. Furthermore, the NCC infra structure does not
+provide for the kind of professional marketing and support necessary to
+further the spread of SIMULA.
+
+Thus, a new company "simula a.s." has
+been established with the specific aim to market, support, and further
+develop the SIMULA systems. This company will start full-scale operations
+on January the first, 1985, at which point it will take over all NCC
+commitments regarding SIMULA. The company is formed by four NCC employees,
+who have been full-time involved in the SIMULA work for several years, and
+by one "outsider" who will provide the business accumen. NCC will provide
+support of various forms for the company during the initial phase, and the
+new company will work in close cooperation with NCC.
+
+The company will for the time being be located on NCC's premises.
+
+
+_Details of "simula a.s."_.
+
+
+
+The company was founded on the 14th of June 1984 by Peter Jensen, \ystein
+Myhre, Eileen Schreiner, and Gunnar Syrrist from the NCC, together with
+Terje N{ss of the Norwegian National Institute of Technology.
+
+In addition to the share holders, the board includes the company's lawyer
+Christian Sandaker, of the firm "Str|m and Sandaker" (Oslo). Peter Jensen
+is chairman of the board.
+
+We are convinced that the SIMULA community will profit from this
+establishment. In addition to give more attention to marketing and support,
+the "industrialisation" will open possibilities that are closed to NCC, for
+further development of SIMULA and the S-PORT system.
+

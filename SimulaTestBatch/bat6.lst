@@ -1,0 +1,100 @@
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst60.sim
+SIM: load
+simtst60 loaded
+SIM: simtst60 /w1
+--- START Simula a.s. TEST 60
+--- Test visibility of protected attributes.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 60
+SIM: compile src/simtst61.sim
+SIM: load
+simtst61 loaded
+SIM: simtst61 /w1
+--- START Simula a.s. TEST 61
+--- Test remote access to attributes which are protected.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 61
+SIM: compile src/simtst62.sim
+SIM: load
+simtst62 loaded
+SIM: simtst62 /w1
+--- START Simula a.s. TEST 62
+--- Test complex use of detach and resume.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 62
+SIM: compile src/simtst63.sim
+SIM: load
+simtst63 loaded
+SIM: simtst63 /w1
+--- START Simula a.s. TEST 63
+--- Test transmission by name of reference types.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 63
+SIM: compile src/simtst64.sim
+SIM: load
+simtst64 loaded
+SIM: simtst64 /w1
+--- START Simula a.s. TEST 64
+--- Test parameter transmission by value to classes.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 64
+SIM: compile src/simtst65.sim
+SIM: load
+simtst65 loaded
+SIM: simtst65 /w1
+--- START Simula a.s. TEST 65
+--- Test parameter transmission by reference to classes.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 65
+SIM: compile src/simtst66.sim
+SIM: load
+simtst66 loaded
+SIM: simtst66 /w1
+--- START Simula a.s. TEST 66
+--- Test corutines and two instances of infile which read
+--- from the same file ("any66") simultanously.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 66
+SIM: compile src/simtst67.sim
+SIM: load
+simtst67 loaded
+SIM: simtst67 /w1
+--- START Simula a.s. TEST 67
+--- Simple test of detach, call and resume.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 67
+SIM: compile src/simtst68.sim
+SIM: load
+simtst68 loaded
+SIM: simtst68 /w1
+--- START Simula a.s. TEST 68
+--- Test coroutines.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 68
+SIM: compile src/simtst69.sim
+SIM: load
+simtst69 loaded
+SIM: simtst69 /w1
+--- START Simula a.s. TEST 69
+--- Test complex use of detach, call and resume.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 69
+SIM: exit
+EXIT  SIMULA

@@ -1,0 +1,221 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>9</title>
+</head>
+
+<body>
+
+<h2>9.  <strong>ARITHMETICAL AND BOOLEAN INSTRUCTIONS</strong></h2>
+
+&nbsp;
+<p>	arithmetic_instruction</p>
+
+<p>		::=  <u>add</u>  !  <u>sub</u>  !  <u>mult</u>  !  <u>div</u>  !  <u>rem</u>  !  <u>neg</u></p>
+
+<p>		::=	<u>and</u>  !  <u>or</u>   !  <u>xor</u>   !  <u>imp</u>  !  <u>eqv</u>  !  <u>not</u></p>
+
+<p>		::=	<u>compare</u>  relation</p>
+
+<br WP="BR1"><br WP="BR2">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>add</u>, <u>sub</u>, <u>mult</u>, <u>div</u>  (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value; check TOS type(INT,REAL,LREAL);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force SOS value; check SOS type(INT,REAL,LREAL);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check types equal;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;  pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, type, &quot;value(<u>SOS</u>) op value(<u>TOS</u>)&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	SOS and TOS are replaced by a description of the value of the application of the
+operator. The type of the result is the same as the type of the operands. SOS is
+always the <u>left</u> operand, i.e. SOS op TOS. All arithmetic on subranges of INT
+should be performed in full integer arithmetic.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>rem</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	Remainder, defined as &quot;SOS - (SOS//TOS)*TOS&quot;. Syntax and semantics as for
+<u>mult</u> except that INT is the only legal type.</p>
+
+<p>	Note that SIMULA demands &quot;truncation towards zero&quot; for integer division. Thus
+(except for a zero remainder) the result of <u>rem</u> has the same sign as the result of
+the division. In more formal terms:</p>
+
+      <blockquote>
+<p>		i <u>div</u> j  =  sign(i/j) * entier(abs(i/j))</p>
+
+<p>		i <u>rem</u> j  =  i - (i <u>div</u> j) * j</p>
+
+      </blockquote>
+<p>	where '/' represents the exact mathematical division within the space of real
+numbers.</p>
+
+    </td>
+  </tr>
+</table>
+<p><br WP="BR2">
+<br WP="BR2">
+<br WP="BR1"><br WP="BR2">
+</p>
+<p><u>neg</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p> *	force TOS value;  check TOS type(INT,REAL,LREAL);</p>
+
+<p> *	value(TOS)  :=  - value(TOS);</p>
+
+<br WP="BR1">	TOS is replaced by a description of the TOS value with its sign inverted.
+<p>&nbsp;
+<p>Note:	Arithmetic operations can result in an interrupt situation at run time. Handling of
+such situations are treated in more detail in the document &quot;The Environment
+Interface&quot; (4).</p>
+
+&nbsp;
+<p><u>and</u>, <u>or</u>, <u>xor</u>, <u>imp</u>, <u>eqv</u>  (dyadic)</p>
+
+<br WP="BR1"><br WP="BR2">
+<p> *	force TOS value;  check TOS type(BOOL);</p>
+
+<p> *	force SOS value;  check SOS type(BOOL);</p>
+
+<p> *	pop;  pop;</p>
+
+<p> *	push( VAL, BOOL, &quot;value(<u>SOS</u>) op value(<u>TOS</u>)&quot; );</p>
+
+<br WP="BR1">
+<p>	TOS and SOS are replaced by a description of the result of applying the operator.
+Note that SOS is the left operand.</p>
+
+&nbsp;
+<p>	(<u>xor</u>: exclusive or, <u>imp</u>: implies, <u>eqv</u>: equivalence)</p>
+
+<br WP="BR2">
+<p><u>not</u></p>
+
+&nbsp;
+<p> *	force TOS value;  check TOS type(BOOL);</p>
+
+<p> *	value(TOS)  :=  not value(<u>TOS</u>);</p>
+
+&nbsp;
+<p>	TOS is replaced by a description of the negated TOS value.</p>
+
+<br WP="BR1">
+<p><u>compare</u>  relation   (dyadic)</p>
+
+&nbsp;
+<p> *	force TOS value;  force SOS value;</p>
+
+<p> *	check relation;</p>
+
+<p> *	pop;   pop;</p>
+
+<p> *	push( VAL, BOOL, &quot;value(<u>SOS</u>) rel value(<u>TOS</u>)&quot; );</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	TOS and SOS replaced by a description of the boolean result of evaluating the
+relation. SOS is always the left operand, i.e. SOS rel TOS. Valid type-relation
+combinations are given in the table below.</p>
+
+<p>&nbsp;</p>
+<p> relation</p>
+
+<p>			::=	<u>?lt</u>  !  <u>?le</u>  !  <u>?eq</u>  !  <u>?ge</u>  !  <u>?gt</u>  !  <u>?ne</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>				<u>?lt</u>	   <u>?le</u>	 <u>?eq</u>	    <u>?ge</u>	  <u>?gt</u>	<u>?ne</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>		BOOL					   +					  +</p>
+
+<p>		CHAR		  +		+	   +		 +	    +	  +</p>
+
+<p>		INT		  +		+	   +		 +	    +	  +</p>
+
+<p>		REAL		  +		+	   +		 +	    +	  +</p>
+
+<p>		LREAL	  +		+	   +		 +	    +	  +</p>
+
+<p>		SIZE		  +		+	   +		 +	    +	  +</p>
+
+<p>		AADDR				   +					  +</p>
+
+<p>		OADDR	  +		+	   +		 +	    +	  +</p>
+
+<p>		GADDR				   +					  +</p>
+
+<p>		PADDR				   +					  +</p>
+
+<p>		RADDR				   +					  +</p>
+
+<p>		resolved_structure		   +					  +</p>
+
+<br WP="BR1">
+<p><center><u>Table of legal relational operations</u></center>
+</p>
+
+<p><center>(+ marks valid relation for the designated type)</center>
+</p>
+
+<br WP="BR1">
+<p>SOS and TOS must be of the same resolved type (i.e. of the same type, possibly resolved
+with the same fixref-count), otherwise: error.</p>
+
+<p>SOS is compared with TOS (i.e. SOS rel TOS), yielding a boolean value. TOS and SOS
+are then popped off the stack. In case a relation occurs in a <u>compare</u> statement, a
+descriptor of the boolean value is pushed, in <u>if</u> and <u>skipif</u> statements the value is
+incorporated in the conditional branch sequences generated.</p>
+
+<p>Comparison between character values is done according to the ISO 646/2022 code (i.e.
+the corresponding integer values are compared).</p>
+
+<p>Remark:	ISO 646 is the 7-bit code, 2022 is the (full) 8-bit code. 2022 does not,
+however, define the actual encoding but just refers to 646 for the subset
+corresponding to the most significant bit being 0; the remainder is then
+defined through structural equivalence. It is necessary to conform to 2022,
+since CHAR is defined to ba 8 bits.</p>
+
+<p>Assuming an integer representation of SIZE values, comparison is performed by
+comparing the numerical values of this representation. OADDR values are compared by
+comparing the corresponding machine addresses (regarded as ordinal numbers).</p>
+
+<p>Comparison between quantities of structured types is performed component by
+component.</p>
+
+&nbsp;
+
+</body>
+
+</html>

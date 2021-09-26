@@ -1,0 +1,20 @@
+%   select N:  text by name
+%   select V:  text by value
+begin text param1,param2;
+external C procedure outstring is procedure outstring(t);
+%+N        name t;
+%+V        value t;
+           text t; ;
+
+    outtext("C-start"); outimage;
+%+V param1:- "Hello VALUE world";
+%+V param2:- param1.sub(7,5);
+
+%-V param1:- copy("Hello NAME world!0!");
+%-V param2:- param1.sub(7,4);
+
+    outstring(param1);
+    outstring(param2);
+%-NV outstring("Hello DEFAULT world!0!");
+    outtext("C-END"); outimage;
+end

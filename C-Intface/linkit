@@ -1,0 +1,7 @@
+SCO386:ld -Me -i -m testtext.map -o testtext \
+   /lib/386/Sseg.o /lib/386/Scrt0.o \
+   testtext.obj \
+   xout.obj text.o \
+  /usr/sim/lib/zy7109rt.a /usr/sim/lib/zy7109ei.a \
+   /lib/386/Slibx.a /lib/386/Slibc.a
+echo testtext loaded

@@ -1,0 +1,185 @@
+rm: direct85 non-existent
+rm: sx* non-existent
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst80.sim
+SIM: load
+simtst80 loaded
+SIM: simtst80 /w1
+--- START Simula a.s. TEST 80
+--- Test the attribute 'IsOpen' of class file (uses infile "any8089").
+
+--- END Simula a.s. TEST 80 (NO ERRORS FOUND)
+SIM: compile src/simtst81.sim
+SIM: load
+simtst81 loaded
+SIM: simtst81 /w1
+--- START Simula a.s. TEST 81 (Test 'open' and 'close')
+    file "any8189" is opened as infile and inbytefile
+    file "sxcvz1" is opened as outfile, printfile and outbytefile
+    file "sxcvz2" is opened as directfile
+    file "sxcvz3" is opened as directbytefile
+--- END Simula a.s. TEST 81 (no errors found)
+SIM: compile src/simtst82.sim
+SIM: load
+simtst82 loaded
+SIM: simtst82 /w1
+--- START Simula a.s. TEST 82
+--- Do a simple test of the operations +, -, *, / and //.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 82
+SIM: compile src/simtst83.sim
+SIM: load
+simtst83 loaded
+SIM: simtst83 /w1
+--- START Simula a.s. TEST 83
+--- Test type procedures as attributes to class, and dot access.
+
+
+Romeo was born in 1910. The parents were unknown.
+
+Juliet was born in 1930. The parents were unknown.
+
+Donald was born in 1930. The parents were unknown.
+
+Daisy was born in 1935. The parents were unknown.
+
+In 1955 Romeo marries Juliet and Daisy marries Donald.
+
+Lucy was born in 1956. The parents were Donald and Daisy.
+
+Linus was born in 1957. The parents were Donald and Daisy.
+
+Charlie was born in 1960. The parents were Donald and Daisy.
+
+Snoopy was born in 1962. The parents were Donald and Daisy.
+
+Scroeder was born in 1956. The parents were Romeo and Juliet.
+
+In 1980 Lucy marries Scroeder (and his piano).
+
+Wolfgang was born in 1981. The parents were Scroeder and Lucy.
+
+In 1982 Romeo and Juliet are killed in a car accident.
+
+**** IT IS NOW 1983 AND THE FAMILY SITUATION IS AS FOLLOWS : ****
+
+                                        !**** NUMBER OF ****! YOUNGEST
+NAME     FATHER   MOTHER   BORN DEAD AGE!SIBL BROT SIST CHIL! CHILD    FIRSTBORN
+Donald   UNKNOWN  UNKNOWN  1930   no  53    0    0    0    4  Snoopy   Lucy
+Daisy    UNKNOWN  UNKNOWN  1935   no  48    0    0    0    4  Snoopy   Lucy
+Lucy     Donald   Daisy    1956   no  27    3    3    0    1  Wolfgang Wolfgang
+Linus    Donald   Daisy    1957   no  26    3    2    1    0
+Charlie  Donald   Daisy    1960   no  23    3    2    1    0
+Snoopy   Donald   Daisy    1962   no  21    3    2    1    0
+Romeo    UNKNOWN  UNKNOWN  1910 1982  72    0    0    0    1  Scroeder Scroeder
+Juliet   UNKNOWN  UNKNOWN  1930 1982  52    0    0    0    1  Scroeder Scroeder
+Scroeder Romeo    Juliet   1956   no  27    0    0    0    1  Wolfgang Wolfgang
+Wolfgang Scroeder Lucy     1981   no   2    0    0    0    0
+
+--- end Simula a.s. TEST 83
+SIM: compile src/simtst84.sim
+SIM: load
+simtst84 loaded
+SIM: simtst84 /w1
+--- START Simula a.s. TEST 84 (test PRINTFILE)
+    The program prints on "new printfile(print84)",
+    compare that output to program source after exec.
+    In addition, "OK" is printed 5 times on sysout.
+
+OK
+OK
+OK
+OK
+OK
+
+--- END Simula a.s. TEST 84
+SIM: compile src/simtst85.sim
+SIM: load
+simtst85 loaded
+SIM: simtst85 /w1
+--- START Simula a.s. TEST 85 (test DIRECTFILE)
+    - does 'new directfile("direct85")'.open(blanks(12)
+
+--- END Simula a.s. TEST 85 (NO ERRORS FOUND)
+SIM: compile src/simtst86.sim
+SIM: load
+simtst86 loaded
+SIM: simtst86 <sysin86 /w1
+--- START Simula a.s. TEST 86
+    The program must get input on SYSIN. Compare output with input!!!
+
+  I : INTEGER
+  R : REAL with 2,5,10,15 20 and 25 decimals
+  D : REAL with choice of decimals and field
+  H : This menu
+  E : Exit
+Command :
+  I : INTEGER
+  R : REAL with 2,5,10,15 20 and 25 decimals
+  D : REAL with choice of decimals and field
+  H : This menu
+  E : Exit
+Command :
+Give INTEGER number:
+           5
+Command :
+Give REAL number:
+                FIX :                          REAL :
+                              12.40                           1.2&+001
+                           12.40000                        1.2400&+001
+                      12.4000000000                   1.240000000&+001
+                 12.400000000000000              1.24000000000000&+001
+            12.40000000000000000000         1.2400000000000000000&+001
+       12.4000000000000000000000000    1.240000000000000000000000&+001
+Command :
+Give parameter nr 2 of OUTREAL/OUTFIX :
+Give length of field :
+Give REAL number:
+           1.750000000000       1.75000000000&+000
+Command :
+
+--- END Simula a.s. TEST 86
+SIM: compile src/simtst87.sim
+SIM: load
+simtst87 loaded
+SIM: simtst87 /w1
+--- START Simula a.s. TEST 87
+--- Test Simulation, simple example
+
+Konfiguration medel  total
+ grund         384.6  1220.8
+ alternativ    157.5   975.3
+
+--- END Simula a.s. TEST 87
+SIM: CC
+SIM: CC    result should be
+SIM: CC     384.6   1220.8
+SIM: CC     158.4    975.3
+SIM: CC
+SIM: compile src/simtst88.sim
+SIM: load
+simtst88 loaded
+SIM: simtst88 <sysin88 /w1
+--- START Simula a.s. TEST 88
+--- input from SYSIN, no more than 5 chars.
+ ('!' terminates the program)
+     sdf  1    2    3 4 612
+1    23   45   qw   er   tyu
+uytr d
+--- END Simula a.s. TEST 88
+SIM: compile src/simtst89.sim
+SIM: load
+simtst89 loaded
+SIM: simtst89 <sysin89 /w1
+--- START Simula a.s. TEST 89
+Input file: Output file: --- END Simula a.s. TEST 89 (NO ERRORS FOUND)
+SIM: exit
+EXIT  SIMULA
+rm: direct85 non-existent

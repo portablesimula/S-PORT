@@ -1,0 +1,11 @@
+set -kv
+zim109.x32 <<endc
+set opt M
+set sys sport
+CC set ver 1
+set select :Z
+set sk1lin 1
+set sk1trc 1
+com b.sim
+ex
+endc

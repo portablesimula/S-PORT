@@ -1,0 +1,798 @@
+begin
+
+class word(cont);  value cont;
+      text cont;
+begin ref(Qelement) qelt;    ! the "owner" of this word;
+      short integer pos;     ! start position on line;
+      ref(word) next;
+
+%+P   prior 
+      ref(word) procedure prev;
+      begin ref(word) tmp;  tmp:-qelt.first;
+            if this word==tmp
+            then prev:- if qelt.prev.next==none !*** qelt==Qfirst ***;
+                        then this word else qelt.prev.last
+            else begin
+                 while tmp.next=/=this word do tmp:-tmp.next;
+                 prev:-tmp
+            end
+      end;
+
+%+D   procedure dump(t); text t;
+%+D   begin outtext(t); setpos(15); outtext(cont); setpos(30);
+%+D         outtext(", line: "); outint(qelt.line,5);
+%+D         outtext(", pos: "); outint(pos,3); outimage;
+%+D   end;
+
+end word;
+
+ref(word) FreeList;          ! to postpone GC, some words are collected here;
+
+class Qelement(prev);
+       ref(Qelement) prev;
+BEGIN
+       text im;              ! subtext of corresponding file image;
+       integer line;         ! file sequence number for image in im;
+       ref(word)first,last;  ! first and last word of line;
+       ref(Qelement) next;   ! chaining the queue;
+
+%+D    procedure dump;   begin outtext(im); outimage end;
+
+       if prev=/=none then  prev.next:-this Qelement;
+
+END  ******  Qelement  ******;
+
+class TooLong(line); integer line; begin ref(TooLong) next; end;
+
+%+D procedure bufdump; 
+%+D begin file1.dumpQ; file2.dumpQ end;
+%TITLE   ***************   L I N E F I L E   ******************
+%
+%      Describes an infile as a buffered file, with buffer size Qmax
+%      Each buffer element containes an image and its corresponding
+%      sequence number. Access to an image is restricted to its first
+%      signific characters
+%
+%      Due to a compiler error, infile cannot be used as prefix.
+%
+% ********************************************************************
+
+class LineFile(filename,Qmax,FileId);
+
+   text filename,fileid;
+   short integer Qmax;         ! current buffer size                  ;
+BEGIN
+   short integer comstart;     ! first pos of image to be compared    ;
+   short integer maxpos;       ! constant = comstart+signific         ;
+   ref(infile) fil;            ! input file connected to this L.File  ;
+   text image;                 ! current line (if inPhase)            ;
+   ref(Qelement) Qfirst, Qlast, Qpt;!file buffer start, end, curr. elt;
+   text array Window(0:Wmax);  ! - for reporting mismatch             ;
+   text array Textfield(0:Wmax);
+   text array Linefield(0:Wmax);
+   short integer array Lpos(0:Wmax);
+   short integer wline;
+   integer linesread;          ! image counter on file                ;
+   short integer imagesize;
+   boolean inFile1;            ! true for file1                       ;
+   ref(word) curword,FM;       ! work variables during mismatch       ;
+   ref(word) dummyfirst;       ! dummy during readimage (constant)    ;
+   boolean LastComplete;  ! OWN: false if previous record was incompl.;
+   text punctbuf;              ! collect punctuations (w/format skip) ;
+   integer prevlnr;            ! OWN variable during print            ;
+   ref(TooLong) firstlong, lastlong;!accumulate "too long line" descr.;
+   ref(Qelement) QT;
+
+%+D  procedure dumpQ;
+%+D  begin ref(Qelement) qelt;
+%+D        for qelt:-Qfirst, qelt.next while qelt=/=none do qelt.dump;
+%+D  end;
+
+%+P  prior
+     procedure fillQ;
+     if Qpt=/=Qfirst then begin ! read from Qfirst to (but excl.) Qpt ;
+           if Qpt==none then begin
+              if fil.endfile then goto EXIT; Qpt:-Qfirst end
+      else if fil.endfile then goto XF;
+           Qlast.next:-Qfirst; QT:-Qpt;
+           !*** close ring and remember front of queue ***;
+           for Qpt:-Qfirst, Qpt.next while QT=/=Qpt do begin
+               inspect Qpt do begin
+                    if first=/=none then begin
+                       ! release words to free list;
+                       last.next:-FreeList; Freelist:-first end;
+                    ReadImage;
+               end;
+           end;
+           Qpt:-Qfirst:-QT;
+           ! reset front and end of Queue, and break ring: ;
+           Qlast:-QT.prev; Qlast.next:-none; Qlast.last.next:-none;
+ XF: end fillQ;
+
+%+P  prior
+     procedure EndImage;
+     inspect Qpt do begin line:=linesread:=linesread-1;
+           im:-"EOF"; first.next:-last:-new word(im);
+           last.qelt:-Qpt; last.pos:=2;
+     end;
+
+%+P  prior
+     procedure ReadImage;
+     begin short integer temptl,pos1,nchar,newch,rpos,iml;
+           ref(word) newwrd; text newcont;
+           text tempt,imt; boolean prevpunct;
+      inspect Qpt do begin
+         first:-last:-dummyfirst;  prevpunct:=false;
+         fil.image:-im.main;
+REPEAT:  im:-fil.image;
+         if LastComplete then linesread:=linesread+1;
+         line:=linesread;
+%-X      if     fil.inrecord then begin
+%+X      if not fil.inrecord then begin
+            if LastComplete then begin
+               if firstlong==none 
+               then firstlong:-lastlong:-    new TooLong(line)
+               else lastlong:-lastlong.next:-new TooLong(line);
+            end;
+            LastComplete:=false;
+         end else LastComplete:=true;
+         if fil.endfile then begin
+            EndImage; noEndfile:=false;
+            next:-QT; QT.prev:-this Qelement;  !*** cut Queue ***;
+            LastComplete:=true; goto FINIS;
+         end;
+         iml:=fil.pos;
+         if iml<=comstart then goto REPEAT;
+         im:-
+         imt:-im.sub(comstart,
+                     if iml>maxpos then signific else iml-comstart);
+%+X      imt.setpos(1);
+         iml:=imt.length; rpos:=0;
+
+ SKIPBL: while rpos<iml do begin
+%-X            newch:=isorank(loadchar(imt,rpos));
+%+X            newch:=isorank(imt.getchar);
+               rpos:=rpos+1; !*** rpos=newch.pos ***;
+               if nonformat(newch) then goto GETWRD;
+         end;
+         if last==first then goto REPEAT else goto FINIS;
+
+ GETWRD: 
+   !*** ATOMS start with either "startword" or "punctuate" chars.  ***;
+   !    "startword" may be followed by "wordconst" characters         ;
+   !    "punctuate" may be followed by "punctuate" or FORMAT chars,   ;
+   !    i.e. spaces etc. are skipped.                                 ;
+
+         pos1:=rpos; nchar:=1;
+         if startword(newch) then begin
+            while rpos<iml do begin
+%-X               newch:=isorank(loadchar(imt,rpos));
+%+X               newch:=isorank(imt.getchar);
+                  rpos:=rpos+1; !*** rpos=newch.pos ***;
+                  if wordconst(newch) then nchar:=nchar+1
+                  else goto GOTIT;
+            end;
+         end
+    else if punctuate(newch) then begin
+            ! nchar also is the pos. of last sign. char. in buffer ;
+%-X         storechar(isochar(newch),punctbuf,0);
+%+X         punctbuf.setpos(1); punctbuf.putchar(isochar(newch));
+            while rpos<iml do begin
+%-X               newch:=isorank(loadchar(imt,rpos));
+%+X               newch:=isorank(imt.getchar);
+                  rpos:=rpos+1; !*** rpos=newch.pos ***;
+                  if punctuate(newch) then begin
+%-X                  storechar(isochar(newch),punctbuf,nchar);
+%+X                  punctbuf.putchar(isochar(newch));
+                     nchar:=nchar+1;
+                  end
+             else if nonformat(newch) then begin
+            PUNCOUT: newcont:-punctbuf.sub(1,nchar); goto GOTPC end;
+             !*** skip format characters here - conc punctuate's ***;
+            end;
+            newch:=-1; goto PUNCOUT;
+         end
+    else begin
+            if rpos<iml then begin
+             ! leading wordconst is regarded as a single char word ;
+%-X             newch:=isorank(loadchar(imt,rpos));
+%+X             newch:=isorank(imt.getchar);
+                rpos:=rpos+1; !*** rpos=newch.pos ***;
+                goto GOTIT;
+            end
+         end;
+
+         newch:=-1; !*** avoid problem at end of line ***;
+
+ GOTIT:  newcont:-imt.sub(pos1,nchar);
+ GOTPC:  if FreeList=/=none then begin
+            newwrd:-FreeList; Freelist:-FreeList.next;
+            newwrd.next:-none;
+            tempt:-newwrd.cont.main; temptl:=tempt.length;
+            if temptl<nchar then tempt:- blanks(nchar)
+       else if temptl>nchar then tempt:- tempt.sub(1,nchar);
+            newwrd.cont:-tempt; tempt:=newcont;
+         end
+         else newwrd:-new word(newcont);
+         newwrd.qelt:-this Qelement; newwrd.pos:=pos1;
+         last:-last.next:-newwrd;
+ TESTIT: if newch>=0 then begin
+            if nonformat(newch) then goto GETWRD else goto SKIPBL end;
+ FINIS:  prev.last.next:-first:-first.next; ! chain and drop dummy ;
+      end inspect QPT
+     end ReadImage;
+
+%+P  prior
+     procedure inimage;
+     begin if Qpt==none then fillQ;  image:-Qpt.im;  Qpt:-Qpt.next end;
+
+% +P  prior
+%    procedure MoreWords;
+%    if infile1 then begin
+%       if curwrd1==none then begin
+%          Qpt:-none; fillQ; curwrd1:-Qfirst.first end
+%       else begin Qpt:-curwrd1.qelt; fillQ end
+%    end
+%    else begin
+%       if curwrd2==none then begin
+%          Qpt:-none; fillQ; curwrd2:-Qfirst.first end
+%       else begin Qpt:-curwrd2.qelt; fillQ end
+%    end MoreWords;
+
+%+P  prior 
+     boolean procedure endfile;
+     if fil.endfile then begin
+           endfile:= if inPhase then Qpt==none
+                else if inFile1 then
+                      curwrd1==none or else curwrd1.next==none
+                else  curwrd2==none or else curwrd2.next==none;
+     end endfile;
+
+     boolean procedure open(imlength);  integer imlength;
+     begin integer i;
+       inFile1:= this linefile==file1; LastComplete:=true;
+       imagesize:=imlength;
+       for Qpt:-Qfirst, Qpt.next while Qpt=/=none do
+           Qpt.im:- blanks(imlength);  !*** now Qpt==none ***;
+       Qlast.last:-new word("dummy");
+       ! necessary in ReadImage first time - removed in ReadImage ;
+       punctbuf:-blanks(imlength);
+       open:=fil.open(Qfirst.im);
+     end open;
+
+     procedure close;
+     begin if inFile1 then file1:-none else file2:-none;
+           fil.close;
+     end close; 
+
+%+P  prior
+     procedure reportLongIm;
+     if firstlong=/=none then inspect report do begin
+        outtext(fil.filename); outtext(": ");
+        outtext("The following lines were longer than given"
+                " image length:"); outimage;
+        while firstlong=/=none do begin
+              outint(firstlong.line,LFlength+1);
+              firstlong:-firstlong.next end;
+        outimage
+     end reportLongIm;
+
+%+P  prior
+     procedure ReportPos;
+     begin integer line;
+      inspect report do begin
+         if inFile1 then begin FM:-FM1; curword:-curwrd1 end
+                    else begin FM:-FM2; curword:-curwrd2 end;
+         if FM==none then FM:-Qlast.last else
+         if FM=/=curword then FM:-FM.prev;
+         line:=curword.qelt.line;
+         setpos(LFlength+1+(if inFile1 then 0 else Wpos2-1));
+         outchar(' '); outtext(niceint(line));
+         outchar('.'); outtext(niceint(curword.pos));
+         if  FM=/=curword then begin
+            outtext(" : "); outtext(niceint(FM.qelt.line));
+            outchar('.'); outtext(niceint(FM.pos));
+         end; outchar(' ');
+      end inspect report
+     end ReportPos;
+
+%+P  prior 
+     procedure print;
+     begin integer lnr; text mess;
+
+%+P      prior
+         procedure frontstrip;  !of mess;
+         begin mess.setpos(1);
+               while mess.more do if mess.getchar<>' ' then begin
+                     mess:-mess.sub(mess.pos-1,mess.length-mess.pos+2);
+                     goto EX end;
+               mess:-notext;
+      EX:end;
+
+         for lnr:=0 step 1 until Wmax do begin
+             Window(lnr):=notext; Lpos(lnr):=0 end;
+         wline:=0;
+         while Qpt=/=FM.qelt.next do begin
+               lnr:=Qpt.line;
+               mess:-Qpt.im.strip;
+               if mess=/=notext then begin
+                  if mess.length>TFlength then frontstrip;
+                  if lnr<>prevlnr then begin
+                     LineField(wline).putint(lnr);
+                     prevlnr:=Lpos(wline):=lnr end;
+                  while mess.length>TFlength do begin
+                       mess.setpos(TFlength+1);
+                       while mess.pos>2 do begin
+                          if mess.getchar=' ' then begin
+                             Textfield(wline):=mess.sub(1,mess.pos-2);
+                             mess:-mess.sub(mess.pos,
+                                            mess.length-mess.pos+1);
+                             goto LOOP;
+                          end;
+                          mess.setpos(mess.pos-2); 
+                       end;
+                       Textfield(wline):=mess.sub(1,TFlength);
+                       mess:-mess.sub(TFlength+1,mess.length-TFlength);
+                 LOOP: wline:=wline+1; frontstrip;
+                  end;
+                  if mess=/=notext then begin
+                     Textfield(wline):=mess; wline:=wline+1 end;
+               end;
+               Qpt:-Qpt.next;
+         end;
+     end print;
+
+     dummyfirst:-new word("*** DUMMY ***");
+     fil:- new infile(filename); Qfirst:-Qlast:-new Qelement(none);
+     for wline:=1 step 1 until Qmax do Qlast:-new Qelement(Qlast);
+     Qfirst.prev:-Qlast; Qpt:-none;
+     for wline:=0 step 1 until Wmax do begin
+         Window(wline):-blanks(Wlength);
+         Linefield(wline):-Window(wline).sub(1,LFlength);
+         Textfield(wline):-Window(wline).sub(LFlength+2,TFlength);
+     end;
+
+END    L I N E F I L E   ;
+%title
+
+text procedure conc(t1,t2); text t1,t2;   ! -- TEMP: ERROR IN SCANNER;
+begin text t; t:-blanks(t1.length+t2.length);
+      t.sub(1,t1.length):=t1; t.sub(1+t1.length,t2.length):=t2;
+      conc:-t
+end;
+
+%+P  prior
+     procedure MoreWords1;
+     inspect file1 do begin
+        if curwrd1==none then begin
+           Qpt:-none; fillQ; curwrd1:-Qfirst.first end
+        else begin Qpt:-curwrd1.qelt; fillQ end
+     end MoreWords1;
+
+%+P  prior
+     procedure MoreWords2;
+     inspect file2 do begin
+        if curwrd2==none then begin
+           Qpt:-none; fillQ; curwrd2:-Qfirst.first end
+        else begin Qpt:-curwrd2.qelt; fillQ end
+     end MoreWords2;
+
+boolean array startword,wordconst,punctuate,nonformat!,format;(0:255);
+
+procedure InitCharclasses(sText,cText,pText);
+text sText, cText, pText;
+begin integer i; 
+      if sText.length<256 or cText.length<256 or pText.length<256
+      then error("One of the character class texts is too short");
+      sText.setpos(1); cText.setpos(1); pText.setpos(1);
+      while i<256 do begin
+            startword(i):= sText.getchar<>' ';
+            wordconst(i):= cText.getchar<>' ' or startword(i);
+            punctuate(i):= pText.getchar<>' ';
+            if punctuate(i) or wordconst(i)
+            then nonformat(i):=true;  !else format(i):=true;
+            i:=i+1;
+      end;
+end;
+
+procedure outline(t); text t;
+if t.sub(1,1)="!10!" then begin
+   t:-t.sub(2,t.length-1); t.setpos(1);
+   while t.more do
+         if t.getchar='!10!' then begin t.setpos(t.pos-1);
+            outtext(t.sub(1,t.pos-1)); outimage;
+            outline(t.sub(t.pos,t.length-t.pos+1)); goto EX
+         end;
+EX:end
+else begin outtext(t); outimage; end;
+
+%+P  prior 
+text procedure niceint(i);  integer i;
+begin text t;
+       t:-blanks(if i>99999 then 10 else if i>9999 then 5 else
+                 if i>999 then 4 else if i>99 then 3 else
+                 if i>9 then 2 else 1);
+       t.putint(i);  niceint:-t;
+end;
+
+text procedure prompt(t,default,help);  text t,default,help;
+begin text input;
+REPEAT: outtext(t);
+       if default=/=notext then begin
+          outtext(" (default "); outtext(default); outtext(")");
+       end;
+       outtext(": ");
+       breakoutimage; inimage;
+       input:- sysin.image.strip;
+       if batch then begin outtext(input); outimage end;
+       if input==notext then input:-default
+  else if input.sub(1,1)="?" then begin
+          outimage; outline(help); outimage; goto REPEAT end;
+       input.setpos(1);
+       while input.more do if input.getchar<>' ' then goto FOUND;
+       outtext("*** NO DEFAULT FOR THIS PARAMETER ***"); outimage;
+       goto REPEAT;
+FOUND: prompt:- copy(input.sub(input.pos-1,input.length-input.pos+2));
+end;
+
+%TITLE    **********   R e p o r t   H a n d l i n g   **********
+
+ref(word) wrd1,wrd2,FM1,FM2,LM1,LM2,start1,start2,stop1,stop2,
+          match1,match2,LW1,LW2,tmp1,tmp2;
+integer i, tmpi;
+integer i1,i2,w1,w2,last1,last2;
+
+ref(linefile) F; integer index;
+boolean noEndfile,summary,outblanklines,inPhase,step1,batch;
+ref(linefile) file1, file2;  ref(outfile) report;
+ref(word) curwrd1, curwrd2;
+integer iml1, iml2, imlr, Qmax, signific, matchcount;
+text t,stext,ctext,ptext,divline;
+short integer Wmax, Wlength, Wpos2, LFlength, TFlength;
+%TITLE    ******   I N I T I A L I S A T I O N   ******
+
+batch:= getintinfo(33)=0;
+
+   begin
+   !*** local block to get rid of variables/text objects before exec.;
+     text stext, ptext, ctext;
+     stext:-blanks(256); stext.sub(1,64):=
+     "                                                0123456789      ";
+                         stext.sub(65,64):=
+     " ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]   abcdefghijklmnopqrstuvwxyz{|}  ";
+
+     ptext:-blanks(256); ptext.sub(1,64):=
+     "                                 !......()*+,-./          :;<=>.";
+                         ptext.sub(65,64):=
+     ".                             . .                             . ";
+
+     ctext:-blanks(256); ctext.setpos(95+1); ctext.putchar('_');
+     InitCharclasses(stext,ctext,ptext);
+   end *** get-rid-of block ***;
+
+   outline(" ******   Compare 'File1' to 'File2'   ******");
+   outimage;
+   report:-new outfile("REPORT");
+   Qmax:=10; Wmax:=50; matchcount:=4; imlr:=80; LFlength:=4;
+   outblanklines:=
+   prompt("Are the defaults OK","Y",
+     conc( conc( conc("!10! - lines that differ (apart from format)"
+                      " will be listed in toto"
+                     ,"!10! - compare first 'N' chars, where N is "
+                      "the smaller of the two image sizes" )
+               , conc( conc( "!10! - buffer size will be ",niceint(Qmax) )
+                     , conc( " lines, match count ",niceint(matchcount) )))
+         , conc( conc( conc( "!10! - report on file ",report.filename )
+                     , conc( " with image length ",niceint(imlr) ))
+               , conc( "!10! - Max number of records will be "
+                     , niceint(10.0**LFlength-1) )))
+   ).getchar='Y';
+   if outblanklines then !*** nothing ***; else begin
+      signific:=-1;
+      summary:=
+      prompt("- full report? Yes or No","Y",
+        conc( "!10! - the report file will log the differences found,"
+            , "!10!   a summary report contains only rel. file. pos." )
+      ).getchar='N';
+      Qmax:=
+      prompt("line buffer size",niceint(Qmax),
+        conc( conc( "!10! - if the current lines don't match, a match is"
+                  , " attempted within the buffer(s). Too small"
+                    "!10!   buffers will cause several messages when the" )
+            ,       " files differ over large line intervals" )
+      ).getint;
+      Wmax:=5*Qmax;
+      matchcount:=
+      prompt("match count",niceint(matchcount),
+         conc( conc( "!10! - when the two files does not match, the"
+                     " texts are scanned to find 'match count' atoms"
+                   , "!10!   in sequence that are the same. Too small"
+                     " a value may lead to many messages, but note:" )
+             ,       "!10!   !!! Processing time (for non-match) grows"
+                     " with the SQUARE of this number !!!" )
+      ).getint;
+REPL: report:-new outfile( prompt("report file",report.filename,
+                                  " - file name in standard form") );
+      imlr:=prompt("report file image length",niceint(imlr),
+                   "!10!   Minimum value is 80 characters"   
+                   "!10!    - output is in two columns, each column has "
+                   " a line number followed by text."
+                  ).getint;
+      if imlr<80 then imlr:=80;
+
+      LFlength:=prompt("Max no. of lines",niceint(10.0**LFlength-1),
+                       "!10!   The width of the line number field "
+                       "is log10(this number)." 
+                      ).getint;
+      LFlength:=if LFlength>999999 then 7 else if LFlength>99999 then 6
+           else if LFlength>  9999 then 5 else if LFlength>  999 then 4
+           else if LFlength>    99 then 3 else 2;
+   end;
+
+   if upcase(report.filename)="SYSOUT" then begin
+      sysout.close; sysout.open(blanks(imlr)); report:-sysout end
+  else if not report.open(blanks(imlr)) then begin
+      outtext("Report file can't be opened!"); outimage;
+      goto REPL
+   end;
+
+   Wlength:=imlr//2-1; Wpos2:=Wlength+1; TFlength:=Wlength-LFlength-1;
+
+F1:file1:- new LineFile(prompt("File1",notext,
+                               " - file name in standard form"
+                              ),Qmax," File1 (pos. ");
+   iml1:= prompt("file1 image length","80",
+                 " - give the length of the largest record in the file"
+                ).getint;
+   if not file1.open(iml1)
+   then begin outtext("File 1 can't be opened!"); outimage;
+        goto F1 end;
+
+F2:file2:- new LineFile(prompt("File2",notext,
+                               " - file name in standard form"
+                              ),Qmax," File2 (pos. ");
+   iml2:= prompt("file2 image length",niceint(iml1),
+                 " - give the length of the largest record in the file"
+                ).getint;
+   if not file2.open(iml2)
+   then begin outline("File 2 can't be opened!"); goto F2 end;
+
+   if signific<0 then begin
+SIGNI:signific:=prompt("No. of chars to compare",
+                       niceint(if iml1<iml2 then iml1 else iml2),
+                       "!10!  - give the length of the image segment to be"
+                       " compared (or CR for whole image)"
+                       "!10!   must be <= both file image lengths"
+                      ).getint;
+      file1.comstart:=prompt("File1 start pos.","1",
+                             " - give the first position of the segment"
+                             " to be compared (or CR for pos. 1)"
+                            ).getint;
+      file2.comstart:=prompt("File2 start pos.",niceint(file1.comstart),
+                             " - give the first position of the segment"
+                             " to be compared (or CR if same as File1)"
+                            ).getint;
+      if signific>iml1 or signific>iml2 or signific<=0 
+         or file1.comstart<=0 or file1.comstart+signific-1>iml1
+         or file2.comstart<=0 or file2.comstart+signific-1>iml2
+      then begin  outline("The compare values are illegal/incompatible!!");
+           goto SIGNI; end;
+   end
+   else begin
+      signific:= if iml1<iml2 then iml1 else iml2;
+      file1.comstart:=file2.comstart:=1;
+   end;
+
+   file1.maxpos:=file1.comstart+signific;
+   file2.maxpos:=file2.comstart+signific;
+   divline:-blanks(imlr); while divline.more do divline.putchar('-');
+%TITLE    *****   O U T P U T   P R E L U D E   ******
+
+       inspect report do begin
+             outtext("Compare File1: "); outtext(file1.fil.filename);
+             outtext(" (image length = "); outtext(niceint(iml1));
+             outchar(')'); outimage;
+             outtext("     to File2: "); outtext(file2.fil.filename);
+             outtext(" (image length = "); outtext(niceint(iml2));
+             outchar(')'); outimage;
+             outtext(if summary then " - summary only on this file:  "
+                     else            " - full report on this file:   ");
+             outtext(report.filename); outimage;
+             outtext(" - "); outtext(niceint(signific));
+             outtext(" characters compared, starting at File1.");
+             outtext(niceint(file1.comstart)); outtext(" / File2.");
+             outtext(niceint(file2.comstart)); outimage;
+             outtext(divline); outimage;
+       end report prelude;
+%TITLE    ****************   M A I N   L O O P (S)   ******************
+
+          noEndfile:=true;
+LINECOMP: inPhase:=true; file1.inimage;  file2.inimage;
+          while noEndfile do begin
+             if file1.image <> file2.image then goto NONMATCH;
+             file1.inimage; file2.inimage;
+          end;
+          if file1.endfile or file2.endfile then goto EXIT;
+
+NONMATCH: inPhase:=false;
+          inspect file1 do
+             curwrd1:-(if Qpt==none then Qlast else Qpt.prev).first;
+          inspect file2 do
+             curwrd2:-(if Qpt==none then Qlast else Qpt.prev).first;
+
+WORDCOMP: while true do begin
+                if curwrd1.cont<>curwrd2.cont then goto WORDMISM;
+                curwrd1:-curwrd1.next; curwrd2:-curwrd2.next;
+                if curwrd1==none then begin
+                   MoreWords1;
+                   if curwrd2==none then begin
+                      MoreWords2;
+                      if noEndfile then goto LINECOMP;
+                   end;
+                end
+           else if curwrd2==none then MoreWords2;
+          end;
+
+%title   *************   Mismatch   ***************
+WORDMISM:
+      MoreWords1; MoreWords2; ! *** fill buffers ***;
+      tmp1:-curwrd1; tmp2:-curwrd2;
+
+SEARCH:
+      match1:-match2:-none;
+      start1:-tmp1; start2:-tmp2;
+
+%  The matching algorithm proceeds as follows:
+%  - within the buffers, the files are stepped line by line, with
+%    start: first atom, stop: last atom of current line.
+%  - the atoms of the current line are compared to the buffer segment
+%    delimited by tmp and stop of the other buffer, with FM pointing
+%    to the current pair.
+%  - if a matching pair is found, comparison proceeds "in step" to see
+%    whether a matching subsequence of "matchcount" atoms can be found.
+%  When a file1-line has been compared with a file2-segment, the role
+%  of the files is switched: the current file2-line is compared to the
+%  current file1-segment.
+%  The match-LW quadruple is set if a match is found. If set during
+%  the first compare-loop, another match may be found during the second;
+%  then the matches is compared (by line number) to determine the
+%  "minimum fit".
+%  The scan will terminate, either by finding a match or by reaching
+%  the end of (one of) the buffers.
+
+%-X   while match1==none and then start1=/=none and then start2=/=none
+%+X   while match1==none and      start1=/=none and      start2=/=none
+      do begin
+         stop1:-start1.qelt.last.next; stop2:-start2.qelt.last.next;
+         FM1:-start1;
+         while FM1=/=stop1 do begin
+               FM2:-tmp2;
+               while FM2=/=stop2 do begin
+                     if FM1.cont=FM2.cont then begin
+                        LM1:-FM1; LM2:-FM2; i:=1;
+                        while i<matchcount do begin
+                           LM1:-LM1.next; if LM1==none then goto TRY2;
+                           LM2:-LM2.next; if LM2==none then goto UP1;
+                           if LM1.cont<>LM2.cont then goto STEP2;
+                           i:=i+1;
+                        end;
+                        LW1:-LM1;     LW2:-LM2;
+                        match1:-FM1;  match2:-FM2;  goto TRY2;
+                     end;
+         STEP2:      FM2:-FM2.next;
+               end;
+         UP1:  FM1:-FM1.next;
+         end;
+
+   TRY2: FM2:-start2;
+         while FM2=/=stop2 do begin
+               FM1:-tmp1;
+               while FM1=/=start1 do begin
+         !note: this loop does not incorporate the current file1-line;
+         !       - it has already been compared to the file2-line.    ;
+         !       Thus this loop is not performed the first time around;
+                     if FM1.cont=FM2.cont then begin
+                        LM1:-FM1; LM2:-FM2; i:=1;
+                        while i<matchcount do begin
+                              LM2:-LM2.next;
+                              if LM2==none then goto
+                                 if match1=/=none
+                                 then SETMATCH else NOMATCH;
+                              LM1:-LM1.next; if LM1==none then goto UP2;
+                              if LM1.cont<>LM2.cont then goto UPIT1;
+                              i:=i+1;
+                        end;
+                        if match1=/=none then begin
+                           if match1.qelt.line + match2.qelt.line <
+                                 FM1.qelt.line +    FM2.qelt.line 
+                           then begin
+         SETMATCH:            FM1:-match1; FM2:-match2;
+                              LM1:-LW1; LM2:-LW2 end;
+                        end;
+                        goto MATCHFOUND;
+                     end;
+         UPIT1:      FM1:-FM1.next;
+               end;
+         UP2:  FM2:-FM2.next;
+         end;
+
+         if match1=/=none then goto SETMATCH;
+         start1:-stop1; start2:-stop2;
+      end;
+
+      if match1==none then 
+NOMATCH: FM1:-FM2:-LM1:-LM2:-none  ! *** no match *** ;
+      else begin
+MATCHFOUND:
+       if FM1=/=curwrd1 and then FM2=/=curwrd2 then begin
+%-X       while LM1.qelt==curwrd1.qelt or else LM2.qelt==curwrd2.qelt
+%+X       while LM1.qelt==curwrd1.qelt or      LM2.qelt==curwrd2.qelt
+             do begin !*** scan to end of both lines ***;
+                if LM1.next==none or LM2.next==none then goto MF;
+                LM1:-LM1.next; LM2:-LM2.next;
+                if LM1.cont<>LM2.cont then begin
+                   !*** match was found, reset scan interval ***;
+                   tmp1:-LM1; tmp2:-LM2; goto SEARCH;
+                end;
+             end;
+         end;
+      end;
+MF:
+     !    either match found (FM1,FM2 =/= none) or no match in buffer. ;
+     !    if FM?==none then the buffers are exhausted. Otherwise, the  ;
+     !    variables LM? point to the last matching pair examined. Thus ;
+     !    comparison shall continue with the two LM?.next as curwrd?.  ;
+
+%+D   if FM1=/=none then FM1.dump("match(1): ");
+%+D   if FM2=/=none then FM2.dump("match(2): ");
+%+D   if FM1==none and then   FM2==none then outline("no match found");
+
+      inspect report do begin
+        outimage; outtext(divline); file1.ReportPos; setpos(pos+3);
+        outtext(if FM1==curwrd1 then " (INS.) " else
+                if FM2==curwrd2 then " (DEL.) " else
+                if FM1==none then " (NO MATCH) " else " (DIFF.) ");
+        file2.ReportPos; outimage;
+        if not summary then begin
+           file1.print; file2.print;
+           i1:=last1:=i2:=last2:=0;
+           if FM1=/=curwrd1 then last1:=file1.wline;
+           if FM2=/=curwrd2 then last2:=file2.wline;
+           while i1<last1 or i2<last2 do begin
+                 outtext(file1.Window(i1)); i1:=i1+1;
+                 setpos(Wpos2);
+                 outtext(file2.Window(i2)); i2:=i2+1;
+                 outimage
+           end;
+        end;
+      end;
+
+      curwrd1:- if LM1==none then none else if LM1.next==none then none
+                else LM1.next;
+      curwrd2:- if LM2==none then none else if LM2.next==none then none
+                else LM2.next;
+      MoreWords1;  MoreWords2;
+%-X   if curwrd1==curwrd1.qelt.first and then curwrd2==curwrd2.qelt.first
+%+X   if curwrd1==curwrd1.qelt.first and      curwrd2==curwrd2.qelt.first
+      then goto LINECOMP;
+      goto WORDCOMP;
+%         ***************   O U T P U T   S U M M A R Y   ************
+
+EXIT:  inspect report do begin
+          outimage; outtext(divline);  setpos(10);
+          outtext("   C O M P A R E   E N D   "); outimage; outimage;
+          outtext("     Lines read on File1: ");
+          outint(file1.linesread,10);
+          if not file1.fil.endfile
+          then outtext(", this file not exhausted");
+          outimage;
+          outtext("     Lines read on File2: ");
+          outint(file2.linesread,10);
+          if not file2.fil.endfile
+          then outtext(", this file not exhausted");
+          outimage; 
+          file1.reportLongIm; file2.reportLongIm;
+       end report;
+
+       file1.close;  file2.close;  report.close;
+END;

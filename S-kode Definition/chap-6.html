@@ -1,0 +1,589 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>6</title>
+</head>
+
+<body>
+
+<h2>6.  <strong>ADDRESSING INSTRUCTIONS</strong></h2>
+
+&nbsp;
+<p>	addressing_instruction</p>
+
+<p>		::=  <u>fetch</u>	!  <u>refer</u>  resolved_type	 !  <u>deref</u></p>
+
+<p>		::=  <u>select</u>  attribute:tag	!  <u>selectv</u>  attribute:tag</p>
+
+<p>		::=  <u>remote</u>  attribute:tag	!  <u>remotev</u>  attribute:tag</p>
+
+<p>		::=  <u>index</u>	!  <u>indexv</u></p>
+
+<p>		::=  <u>inco</u>		!  <u>deco</u></p>
+
+<p>		::=  <u>dist</u>		!  <u>dsize</u>  structured_type</p>
+
+<p>		::=  <u>locate</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>The effect of the addressing instructions upon the stack will be illustrated by abstract
+diagrams. Note that a mode REF stack item is depicted as if it actually pointed into
+storage; this is of course not true during the compilation, where the address in most cases
+will be unknown.</p>
+
+&nbsp;
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>fetch</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">&nbsp;force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	TOS.MODE should be REF, otherwise <u>fetch</u> has no effect.</p>
+
+<p>	TOS is modified to describe the contents of the area previously described.</p>
+
+    </td>
+  </tr>
+</table>
+<p><br WP="BR2">
+<br WP="BR2">
+</p>
+<p>                    (<u>TOS</u>) </p>
+
+<p>                                    </p>
+
+<p>                                    V</p>
+
+<p>                The resulting       </p>
+
+<p>                     TOS  &gt; VALUE  </p>
+
+<p>                 after <u>fetch</u>        </p>
+
+<br WP="BR1"><br WP="BR2">
+
+<br WP="BR1">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>refer</u>  resolved_type</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;  check TOS type(GADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	TOS.MODE := REF;  TOS.TYPE := type;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	TOS is modified to describe a quantity of the given type, at the address described
+by TOS.</td>
+  </tr>
+</table>
+<p><br WP="BR2">
+<br WP="BR1"></p>
+
+<p>          (<u>TOS</u>) &gt; GADDR VALUE </p>
+
+<p>                          </p>
+
+<p>                                              </p>
+
+<p>      The resulting                           V</p>
+
+<p>           TOS  &gt;</p>
+
+<p>       after <u>refer</u>           REF                object   </p>
+
+<p>                                                  of     </p>
+
+<p>                                                &quot;type&quot;   </p>
+
+<br WP="BR1"><br WP="BR2">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>deref</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check TOS ref;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	TOS.MODE := VAL;  TOS.TYPE := GADDR;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	TOS is modified to describe the address of the area.</td>
+  </tr>
+</table>
+
+<br WP="BR1"><br WP="BR2">
+<br WP="BR2">
+<p>          (<u>TOS</u>) </p>
+
+<p>                             REF               </p>
+
+<p>                                               </p>
+
+<p>      The resulting        V</p>
+
+<p>           TOS  &gt; GADDR VALUE &gt; </p>
+
+<p>       after <u>deref</u>                  </p>
+
+<p>                                                        </p>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>select</u>  attr:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check TOS ref;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	TOS.TYPE := attr.TYPE;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	&quot;TOS.OFFSET := <u>TOS</u>.OFFSET ++ attr.OFFSET&quot;;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	(note that the BASE component of TOS is unchanged)</p>
+
+<p>	The area described by TOS is considered to be holding a record of the type, say
+'REC', in which the instruction argument attr is an attribute. TOS is modified to
+describe the designated component of that record. Note that no qualification check
+is implied, i.e. TOS.TYPE may be different from 'REC'.</p>
+
+    </td>
+  </tr>
+</table>
+<p>
+<br WP="BR1"><br WP="BR2">
+</p>
+<p>          BASE &gt; </p>
+
+<p>                                                         </p>
+
+<p>                                      TOS.OFFSET         </p>
+
+<p>                                                         </p>
+
+<p>                        REF          V                    </p>
+
+<p>          (<u>TOS</u>) &gt;    </p>
+
+<p>                                                       </p>
+
+<p>                                                       </p>
+
+<p>                                        attr.OFFSET    </p>
+
+<p>       The resulting       REF          V               </p>
+
+<p>           TOS  &gt;        </p>
+
+<p>        after <u>select</u>                     attr         </p>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>selectv</u>  attr:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check TOS ref;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	TOS.TYPE := attr.TYPE;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	&quot;TOS.OFFSET := <u>TOS</u>.OFFSET ++ attr.OFFSET&quot;;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	The instruction has the same effect as a <u>select</u> attr:tag followed by a <u>fetch</u>.</td>
+  </tr>
+</table>
+
+<p>                                                </p>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>remote</u>  attr:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;   check TOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( REF, attr.TYPE,<br>
+      &nbsp;&quot;BASE = value(<u>TOS</u>), OFFSET = attr.OFFSET&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction uses one step of indirection. The value is considered to be the
+address of an object of the type 'REC' in which attr is an attribute. TOS is replaced
+by a descriptor of the designated component of that object. Note again that no
+qualification check is implied (neither could it be done).</td>
+  </tr>
+</table>
+<p><br WP="BR2">
+</p>
+
+<p>          (<u>TOS</u>) &gt; OADDR VALUE &gt;</p>
+
+<p>                                    </p>
+
+<p>                                              attribute </p>
+
+<p>                                              OFFSET    </p>
+
+<p>      The resulting        REF               V           </p>
+
+<p>           TOS  &gt;    </p>
+
+<p>       after <u>remote</u>                           attr     </p>
+
+<p>                                                 </p>
+
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>remotev</u>  attr:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;   check TOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( REF, attr.TYPE,<br>
+      &nbsp;&quot;BASE = value(<u>TOS</u>), OFFSET = attr.OFFSET&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	The instruction has the same effect as a <u>remote</u> attr:tag followed by a <u>fetch</u>.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>index</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;   check TOS type(INT);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check SOS ref;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	TOS.OFFSET := <u>SOS</u>.OFFSET  ++  &quot;<u>SOS</u>.SIZE * value(<u>TOS</u>)&quot;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	SOS is considered to describe an element of a repetition, and the purpose of the
+instruction is to select one of the components of the repetition by indexing relative
+to the current position. The effect may perhaps best be understood by considering
+an infinite array A with elements of SOS.TYPE. The array is placed so that element
+A(0) is the quantity described by SOS. After <u>index</u> the stack top will describe
+      A(N),
+where N is the value of TOS. No bounds checking should be performed.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>indexv</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;   check TOS type(INT);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check SOS ref;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	TOS.OFFSET := <u>SOS</u>.OFFSET  ++  &quot;<u>SOS</u>.SIZE * value(<u>TOS</u>)&quot;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction has the same effect as an index followed by a <u>fetch</u>.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>inco</u>, <u>deco</u>  (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value; check TOS type(SIZE);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force SOS value; check SOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;  pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, OADDR, &quot;value(<u>SOS</u>) +/- value(<u>TOS</u>)&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	The two top elements are replaced by a descriptor of the object address RESULT
+defined through the equation</p>
+
+      <blockquote>
+<p>		<u>dist</u>(RESULT,value(<u>SOS</u>)) = +/- value(<u>TOS</u>)</p>
+
+      </blockquote>
+<p>	where + corresponds to <u>inco</u> and - to <u>deco</u>.</p>
+
+    </td>
+  </tr>
+</table>
+<br WP="BR2">
+<br WP="BR1">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>indexv</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;   check TOS type(INT);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check SOS ref;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	TOS.OFFSET := <u>SOS</u>.OFFSET  ++  &quot;<u>SOS</u>.SIZE * value(<u>TOS</u>)&quot;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction has the same effect as an index followed by a <u>fetch</u>.</td>
+  </tr>
+</table>
+
+<br WP="BR1"><br WP="BR2">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>dist</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value; check TOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force SOS value; check SOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;  pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, SIZE, &quot;value(<u>SOS</u>) - value(<u>TOS</u>)&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	TOS and SOS are replaced by a description of the signed distance from TOS to
+SOS.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>dsize</u>  structured_type</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;  check TOS type(INT);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, SIZE, &quot;size(type with mod. rep.count)&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	The structured type must be prefixed with a &quot;DYNAMIC&quot; type (see 4.3.6), and it
+must contain an indefinite repetition, otherwise: error.
+      <p>	This instruction is a dynamic version of the <u>c-size</u> value function (see section
+4.4.1); it may be used to compute the actual size of an object of a type containing
+an indefinite repetition. TOS describes a value, the actual repetition count to be
+used in the size calculation, i.e. the size is computed <u>as if</u> the type had been
+defined with this repetion count instead of zero. A description of the size thus
+obtained replaces TOS. Observe that if the repetition occurs as the last of several
+alternatives, the repeated alternative must be used to determine the size. This may
+give a smaller size than if <u>c-size</u> of the type was requested.</td>
+  </tr>
+</table>
+
+<br WP="BR1"><br WP="BR2">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>locate</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;  check TOS type(AADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force SOS value;  check SOS type(OADDR,GADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;  pop;</td>
+  </tr>
+  <tr>
+    <td width="6%" valign="top">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, GADDR,<br>
+      &nbsp;&quot;value(<u>SOS</u>).BASE, value(<u>SOS</u>).OFFSET++value(<u>TOS</u>)&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	SOS and TOS are replaced by a description of the general address value formed
+by &quot;addition&quot; of the two original addresses.</td>
+  </tr>
+</table>
+<p>
+
+<br WP="BR1">
+<br WP="BR1"><br WP="BR2">
+</p>
+
+<p>              (SOS) &gt;   </p>
+
+<p>                                              </p>
+
+<p>                                 (<u>TOS</u>)        </p>
+
+<p>           The resulting         V             </p>
+
+<p>               TOS  &gt; : :        </p>
+
+<p>           after <u>locate</u>                        </p>
+
+<p>                                               </p>
+
+</body>
+
+</html>

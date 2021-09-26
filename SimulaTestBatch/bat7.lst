@@ -1,0 +1,102 @@
+rm: sxcvz* non-existent
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst70.sim
+SIM: load
+simtst70 loaded
+SIM: simtst70 /w1
+--- START Simula a.s. TEST 70
+--- Test the text attributes length, pos, main, setpos,
+--- more, getchar and putchar, and the reference comparators
+--- == and =/=.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 70
+SIM: compile src/simtst71.sim
+SIM: load
+simtst71 loaded
+SIM: simtst71 /w1
+--- START Simula a.s. TEST 71
+--- Test visibility of identifiers.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 71
+SIM: compile src/simtst72.sim
+SIM: load
+simtst72 loaded
+SIM: simtst72 /w1
+--- START Simula a.s. TEST 72
+--- Test of formal procedures.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 72
+SIM: compile src/simtst73.sim
+SIM: load
+simtst73 loaded
+SIM: simtst73 /w1
+--- START Simula a.s. TEST 73
+--- Test of formal procedures
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 73
+SIM: compile src/simtst74.sim
+SIM: load
+simtst74 loaded
+SIM: simtst74 /w1
+--- START Simula a.s. TEST 74
+--- Test resume and detach.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 74
+SIM: compile src/simtst75.sim
+SIM: load
+simtst75 loaded
+SIM: simtst75 /w1
+--- START Simula a.s. TEST 75
+--- Test of name parameters and virtual procedures.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 75
+SIM: compile src/simtst76.sim
+SIM: load
+simtst76 loaded
+SIM: simtst76 /w1
+--- START Simula a.s. TEST 76
+--- Test of detach and resume.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 76
+SIM: compile src/simtst77.sim
+SIM: load
+simtst77 loaded
+SIM: simtst77 /w1
+--- START Simula a.s. TEST 77
+--- Test infile using two infile objects reading from the
+--- same external file ("any77").
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 77
+SIM: compile src/simtst78.sim
+SIM: load
+simtst78 loaded
+SIM: simtst78 /w1
+--- START Simula a.s. TEST 78
+--- Test the attribute 'filename' of class file.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 78
+SIM: compile src/simtst79.sim
+SIM: load
+simtst79 loaded
+SIM: simtst79 /w1
+--- START Simula a.s. TEST 79
+--- Test the attribute 'IsOpen' of class file.
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 79
+SIM: exit
+EXIT  SIMULA

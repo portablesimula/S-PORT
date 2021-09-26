@@ -1,0 +1,19 @@
+begin
+external Simuletta procedure system="E@UUCMND"
+is procedure system(t); text t; ;
+inspect new infile("$HOME/.profile") do begin
+    open(blanks(80));
+    inimage;
+    while not endfile do begin
+       while image.more and then image.getchar=' ' do;
+       if image.pos<=image.length-6 then begin
+          image.setpos(image.pos-1);
+          if image.sub(image.pos,8)="setcolor"
+          then system(image.sub(image.pos,image.length-image.pos+1)
+                      .strip);
+       end;
+       inimage;
+    end;
+    close;
+end;
+end

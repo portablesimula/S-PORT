@@ -1,0 +1,326 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>14</title>
+</head>
+
+<body>
+
+<h2>14.  <strong>SEPARATE COMPILATION</strong></h2>
+
+<h3>14..1.  <u>Module definition</u></h3>
+
+&nbsp;
+<p>	module_definition</p>
+
+<p>		::=	<u>module</u>  module_id:string  check_code:string</p>
+
+<p>			visible_existing</p>
+
+<p>			<u>body</u> &lt;local_quantity&gt;* &lt;program_element&gt;* <u>endmodule</u></p>
+
+&nbsp;
+<p>	visible_existing</p>
+
+<p>		::=	&lt;visible&gt;*  tag_list	!  <u>existing</u></p>
+
+&nbsp;
+<p>	visible</p>
+
+<p>		::=	record_descriptor		!  routine_profile</p>
+
+<p>		::=	routine_specification	!  label_specification</p>
+
+<p>		::=  constant_specification	!  insert_statement</p>
+
+<p>		::=	info_setting</p>
+
+&nbsp;
+<p>	tag_list</p>
+
+<p>		::=	&lt; <u>tag</u>  internal:tag  external:number &gt;+</p>
+
+&nbsp;
+<p>Rather than compiling a complete program, the S-compiler can be instructed to compile a
+part of a program (a module) which subsequently will be referenced by another module or
+a main program.</p>
+
+<p>The module_id is a system-unique system-dependent identification for the module. It will
+be used to locate module descriptors referenced in <u>insert</u> statements, or the descriptor of
+the module itself if it is specified <u>existing</u>.</p>
+
+<p>The check_code is an implementation-dependent code which can be used to determine
+the validity of the correspondence between a module object and the compiled version of
+the module it purports to describe. One possibility for this check_code is an accurate
+representation of the time and date of compilation.</p>
+
+<p>An <u>existing</u> specification in the module head informs the S-compiler that the module has
+been compiled previously, and that the module head was unchanged (as well external as
+internal tags occurring in the head are the same). The visible attributes of the module will
+in this case be those specified visible in the earlier compilation, but changes may have
+been made in the module body. Such changes do not however influence these attributes,
+and the S-compiler can obtain the module head from the module descriptor file. This
+means that the compilation of the module will not require recompilation of other modules
+referencing this module. The check_code given in the module head must then match that
+in the existing attribute file.</p>
+
+<p>If the S-compiler encounters a module with <u>existing</u> specified, the check_code given in the
+module head must match that in the existing attribute file.</p>
+
+<p>If the module is not specified <u>existing</u>, the list of descriptors specified in the module head
+specifies the externally visible attributes of the module. In order to be able to create
+unique tag identification of the visible elements, the <u>tag list</u> specifies a correspondence
+between the internal tags used in the module and an external number. Only tags
+specifically mentioned in the tag_list are transferred via the insert instruction given in
+another compilation unit; the tags defined through an insert instruction cannot themselves
+be made visible outwith the module being compiled.</p>
+
+<p>The routine specifications refer to routines defined within the module body, neither routine
+profiles nor other definitions given in the head may be repeated in the body. If a profile tag
+occurs in the tag_list, all the parameter tags may also occur, since the profile tag may be
+associated with a routine body in another module. Label or constant specifications refer to
+quantities defined in the body.</p>
+
+<p>Any local quantities and descriptors are visible only from within the body of the module; all
+such tags are destroyed at <u>endmodule</u> and made available for re-use. They are statically
+allocated and part of the module throughout an execution, by analogy with Algol's
+'own'-variables. Their initial values are undefined.</p>
+
+&nbsp;
+<h3>14.2.  <u>The interface module</u></h3>
+
+&nbsp;
+<p>	interface_module</p>
+
+<p>		::=	<u>global</u> <u>module</u>  module_id:string  check_code:string</p>
+
+<p>			 &lt;global_interface&gt;*  tag_list</p>
+
+<p>			  <u>body</u>  &lt; <u>init</u> global:tag  type  repetition_value &gt;*</p>
+
+<p>			<u>endmodule</u></p>
+
+&nbsp;
+<p>	global_interface</p>
+
+<p>		::=	record_descriptor</p>
+
+<p>		::=	constant_definition	&lt; <u>system</u>  sid:string &gt;?</p>
+
+<p>		::=	global_definition	&lt; <u>system</u>  sid:string &gt;?</p>
+
+<p>		::=	routine_profile</p>
+
+<p>		::=	info_setting</p>
+
+&nbsp;
+<p>	global_definition</p>
+
+<p>		::=	<u>global</u>  internal:newtag  quantity_descriptor</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>The interface module serves two main purposes:</p>
+
+<ul>
+  <li>it specifies a set of statically allocated variables (the globals),</li>
+  <li>it specifies the interface to the system environment.</li>
+</ul>
+<p>An interface module is inserted as any other module with the restriction, that only one
+particular interface module can ever occur in the executing program, i.e. it must be
+checked that different modules do not insert different versions of the interface module.</p>
+
+<p>A complete listing of the interface module may be found in (4).</p>
+
+&nbsp;
+<p>MAXLEN</p>
+
+&nbsp;
+<p>	This is a predefined SIZE constant with an implementation dependent value; it is
+the <u>c-size</u> of the temporary area (page 35). Note that it is not the same as the
+ALLOCATED attribute of this area; ALLOCATED will always be less than or equal
+to the value of MAXLEN.</p>
+
+<p>This constant is needed since it is necessary to have a special area available for a save
+object in case it is not possible to allocate one dynamically without garbage collection.</p>
+
+&nbsp;
+<h4>14.2.1.  <u>Global variables</u></h4>
+
+&nbsp;
+<p>The global definition specifies static allocation of a variable of the given type, therefore
+the corresponding descriptor will be complete. Each such variable is an object, and may
+thus be addressed either by an object or a general address.</p>
+
+<p>A global variable may be initialised to a given value through the <u>init</u> statement. This
+initialisation must take place before execution of the program proper take place, e.g. in
+connection with <u>main</u>. It is of no concern whether this is done by preloading the values, or
+by executing code corresponding to the <u>init</u> statements. If a global variable is not so
+initialised, the initial value is undefined.</p>
+
+<p>&nbsp;</p>
+<h4>14.2.2.  <u>The environment interface</u></h4>
+
+&nbsp;
+<p>The S-code specification of the environment interface is given in the interface module in
+the form of system profiles, system globals, and system constants.</p>
+
+<p>The system constants are assigned values during the generation of the S-code program.
+Values may also be assigned to system globals during this process, using <u>init</u>. In both
+cases the S-code program is only providing default values, which the S-compiler may
+chose to overwrite with values appropriate for the particular implementation.</p>
+
+<p>All system routines are defined in this module; it is the responsibility of the S-compiler to
+insert the actual instruction sequences corresponding to each routine into the body.</p>
+
+<p>&nbsp;</p>
+<h3>14.3.  <u>The macro definition module</u></h3>
+
+&nbsp;
+<p>	macro_definition_module</p>
+
+<p>		::=	<u>macro</u> <u>module</u>  module_id:string  check_code:string</p>
+
+<p>			 &lt;macro_definition&gt;*  <u>endmodule</u></p>
+
+&nbsp;
+<p>The macro definition module contains the definitions of all macros used by the front end
+Simula compiler (the run time system S-code will never contain macro calls). In systems
+where this facility is implemented (see below) this module is implicitly inserted in the
+S-compiler when it processes S-programs generated by the Simula front end compiler.
+Only one macro definition module will occur in one particular release of the portable
+system.</p>
+
+<p>Macros are introduced for two purposes:</p>
+
+<ul>
+  <li>S-code compression, and</li>
+  <li>code generation optimisation in the S-compiler.</li>
+</ul>
+<p>The front end compiler will be able to either generate macro calls or generate the
+expansion of the call; this will be governed by a switch. Thus a particular S-compiler need
+not implement the macro facility at all, as long as the Simula front end compiler is installed
+with the macro expansion switch <u>on</u>.</p>
+
+<p>The macro definition module will be accompanied by a listing of all macro definitions,
+giving the symbolic S-code to be substituted at each macro call together with the rationale
+for the particular macro, and a specification of the kind of the parameters and of the
+parameter insertion points. This will facilitate efficient code generation for the macro
+expansions.</p>
+
+&nbsp;
+<h4>14..3..1.  <u>Macro definitions</u></h4>
+
+&nbsp;
+<p>	macro_definition</p>
+
+<p>		::=	<u>macro</u>  macro_name:byte  macro_parcount:byte</p>
+
+<p>			  <u>known</u>  macro_id:string</p>
+
+<p>			 &lt;macro_body_element&gt;*</p>
+
+<p>			<u>endmacro</u></p>
+
+&nbsp;
+<p>	macro_body_element</p>
+
+<p>		::=	<u>mark</u>  macro_sequence:string</p>
+
+<p>		::=	<u>mpar</u>  macro_parnumber:byte</p>
+
+&nbsp;
+<p>The macro definition determines the substitution schema for the macro call processing
+(see 14.3.2). The macro sequences of the body should not (and cannot) be analysed
+when the definition is processed, and nested definitions are illegal. The macro_parcount
+is the number of actual parameters given when the macro is called, i.e. zero means no
+parameters, one means exactly one parameter in the call etc. The points at which some
+actual parameter is to be inserted when the macro is expanded are marked by the
+<u>mpar</u>-construction, and the parnumber refer to the place in the actual parameter list (thus
+parnumber cannot be zero).</p>
+
+<p>The macro_id names the macro in a more reasonable manner than the pair (module_id,
+macro_name) does; it bears no other significance.</p>
+
+&nbsp;
+<h4>14..3..2.  <u>Macro expansion</u></h4>
+
+&nbsp;
+<p>	macro_call</p>
+
+<p>		::=	<u>mcall</u>  macro_name:byte  &lt;actual_parameter:string&gt;*</p>
+
+&nbsp;
+<p>The effect of a macro call upon the S-compiler will be described as if the macro expansion
+should take place by textual replacement in the input stream. It is emphasised that this
+description is for the purpose of definition only, other and more efficient methods are of
+course legal as long as the described effect is achieved.</p>
+
+<p>When a macro call is recognised the complete state of the S-compiler is saved and the
+S-compiler enters macro expansion mode. The corresponding macro definition is
+identified, and the call is scanned (the number of actual parameters is given by the
+definition). During the scan each actual parameter is assigned its parameter number,
+beginning at one. The macro call is now replaced &quot;textually&quot; after the following rules:</p>
+
+<ul>
+  <li>All macro body elements are processed in the sequence they occur in the
+definition.</li>
+  <li>If the element is a macro sequence, the string contents is inserted, i.e. the &quot;length
+byte&quot; of the string is removed.</li>
+  <li>If the element is a parameter number, the contents of the corresponding actual
+parameter string is inserted in the same manner.</li>
+</ul>
+<p>When the replacement defined above has taken place, the S-compiler leaves expansion
+mode, restores the state saved and continues processing with the first inserted byte.</p>
+
+<p>&nbsp;</p>
+<h3>14.4.  <u>Inclusion of a module</u></h3>
+
+&nbsp;
+<p>	insert_statement</p>
+
+<p>		::=	<u>insert</u>  module_id:string  check_code:string</p>
+
+<p>			  external_id:string tagbase:newtag  taglimit:newtag</p>
+
+&nbsp;
+<p>		::=	<u>sysinsert</u> module_id:string  check_code:string</p>
+
+<p>			  external_id:string tagbase:newtag  taglimit:newtag</p>
+
+&nbsp;
+<p>This instruction causes the S-Compiler to include a module. The external_id is used to
+identify the module with respect to an operating system. If the single character ? is given
+as an external_id the S-Compiler should search the module definition library for a module
+identified by the module_id. If it cannot be found or if the check code does not match, the
+S-Code is in error.</p>
+
+<p><u>sysinsert</u> is used for system modules RTS, simob etc., while <u>insert</u> is used for user
+modules e.g. seperately compiled classes.</p>
+
+<p>The visible objects of the module (as specified in the tag_list) are now brought into the
+current compilation unit by adding tagbase to the external numbers specified, checking
+that taglimit is not exceeded. Thus tags are allocated from the range (tagbase..taglimit).</p>
+
+<p>Each insert instruction will have this effect, and the same module may be included several
+times in the same compilation unit. The consequence of that is to create several intervals
+of tags, refering the same elements in the included module.</p>
+
+&nbsp;
+<h3>14.5.  <u>Linkage of modules</u></h3>
+
+&nbsp;
+<p>The linkage of the executable code will generally be done in a manner standard to the
+target system. Some knowledge about the modules must, however, be communicated to
+the S-compiler: identification and type binding etc. of names external to the program being
+compiled. Such information is procured from a data base (the module definition library)
+maintained by the S-compiler itself. The naming conventions used, the structure of and
+access method to this data base are highly system-dependent.</p>
+
+<p>&nbsp;</p>
+
+</body>
+
+</html>

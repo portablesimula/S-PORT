@@ -1,0 +1,139 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>8</title>
+</head>
+
+<body>
+
+<h2>8.  <strong>DYNAMIC QUANTITIES</strong></h2>
+
+&nbsp;
+<p>	access_instruction</p>
+
+<p>		::=	<u>setobj</u>	!  <u>getobj</u></p>
+
+<p>		::=	<u>access</u>  oindex:byte  attribute:tag</p>
+
+<p>		::=	<u>accessv</u>  oindex:byte  attribute:tag</p>
+
+<br WP="BR1"><br WP="BR2">
+The addressing of dynamic quantities poses a problem as their descriptors are
+incomplete. Dynamic quantities are continually being created and destroyed during
+program execution, and the S-compiler is not in control of their creation and allocation in
+storage; this task is the responsibility of the run time system.
+<p>In order to complete the definition of descriptors of dynamic objects the S-compiler must
+provide a mechanism for associating object addresses (to be generated at run time) with
+natural numbers or object indices known at compile time. The access instructions
+described below manipulate such associations.</p>
+
+<p>The scheme adopted should give complete freedom to the S-compiler in choosing an
+appropriate implementation strategy; this can have a considerable effect on run-time
+performance. The upper bound on the indices is implementation-defined, but it must be
+greater than 7.</p>
+
+<p>A well-known implementation technique using a &quot;display vector&quot; being continually updated
+during program execution is for instance catered for in this proposal; as a matter of fact
+that is the reason why the numbers associated with the objects are called &quot;object indices&quot;.</p>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>setobj</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;	check TOS type(INT);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force SOS value;	check SOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;  pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	The object addressed by the value described by SOS will at run time be associated
+with the value of TOS, destroying any previous association of TOS. TOS and SOS
+are popped from the stack.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>getobj</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;  check TOS type(INT);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">&nbsp;push( VAL, OADDR, &quot;value ass. with value(TOS)&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	The object address previously associated with TOS value (through <u>setobj</u>) is
+retrieved, and a new descriptor is created to describe this object address. It
+replaces TOS.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>access</u>  oindex:byte  attr:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( REF, attribute.TYPE,<br>
+      &nbsp;&quot;OADDR associated with oindex&quot;, attribute.OFFSET);</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction may be approximately described as a <u>getobj</u> followed by a <u>select</u>. A
+descriptor of the attribute, regarded as a component of the object associated with
+      oindex, will be pushed onto the stack.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>accessv</u>  oindex:byte  attr:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( REF, attribute.TYPE,<br>
+      &nbsp;		&quot;OADDR associated with oindex&quot;, attribute.OFFSET);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction has the same effect as an <u>access</u> oindex:byte attr:tag followed by a
+<u>fetch</u>.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+
+</body>
+
+</html>

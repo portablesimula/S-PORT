@@ -1,0 +1,20 @@
+set -kv
+date
+df
+rm *.PAR
+rm *.par
+rm *.AT?
+rm *.at?
+rm *.AX?
+rm *.ax?
+rm *.obj
+rm *.o
+rm *.map
+rm *.lst
+rm dmp*
+rm *.dmp*
+rm xxx*
+rm yyy*
+rm zzz*
+rm ddd*
+df

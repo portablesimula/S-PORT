@@ -1,0 +1,129 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>15</title>
+</head>
+
+<body>
+
+<h2>15.  <strong>INITIALISATION OF ALLOCATED AREAS</strong></h2>
+
+&nbsp;
+<p>	area_initialisation</p>
+
+<p>		::=	<u>zeroarea</u></p>
+
+<p>		::=	<u>initarea</u>  resolved_type  !  <u>dinitarea</u>  structured_type</p>
+
+&nbsp;
+<p>For the purpose of giving dynamically allocated areas sensible initial values three
+instructions are defined. These instructions will always be used in the following manner:</p>
+
+<ul>
+  <li>when an area has been allocated by the system environment, or when a possible
+garbage collection has returned free storage, the area(s) will be   zeroed by
+<u>zeroarea</u>,</li>
+  <li>when a particular area has been acquired (somehow) to be structured by some
+type, one of the instructions <u>initarea</u> or <u>dinitarea</u> is issued.</li>
+</ul>
+<p>This usage pattern will be enforced by the front-end compiler and the run time system, i.e.
+when <u>initarea</u> is to be evaluated the S-compiler may assume that the area to be initialised
+has been zero-filled. Thus an implementation may choose to realise either <u>zeroarea</u> or the
+initarea-pair, or it may choose a mixed strategy, zero filling the area (<u>zeroarea</u>
+implemented) and partly implementing (<u>d</u>)<u>initarea</u> for those components which do not have
+a zero representation. It should be obvious that the complete implementation of <u>all</u> will be
+redundant and will probably lead to considerable run time overhead.</p>
+
+<p><u>Important note</u>:	Neither the prefix part nor alternative parts must ever be initialised.</p>
+
+<p>&nbsp;</p>
+<p><u>zeroarea</u>  (dyadic)</p>
+
+&nbsp;
+<p> *	force TOS value;  check TOS type(OADDR);</p>
+
+<p> *	force SOS value;  check SOS type(OADDR);</p>
+
+<p> *	pop;</p>
+
+&nbsp;
+<p>	TOS and SOS must be OADDR, otherwise error.</p>
+
+<p>	The area between SOS and TOS (SOS included, TOS not) is to be zero-filled, and
+TOS is popped.</p>
+
+&nbsp;
+<p><u>initarea</u>  resolved_type</p>
+
+&nbsp;
+<p> *	force TOS value;  check TOS type(OADDR);</p>
+
+&nbsp;
+<p>	TOS.TYPE must be OADDR, otherwise: error.</p>
+
+&nbsp;
+<p>	The argument type is imposed upon the area, and the area is initialised according
+to the table below. Only the common part of an instance of a structure will be
+initialised, ignoring both the prefix and any alternate part(s). The structure is
+initialised component by component according to the table below.</p>
+
+<p>&nbsp;</p>
+<p><u>dinitarea</u>  structured_type  (dyadic)</p>
+
+&nbsp;
+<p> *	force TOS value;  check TOS type(INT);</p>
+
+<p> *	force SOS value;  check SOS type(OADDR);</p>
+
+<p> *	pop;</p>
+
+&nbsp;
+<p>	TOS.TYPE must be INT, SOS.TYPE must be OADDR, and the structured type must
+contain an indefinite repetition, otherwise: error.</p>
+
+<p>	The value of TOS is used to resolve the type, i.e fixing the number of elements in
+the indefinite repetition, following that the evaluation proceeds exactly as for
+<u>initarea</u>.</p>
+
+<br WP="BR2">
+<p><center><u>Area initialisation values</u></center>
+</p>
+
+<br WP="BR1">
+<p>				type:			initialised to:</p>
+
+&nbsp;
+<p>				BOOL				<u>false</u></p>
+
+<p>				CHAR				NUL (ISO repr. 0)</p>
+
+<p>				INT				0</p>
+
+<p>				REAL, LREAL		0.0</p>
+
+<p>				SIZE				<u>nosize</u></p>
+
+<p>				AADDR			<u>anone</u></p>
+
+<p>				OADDR			<u>onone</u></p>
+
+<p>				GADDR			<u>gnone</u></p>
+
+<p>				PADDR			<u>nowhere</u></p>
+
+<p>				RADDR			<u>nobody</u></p>
+
+<p>				structure			- each attr. init. as above.</p>
+
+&nbsp;
+<p>Note:	if these values are represented as zero and if <u>zeroarea</u> is implemented, the
+instructions (<u>d</u>)<u>initarea</u> may safely be ignored!</p>
+
+<p>&nbsp;</p>
+
+</body>
+
+</html>

@@ -1,0 +1,107 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>10</title>
+</head>
+
+<body>
+
+<h2>10.  <strong>TYPE CONVERSION</strong></h2>
+
+&nbsp;
+<p>	convert_instruction</p>
+
+<p>		::=	<u>convert</u>  simple_type</p>
+
+&nbsp;
+<p>TOS must be of simple type, otherwise: error.</p>
+
+<p>The TYPE of TOS is changed to the type specified in the instruction, this may imply code
+generation. Not all conversions are valid, see the table below. An attempt to perform an
+invalid conversion is an error.</p>
+
+<p>The conversion performed will in some cases be illegal because of the actual value; one
+example would be to try to convert a REAL to an INT, if the actual value of the REAL is
+outside the range of INT. Such errors should be checked for at run time, in the cases
+where they can occur. These conversions are marked ? in the table. The handling of
+these errors at run time are described in (4).</p>
+
+<p>Conversion from a GADDR to OADDR (AADDR) means: take the object address (attribute
+address) part of the general address and return as result. An object address OADDR may
+be converted to a general address GADDR. In that case the object address is extended
+with an empty attribute address and the pair comprises the result.</p>
+
+&nbsp;
+<p>REAL (LREAL) to INT conversion is performed after the rule</p>
+
+&nbsp;
+<p>			INT = entier( REAL + 0.5 ).</p>
+
+&nbsp;
+<p>(Entier: the greatest integer not greater than the argument). The conversion should be
+done exactly.</p>
+
+<p>Observe that this rule does not preserve symmetry around zero; e.g. +0.5 is converted to
+1, while -0.5 is converted to 0.</p>
+
+<p><br WP="BR2">
+<br WP="BR1"><br WP="BR2">
+</p>
+<p>						L	A	O	G	P	R</p>
+
+<p> to:		B	C  	R	R	S	A	A	A	A	A</p>
+
+<p>		O	H	I	E	E	I	D	D	D	D	D</p>
+
+<p>		O	A	N	A	A	Z	D	D	D	D	D</p>
+
+<p> from:	L	R	T	L	L	E	R	R	R	R	R</p>
+
+<br WP="BR2">
+<p> BOOL	.</p>
+
+<p> CHAR	.	+</p>
+
+<p> INT		?	.	?	?</p>
+
+<p> REAL		?	.	?</p>
+
+<p> LREAL			?	?	.</p>
+
+<p> SIZE						.</p>
+
+<p> AADDR							.</p>
+
+<p> OADDR								.	+</p>
+
+<p> GADDR							+	+	.</p>
+
+<p> PADDR										.</p>
+
+<p> RADDR											.</p>
+
+&nbsp;
+<p><center><u>Table of legal conversions</center>
+</u></p>
+
+&nbsp;
+<p>	.  -	always a legal conversion, but a null operation</p>
+
+&nbsp;
+<p>	+  -	always legal and exact</p>
+
+&nbsp;
+<p>	?  -	the legality depends on the actual value being converted. Loss of accuracy
+is not considered an error when converting from integer values to real
+values. In other cases execution time checks may have to be inserted in
+order to avoid loss of information due to truncation.</p>
+
+&nbsp;
+<p>	blank  -  always illegal.</p>
+
+</body>
+
+</html>

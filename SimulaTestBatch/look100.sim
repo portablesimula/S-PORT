@@ -1,0 +1,41 @@
+begin text t; integer i,i0;
+      integer array diff(-100:100);
+      integer array total(-100:100);
+
+      procedure print(diff); intager array diff;
+      begin linesperpage(-1);
+         for i:=-100 step 1 until 100 do begin
+             if diff(i)<>0 then begin
+                outint(diff(i),0); outtext(" occurrences of diff. ");
+                outint(i,0); outimage;
+                total(i):=total(i)+diff(i); diff(i):=0;
+             end;
+         end;
+      end print;
+
+   inspect new infile("out100") do begin
+      open(blanks(80));
+      inimage; !skip blank;
+      while not endfile do begin
+          inimage;
+          if image.sub(1,3)<>"***" then begin
+             if not digit(loadchar(image,15)) then begin
+                outtext(image.strip); outimage;
+                inimage;
+                outtext(image.strip); outimage;
+                goto EXIT
+             end;
+             i:=image.sub(16,4).getint;
+             inimage;
+             i:=image.sub(16,4).getint-i;
+             diff(i):=diff(i)+1;
+             if abs(i) > 2 then begin
+         OUT:   outtext(image.strip); outint(i,4); outimage;
+             end;
+          end else begin print(diff); goto OUT end;
+          inimage; !skip blank;
+      end;
+      EXIT:
+          print(total); close;
+   end;
+end

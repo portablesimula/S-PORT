@@ -1,0 +1,28 @@
+Module inver_("RTS 108");
+ begin sysinsert rt,sysr,knwn;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                  ---
+       ---  Simula a.s.                                        ---
+       ---  Oslo, Norway                                       ---
+       -----------------------------------------------------------
+
+       Visible routine ("invert")invert;
+       import name(ref(inst)) nexta;
+       export      ref(inst)  res;
+       ---  invert a list on the link field nexta. At entry nexta
+       ---  points to the link field of the first elt of the list
+       begin ref(inst) head,last,cur; field rela;
+             head:=conv_ref(nexta); rela:=conv_field(nexta); last:=none;
+             repeat while last <> head
+             do cur:=head;
+                repeat while var(cur+rela) <> last
+                do cur:=var(cur+rela) endrepeat;
+                if last = none then res:=cur; last:=cur;
+                else var(last+rela):=cur; last:=cur endif;
+             endrepeat;
+             if last <> none then var(last+rela):=none endif;
+       end;
+
+
+end;

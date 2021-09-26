@@ -1,0 +1,264 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>5</title>
+</head>
+
+<body>
+
+<h2>5.  <strong>STACK INSTRUCTIONS AND ASSIGNMENT</strong></h2>
+
+&nbsp;
+<p>	stack_instruction</p>
+
+<p>		::=  <u>push</u>  obj:tag	!  <u>pushv</u>  obj:tag</p>
+
+<p>		::=  <u>pushc</u>  value	!  <u>dup</u>	!  <u>pop</u>	!  <u>empty</u></p>
+
+<p>		::=  <u>pushlen</u>  (see chapter 7)</p>
+
+<p>		::=  <u>popall</u>  byte</p>
+
+<br WP="BR2">
+<p>	assign_instruction</p>
+
+<p>		::=	<u>assign</u>		!   <u>update</u>	!   <u>rupdate</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>push</u>  obj:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( REF, obj.TYPE, obj.BASE, obj.OFFSET );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	Obj must refer to a defined global, local or constant quantity, otherwise: error.
+Observe that routine parameters and exit tags are local quantities.
+      <p>A copy of the descriptor is pushed onto the stack.</td>
+  </tr>
+</table>
+<br WP="BR2">
+<br WP="BR2">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>pushv</u>  obj:tag</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( REF, obj.TYPE, obj.BASE, obj.OFFSET );</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction has the same effect as a push obj:tag, followed by a <u>fetch</u>.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>pushc</u>  constant:value</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, constant.TYPE, &quot;value&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	A descriptor of the given value is pushed onto the stack.
+      <p>	Note that on some machines it is possible to use certain values as part of the target
+instruction (immediate operands), in which case the descriptor may hold the actual
+value. On other machines or with more complex values, it may be necessary to
+place the value in store. In either case the descriptor will be of mode VAL, thus the
+value will not have an associated address. The syntax of values is given in section
+4.4.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>dup</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( TOS );</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	A duplicate of TOS is pushed onto the stack and forced into value mode.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>pop</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	Pop off TOS;<br>
+	This instruction is illegal if TOS is a profile description.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>popall</u>  N:byte</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	perform pop n times;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check stack empty;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	Pop N items off the stack. The stack should then be empty, otherwise: error.</p>
+
+<p>	This instruction gives a short way of emptying the stack, together with the control of
+the number of elements that was on the stack. Profiles cannot be deleted from the
+stack by <u>pop</u>, only by deleting the complete stack through <u>popall</u>.</p>
+
+    </td>
+  </tr>
+</table>
+
+<br WP="BR1">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>empty</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check stack empty;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction is intended as a debugging aid, it is recommended that the
+condition is checked always.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>assign</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check SOS ref;  check types identical;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;  pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	Code is generated to transfer the value described by TOS to the location
+designated by SOS. This implies that the stack elements must be evaluated, and
+that any code generation involving TOS or SOS, that has been deferred for
+optimisation purposes, must take place before the assignment code is generated.
+SOS and TOS are popped from the stack.</td>
+  </tr>
+</table>
+
+<br WP="BR1"><br WP="BR2">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>update</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check SOS ref;  check types identical;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force SOS value;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	Code is generated to transfer the value described by TOS to the location
+designated by SOS. TOS must be evaluated and any deferred code generation
+involving TOS must take place before the update code is generated. Note that only
+TOS is popped and the new TOS is modified to describe the value assigned.</td>
+  </tr>
+</table>
+<p>
+
+<br WP="BR1"></p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>rupdate</u>   (dyadic)</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check TOS ref;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">&nbsp;force SOS value;	check types identical;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	This instruction (&quot;reverse update&quot;) works almost like update with the sole exception
+that the roles of TOS and SOS are interchanged, i.e. the value transfer is <u>from</u> SOS
+<u>to</u> TOS.</td>
+  </tr>
+</table>
+
+</body>
+
+</html>

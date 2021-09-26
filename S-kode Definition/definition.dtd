@@ -1,0 +1,17 @@
+<!ELEMENT defintion (contact+, paragraph+)>
+
+<!ELEMENT contact (name, address1, address2, city, state,
+   zip, phone, flag)>
+<!ATTLIST contact type CDATA #IMPLIED>
+
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT address1 (#PCDATA)>
+<!ELEMENT address2 (#PCDATA)>
+<!ELEMENT city (#PCDATA)>
+<!ELEMENT state (#PCDATA)>
+<!ELEMENT zip (#PCDATA)>
+<!ELEMENT phone (#PCDATA)>
+<!ELEMENT flag (EMPTY)>
+<!ATTLIST flag id CDATA #IMPLIED>
+
+<!ELEMENT paragraph (#PCDATA)>

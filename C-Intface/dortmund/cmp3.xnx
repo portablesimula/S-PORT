@@ -1,0 +1,41 @@
+cat >gethostid.c <<endcat
+int gethostid()
+{
+  char sn[9];
+  strcpy (sn,"hugo");
+  return (sn[2]);
+}
+endcat
+cc -c gethostid.c
+# ===================================================
+cat >hwtest.c <<endcat
+#include <stdio.h>
+#include "gethostid.c"
+
+main()
+{
+  int out;
+  out = gethostid();
+  printf("%d\n",out);
+}
+endcat
+cc hwtest.c
+# ===================================================
+cat >tsthost.sim <<endcat
+begin external C procedure gethostid is integer procedure th;;
+      integer i; text t;
+      i:=th;
+      outint(i,12);
+end;
+endcat
+sim$SREL.x32<<endc
+set opt M
+include gethostid.o
+com tsthost.sim
+lo
+exit
+endc
+# ===================================================
+tsthost
+./a.out
+rm gethostid* hwtest* tsthost* a.out auto*

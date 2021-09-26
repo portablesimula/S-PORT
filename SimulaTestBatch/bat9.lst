@@ -1,0 +1,115 @@
+#
+# NOTE!!! simtst00 may take VERY LONG TIME to execute !!!!
+#
+set +kv
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/simtst90.sim
+SIM: load
+simtst90 loaded
+SIM: simtst90 /w1
+--- START Simula a.s. TEST 90
+--- Test getfrac/putfrac
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 90
+SIM: compile src/simtst91.sim
+
+*** INTERNAL ERROR (RTS error #16) at source line 47
+SIM: load
+simtst90 loaded
+SIM: simtst91 /w1
+sh: simtst91: not found
+SIM: compile src/simtst92.sim
+SIM: load
+simtst92 loaded
+SIM: simtst92 /w1
+--- START Simula a.s TEST 92
+--- Test of virtual labels and procedures
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s TEST 92
+SIM: compile src/simtst93.sim
+SIM: load
+simtst93 loaded
+SIM: simtst93 /w1
+--- START Simula a.s - SIMULA TEST NO 93
+--- Test Simset - linkage, head, link, head, into,
+--- out, follow and precede.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s TEST 93
+SIM: compile src/simtst94.sim
+SIM: load
+simtst94 loaded
+SIM: simtst94 /w1
+--- START Simula a.s TEST 94
+--- Test Simset - first, last, empty, cardinal and clear.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s TEST 94
+SIM: compile src/simtst95.sim
+SIM: load
+simtst95 loaded
+SIM: simtst95 /w1
+--- START Simula a.s TEST 95
+--- Test nested declaration of classes and prefixing.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s TEST 95
+SIM: compile src/simtst96.sim
+SIM: load
+simtst96 loaded
+SIM: simtst96 /w1
+--- START Simula a.s. TEST 96
+    Test of Simulation - reads from infile "data96".
+
+--- END Simula a.s. TEST 96
+ (NO ERRORS FOUND)
+SIM: compile src/simtst97.sim
+SIM: load
+simtst97 loaded
+SIM: simtst97 /w1
+--- START Simula a.s. - TEST No. 97      ---
+--- Tests Process, activation statements, ---
+--- idle, terminated, time.               ---
+--- NO ERRORS FOUND IN THIS TEST
+--- END OF Simula a.s - SIMULA TEST NO 97
+SIM: compile src/simtst98.sim
+SIM: load
+simtst98 loaded
+SIM: simtst98 /w1
+--- START Simula a.s test 98 (attribute protection test)
+--- END Simula a.s TEST 98 (NO ERRORS FOUND)
+SIM: compile src/simtst99.sim
+SIM: load
+simtst99 loaded
+SIM: simtst99 /w1
+--- START Simula a.s TEST 99--- Test mod, rem, min, max.
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 99
+SIM: compile src/simtst00.sim
+SIM: load
+simtst00 loaded
+SIM: simtst00
+START Simula a.s test 100
+    Test monotoneity of putreal and getreal.
+    Test that put-get-put delivers the identity.
+    - report on outfile "out100"
+
+..END Simula a.s test 100 (no significant deviations found)
+SIM: exit
+EXIT  SIMULA
+-rw-rw-r--   1 sport    group      15154 Jun 29 12:23 out100
+-rw-rw-r--   1 sport    group      30824 Oct 29  1990 out100.diff
+-rw-rw-r--   1 sport    group      13102 Nov  6  1990 out100.doscp
+-rw-rw-r--   1 sport    group      28002 Nov  6  1990 out100.dosem
+-rw-r--r--   1 sport    group      25842 Oct 29  1990 out100.wei
+-rw-rw-r--   1 sport    group      15154 Nov  1  1990 out100.x16
+-r--r--r--   1 sport    group      13102 Oct 29  1990 out100.x16.8
+-rw-rw-r--   1 sport    group      13854 Oct 29  1990 out100.x32

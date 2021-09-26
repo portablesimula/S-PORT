@@ -1,0 +1,350 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>7</title>
+</head>
+
+<body>
+
+<h2>7.  <strong>INTERMEDIATE RESULTS</strong></h2>
+
+<br WP="BR1">
+<p>	protect_statement</p>
+
+<p>		::=	<u>save</u>  &lt;program_element&gt;*  <u>restore</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	protect_instruction</p>
+
+<p>		::=	<u>save</u>  &lt;instruction&gt;*  <u>restore</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	temp_control</p>
+
+<p>		::=	<u>t-inito</u>   !   <u>t-geto</u>   !   <u>t-seto</u></p>
+
+<br WP="BR1">
+<p>During the compilation the stack will regularly contain items, which describe partially
+evaluated expressions such as e.g. incomplete address calculations. The execution of the
+corresponding machine instructions will at run time give rise to intermediate results; of
+necessity these must be held in some form of anonymous storage, <u>the temporary area</u>.
+The actual implementation of this area should be highly target machine dependent, thus
+the machine registers may be used if a sufficiently large number of registers are available.</p>
+
+<p>At <u>save</u> the intermediate results are copied from the temporary area into some object, the
+<u>save-object</u>, provided by the run time system, and at <u>restore</u> the temporary area is
+reestablished from this object.A garbage collection might be invoked from a routine (but
+never from the outermost program level), thus the values of type OADDR and GADDR in
+the save-objects must be accessible (to the run time system). (We will in this chapter call
+the OADDR part of such values <u>pointers</u>.)</p>
+
+<p>For the purpose of explanation we assume that the S-compiler keeps track of two
+attributes of the temporary area, namely ALLOCATED which is the SIZE of the used part
+of the temporary area at any given program point, and MARKS which identify all
+intermediate values of type OADDR or GADDR. The former must be available during the
+processing of <u>pushlen</u> (q.v.), while some representation of the latter must be transferred to
+the save-object (at <u>save</u>).</p>
+
+<p>The temp control instructions are used as follows: <u>t-inito</u> is called in preparation of a
+complete scan through the pointers of a save-object. During the scan <u>t-geto</u> will be called
+repeatedly, yielding the pointers successively. If the pointer is to be updated, one <u>t-seto</u>
+will follow the corresponding <u>t-geto</u>, so that the pointer just inspected will be updated.</p>
+
+&nbsp;
+<h3>7.1.  <u>Implementation directives</u></h3>
+
+<p>Since the contents of a save-object always will be accessed through one of the
+instructions to be defined below (<u>t-inito</u>, <u>t-geto</u>, <u>t-seto</u>) the internal structure is completely
+implementation- dependent. The reason is, that the access must be as fast as possible on
+any given architecture, since the garbage collector makes several scans over the existing
+save-objects during the mark and the move phases.</p>
+
+&nbsp;
+<h4>7.1.1.  <u>The save object</u></h4>
+
+<p>Apart from the actual temporaries saved, some additional information must be present in
+the save-objects. For the purpose of explanation we will call this additional attribute
+SAVE-MARKS. SAVE-MARKS is some representation of the MARKS attribute to the
+temporary area, which allows for sequential access to all pointer values saved. (E.g. a bit
+map indicating the positions of the pointers in the save object, or an address to a
+description of the save object, or a value giving the number of pointers, provided they are
+stored consecutively in the save object, from a fixed offset.)</p>
+
+<p>All of the temporary area must be included in the save object, except those values which
+are constants. This includes non-pointers as well as pointers, and includes REF items as
+well as VAL items. All REF items, all GADDR items and all OADDR items must be
+delivered as pointers with <u>t-geto</u> unless they are known to be <u>onone</u> or <u>gnone</u>, or are
+known to point within global variables, local variables or constants. Pointers that are
+attributes of records must be returned unless they are in an alternate part of the record.
+Note that the requirements that REF pointers must be returned implies that in general the
+run time representation of a REF item must be the same as that of a GADDR.</p>
+
+&nbsp;
+<h4>7.1.2.  <u>Temp-control</u></h4>
+
+<p>The parameters to the instructions <u>t-geto</u> and <u>t-seto</u> are implicit, i.e. they refer to the
+save-object referenced by the most recent call (at run time) on <u>t-inito</u>, successive calls on
+<u>t-geto</u> scans through the pointers in the save object, and a call on <u>t-seto</u> refers to the
+pointer accessed by the most recent call on <u>t-geto</u>.</p>
+
+<p>For the purpose of explanation we introduce two anonymous variables, SAVE-OBJECT
+and SAVE-INDEX. SAVE-OBJECT is set by <u>t-inito</u> and referenced by <u>t-geto</u> and <u>t-seto</u>.
+SAVE-INDEX is initialized by <u>t-inito</u>, updated by <u>t-geto</u> and referenced by <u>t-seto</u>. In an
+implementation some representation of SAVE-OBJECT and SAVE-INDEX could be kept in
+dedicated registers or in main storage. The use of the variables is explained in detail
+below.</p>
+
+&nbsp;
+<h3>7.2.  <u>The occurrence of the protect construction</u></h3>
+
+<p>The construction will occur in S-programs in the following context alone:</p>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="23%"><u>pushlen</u>				</td>
+    <td width="77%">				( parameter to a run time      )</td>
+  </tr>
+  <tr>
+    <td width="23%"><u>asscall</u>  &quot;profile:tag&quot;</td>
+    <td width="77%">	( system routine, which returns)</td>
+  </tr>
+  <tr>
+    <td width="23%"><u>call</u>     &quot;body:tag&quot;</td>
+    <td width="77%">		( the OADDR of a save-object   )</td>
+  </tr>
+  <tr>
+    <td width="23%"><u>save</u></td>
+    <td width="77%">&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="23%">	 ...</td>
+    <td width="77%">
+<p>	 ( some S-code sequence which will result in TOS describing an OADDR (mode REF), pointing to the object saved above )</p>
+
+    </td>
+  </tr>
+  <tr>
+    <td width="23%"><u>restore</u></td>
+    <td width="77%">&nbsp;</td>
+  </tr>
+</table>
+
+<br WP="BR1"><br WP="BR2">
+The protect instruction is illegal within routine bodies.
+<p>The <u>pushlen</u> instruction will occur only in this context. Furthermore the object address
+returned from the run time system before <u>restore</u> will point to the object generated at the
+corresponding <u>save</u>. Observe that the object <u>address</u> is not necessarily the same since a
+garbage collection may have occurred between <u>save</u> and <u>restore</u>.</p>
+
+<br WP="BR1">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>pushlen</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, SIZE, &quot;temporary area.LENGTH&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	An implicit <u>eval</u> is performed.</p>
+
+<p>	The SIZE needed for the following <u>save</u>, that is the sum of the current value of
+ALLOCATED and the number of object units, which is needed for SAVE-MARKS
+and possibly other implementation-dependant information, is computed and the
+value is pushed onto the stack.</p>
+
+<p>For optimisation purposes, it is set to <u>nosize</u> in case ALLOCATED = <u>nosize</u> (i.e. if the
+temporary area is empty). In this case the accompaning <u>save</u> and corresponding <u>restore</u>
+will receive <u>onone</u> as parameter.</p>
+
+<p>	An S-compiler may choose to skip code generation for the complete sequence
+<u>pushlen</u>, <u>asscall</u>, <u>call</u>, and <u>save</u> in the case ALLOCATED = <u>nosize</u>. In that case the
+processing of <u>restore</u> is changed, see below.</p>
+
+    </td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>save</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;  check TOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	remember stack;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	purge stack;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	TOS describes the address of a save-object. The size of this object is as
+determined by the preceding <u>pushlen</u>. The complete state of the stack is
+remembered (together with the values of ALLOCATED and MARKS) and the
+compilation continues with an empty stack.</p>
+
+<p>	Code is generated, which - if TOS.VALUE &lt;&gt; <u>onone</u> (see note below) - at run time
+will save the used part of the temporary area, and set the SAVE-MARKS attribute.</p>
+
+<p>	TOS is popped.</p>
+
+    </td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>restore</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check TOS ref;  check TOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">push(onone);  perform assign;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	check stack empty;</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	reestablish stack remembered at corresponding save;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	The stack remembered by the corresponding save is reestablished (together with
+the attributes ALLOCATED and MARKS).</p>
+
+<p>	Code is generated, which - if TOS.VALUE &lt;&gt; <u>onone</u> (see note below) - at run time
+will copy the content of the specified save-object into the temporary area (the
+save-object will be the one generated at the corresponding save). After the copy
+has been taken, <u>onone</u> is assigned to what is referred by TOS.</p>
+
+<p>	TOS is popped.</p>
+
+    </td>
+  </tr>
+</table>
+
+<br WP="BR1"><br WP="BR2">
+Notes:
+<ul>
+  <li>Although the test TOS.VALUE = <u>onone</u> is a run time condition it may be deduced
+by the S-compiler from the fact that <u>onone</u> will occur on the stack iff <u>pushlen</u>
+resulted in <u>nosize</u> being pushed (and the latter condition is determinable at compile
+time).</li>
+  <li>The front end compilers do not generate the protect construction in case the
+compile time stack is empty.</li>
+</ul>
+
+<br WP="BR1">
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>t-inito</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;  check TOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	Code is generated to initialise a scan of the save-object described by TOS, i.e.
+SAVE-OBJECT is set to refer to the object, and SAVE-INDEX is initialized.</p>
+
+<p>	TOS is popped.</p>
+
+    </td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>t-geto</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	push( VAL, OADDR, &quot;value of current pointer&quot; );</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">	Code is generated, which in case SAVE-INDEX refers to the &quot;last&quot; pointer of the
+save object refered by SAVE-OBJECT or no pointer exists in the object, the value
+<u>onone</u> is returned to signal that the scan of the object should be terminated.
+Otherwise SAVE-INDEX is updated to describe the &quot;next&quot; pointer of the save
+object. In case the value of the &quot;next&quot; pointer is <u>onone</u>, the pointer is skipped, i.e.
+iterate this description, otherwise the value of the refered pointer is returned.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="100%" colspan="2"><u>t-seto</u></td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	force TOS value;   check TOS type(OADDR);</td>
+  </tr>
+  <tr>
+    <td width="6%">
+      <p align="center"> *</td>
+    <td width="94%">	pop;</td>
+  </tr>
+  <tr>
+    <td width="6%">&nbsp;</td>
+    <td width="94%">
+<p>	Code is generated that inserts the value described by TOS into the pointer variable
+refered by SAVE-OBJECT and SAVE-INDEX. Note that <u>t-seto</u> does not update
+SAVE-INDEX.</p>
+
+<p>	TOS is popped.</p>
+
+    </td>
+  </tr>
+</table>
+<p><br WP="BR2">
+<br WP="BR1">Important note:&nbsp;</p>
+<ul>
+  <li>	Only the OADDR part of a general address should be updated. This
+instruction is issued by the garbage collector during the storage
+compaction, and objects are always moved as a whole.</li>
+</ul>
+
+</body>
+
+</html>

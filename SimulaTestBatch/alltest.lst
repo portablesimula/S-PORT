@@ -1,0 +1,14 @@
++ date 
+Sat Jun 29 11:40:58 cdt 1991
++ run bat0 sim109.x32 
++ run bat1 sim109.x32 
++ run bat2 sim109.x32 
++ run bat3 sim109.x32 
++ run bat4 sim109.x32 
++ run bat5 sim109.x32 
++ run bat6 sim109.x32 
++ run bat7 sim109.x32 
++ run bat8 sim109.x32 
++ run bat9 sim109.x32 
++ date 
+Sat Jun 29 12:23:49 cdt 1991

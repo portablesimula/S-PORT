@@ -1,0 +1,176 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta http-equiv="Content-Language" content="en-gb">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>2</title>
+</head>
+
+<body>
+
+<h2>2.  <strong>DESCRIPTORS AND THE COMPILE TIME STACK</strong></h2>
+
+<p>The actions, which the S-compiler should take upon recognition of a specific program
+element, are defined in terms of <u>descriptors</u>. These actions will in general involve both the
+manipulation of descriptors and code generation for the target machine. Exactly <u>when</u>
+such code generation should take place, as well as the generation <u>order</u>, is to a wide
+extent left to the S-compiler to decide. However, at certain points in the program code
+generation <u>must</u> take place. Such points are either implicit in the evaluation of certain
+instructions, or they will be marked explicitly by the <u>eval</u> instruction (see chapter 16).</p>
+
+<p>The descriptors contain information about various objects which will exist during the
+computation. The descriptors themselves do not exist at run time; they are compile-time
+objects used to control the generation of executable code. The exact form of descriptors
+(and other data structures maintained during the compilation process) depends on both
+the target machine and the implementation techniques, but for the purpose of explanation
+we will assume that descriptors will contain at least three fields: MODE, TYPE, and
+&quot;value&quot;.</p>
+
+<p>Once a descriptor has been defined it remains unaltered, but the tagged descriptors are
+used to create and modify anonymous descriptors held in a <u>stack</u>. This stack need not
+have any existence in the compiled program, it is purely a device for describing the effect
+of the S-instructions. At run time intermediate results will exist; such &quot;temporaries&quot; are
+related to the state of the compile-time stack. In practice the stack will never be very deep,
+a limit of about fifty descriptors should prove to be over-generous.</p>
+
+<h3>2.1.  <u>The &quot;value&quot; field (BASE, OFFSET)</u></h3>
+
+<p>This field may hold an address or a value - or even a specification of a computation that
+will lead to either - depending upon the MODE field. For the purpose of explanation we
+will adopt the very naive view that this field always contains either an address description
+or a value. In the former case (when MODE is REF) we will consider this field to comprise
+two subfields, referred to as BASE and OFFSET; they will contain descriptors of the
+OADDR and the AADDR components of a general address respectively. Generally the
+&quot;value&quot; field will be described in very loose terms.</p>
+
+<h3>2.2.  <u>MODE, the access control field</u></h3>
+
+<p>The MODE is an implementation-dependent specification of an algorithm or &quot;access rule&quot;
+which, when applied to the rest of the descriptor, will yield the described quantity. Clearly,
+as these access rules will vary from compiler to compiler it is impossible to give a rigorous
+definition of them. However from the point of view of describing the effect of certain
+S-code constructions, access rules can be grouped into two general modes, namely VAL
+and REF.</p>
+
+<table border="0" width="100%" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="8%" valign="top">VAL</td>
+    <td width="92%">
+  <df>VAL access rules describe <u>values</u>. In this case the &quot;value&quot; field may or may not
+contain the actual value described. A descriptor with MODE VAL could specify that
+a value is
+<ul>
+<li>the constant 137</li>
+<li>contained in register 4</li>
+<li>the address of label LAB1</li>
+<li>contained in area X</li>
+<li>or it could specify an algorithm for obtaining the value, such as &quot;add the
+value in area X to index register 6&quot; etc.</li>
+</ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="8%" valign="top">REF&nbsp;</td>
+    <td width="92%">
+<p>	REF access rules describe references to areas which have an associated address
+of some sort. In this case the &quot;value&quot; field may or may not hold this address. A
+descriptor of MODE REF could specify that an area is</p>
+
+      <ul>
+        <li>	pointed at by index register 2</li>
+        <li>	pointed at by the area X</li>
+        <li>	starting at bit 5 of the area 300</li>
+        <li>	at the address: displacement + (base)</li>
+        <li>	at the address: (display(5)) + offset</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+<p>The main significance of this distinction may be stated:</p>
+
+<blockquote>
+<p>	An assignment of a quantity described by &quot;descr1&quot; to a quantity described by
+&quot;descr2&quot; is not valid if descr2 do not have mode REF. The descriptor descr1 may
+be of either mode, if it is REF, it is converted to VAL first.</p>
+
+</blockquote>
+<h3>2.3.  <u>TYPE, the data item type</u></h3>
+
+<p>TYPE specifies the values that may be associated with the object described, and hence
+also defines the interpretations of operations upon that object; the instruction <u>add</u> may
+operate on integers or reals, and depending on the actual type either a real (floating point)
+add or an integer add machine instruction may be generated.</p>
+
+<p>Within a descriptor the TYPE field holds the tag of a descriptor defining the type. The
+simple types refer to pre-defined descriptors, while structured types refer to record
+descriptors. The descriptors referred to by TYPE have TYPE fields referring to themselves.
+The TYPEs manipulated by S-code may be grouped as follows:</p>
+
+<table border="0" width="100%" cellspacing="5" cellpadding="0">
+  <tr>
+    <td width="14%" valign="top">VOID&nbsp;</td>
+    <td width="86%">	This type is used to restrict the operations on certain descriptors. The only general
+operation permitted is <u>pop</u>, but other operations are defined on specific classes of
+descriptors of type VOID. VOID is <u>not</u> a type of S-code, purely a convenient
+specification for certain descriptors.</td>
+  </tr>
+  <tr>
+    <td width="14%" valign="top">simple type</td>
+    <td width="86%">		The simple types are BOOL, CHAR, INT, REAL, LREAL, SIZE,
+      AADDR, OADDR, GADDR, PADDR, and RADDR, and are described in section 4.1.</td>
+  </tr>
+  <tr>
+    <td width="14%" valign="top">structuredtypes</td>
+    <td width="86%">		refer to type tags defined by record descriptors, see section 4.3.</td>
+  </tr>
+</table>
+&nbsp;
+<h3>2.4.  <u>Reference to descriptors (tags)</u></h3>
+
+<p>During the compilation descriptors will be created and destroyed. With the exception of
+stack items each descriptor is associated on creation with a unique identifying &quot;tag&quot;, on
+destruction the tag becomes available for re-use.</p>
+
+<p>In this document tags will be used in a manner similar to the use of identifiers in other
+languages, that is they will represent either a particular descriptor or the object described
+by that descriptor. In the hardware representation of S-code the tags will be positive
+numbers.</p>
+
+<p>Syntactically a distinction is made between &quot;tag&quot;, &quot;newtag&quot;, and &quot;spectag&quot;. Whenever
+&quot;tag&quot; occurs the corresponding value must be defined, that is associated with a descriptor.
+&quot;newtag&quot; signifies that the tag value is undefined, that is it has either never
+occurred previously in the program text, or the meaning has been (explicitly or implicitly) deleted. In
+the case of &quot;spectag&quot;, the tag value may either be undefined, otherwise it must have
+occurred previously in a specification of a routine, a constant, or a label.</p>
+
+<h3>2.5.  <u>Stack semantics</u></h3>
+
+<p>The effect of instructions upon the items in the stack is described using a procedural
+notation, and marked with asterisks in the left margin. The following terms are used with a
+specific meaning:</p>
+
+<ul>
+  <li>the term &quot;error&quot; means that the compilation should be abandoned with a minimum
+of change to the controlling environment. A suitable error message should be
+generated.</li>
+  <li>&quot;check ...&quot; (e.g. check TOS ref;) means that if the condition is not fulfilled (in the
+example: if TOS is not mode REF) the S-program is in error (see above).</li>
+  <li>The top elements of the stack will be referred to as TOS (top of stack) and SOS
+(second on stack). If any instruction refers to a non-existing item on the stack, the
+S-program is in error.</li>
+  <li>	<u>TOS</u> and <u>SOS</u> (underlined) refer to the elements <u>before the evaluation started</u>.</li>
+  <li>the operation &quot;++&quot; implies the concatenation of two OFFSETs, the result (at run
+time) being the OFFSET of the second operand relative to the BASE of the first
+operand. This may imply code generation. For an example, see the <u>index</u>
+instruction in chapter 6.</li>
+  <li>&quot;force ... value&quot; means that a descriptor of mode REF is changed to describe the
+contents of the referenced area, thereby becoming VAL. This may imply code
+generation. If the mode was VAL, nothing is done.</li>
+</ul>
+<p>&nbsp;</p>
+
+</body>
+
+</html>

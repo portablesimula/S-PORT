@@ -1,0 +1,691 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>4</title>
+</head>
+
+<body>
+
+<h2>4.  <strong>TYPES AND VALUES</strong></h2>
+
+&nbsp;
+<p>	type</p>
+
+<p>		::=	structured_type   !   simple_type</p>
+
+<br WP="BR1"><br WP="BR2">
+	resolved_type
+
+<p>		::=	resolved_structure</p>
+
+<p>		::=	simple_type</p>
+
+<p>		::=	INT Range lower:number upper:number</p>
+
+<p>		::=	SINT</p>
+
+<br WP="BR1"><br WP="BR2">
+<br WP="BR1">Any data quantity must belong to some <u>type</u>. The type will define the internal structure of
+the quantity as well as the operations that may be performed upon it. Types are used as
+generators in global, constant, local or parameter definitions and as specificators in
+quantity descriptors. Each type defines a descriptor (of the same type), this descriptor
+cannot be used on the stack, thus types cannot be used dynamically as e.g. parameters.
+<p>The distinction between resolved and non-resolved type is made because of the indefinite
+repetition, which may occur in structured types. Such a type cannot be used as a
+generator, or in further type definition, without determining the actual number of elements
+in the repetition.</p>
+
+<p>Whenever the S-compiler should perform type checking, neither the actual number of
+elements in such an indefinite repetition, nor the actual range specified for an INT quantity
+is of any significance, unless it is explicitly indicated in the text. A structured type can be
+extended by using prefixing. Such two types are not type compatible (but note that the
+S-code only imposes type checking in a very few cases such as in initialisation of
+globals).</p>
+
+<h3>4.1.  <u>Predefined types and their value ranges</u></h3>
+
+<br WP="BR1">
+<p>	simple_type</p>
+
+<p>		::=	BOOL		!  CHAR</p>
+
+<p>		::=	INT		!  REAL	!  LREAL	!  SIZE</p>
+
+<p>		::=	OADDR	!  AADDR	!  GADDR	!  PADDR	!  RADDR</p>
+
+<br WP="BR2">
+<br WP="BR1">
+<p>All simple types are predefined tags. The language offers no possibility to define new
+simple types.</p>
+
+<h4>4.1.1.  <u>Arithmetic types</u></h4>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="15%" valign="top">BOOL</td>
+    <td width="85%">	Boolean. Takes the values <u>true</u> or <u>false</u>.</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">CHAR</td>
+    <td width="85%">	Character. 256 different characters are defined (corresponding to an 8-bit
+representation). The lower half of this ordered set is the ISO 646 character
+set (encoded accordingly), the interpretation of the upper half is
+implementation-dependent.</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">INT</td>
+    <td width="85%">		Integer. Signed integer values with a machine dependent range and
+representation. The range must correspond at least to a 16-bit
+representation, but if possible it should be at least 32 bits.</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">REAL</td>
+    <td width="85%">	A subset of the real values, which is representable on the target machine.</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">LREAL</td>
+    <td width="85%">	Long real. A set of real values with greater precision than the REAL values.
+The range of LREAL may differ from that of REAL. Restricted
+implementations may choose to ignore the distinction between REAL and LREAL, treating both as REAL.</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">SIZE</td>
+    <td width="85%">	Object size. Values of this type describe object sizes and distances between
+objects, measured as the distance between two machine addresses. They may be
+represented as integers (with sign), but they are not type compatible with INT. The
+empty size (corresponding to zero) is <u>nosize</u>.</td>
+  </tr>
+</table>
+<h4>&nbsp;<br WP="BR2">
+4..1..2.  <u>Data address types</u></h4>
+
+<p>Addresses in S-code are designed to permit the description of objects which are arranged
+in implementation and machine-dependent ways. In particular it is envisaged that some
+S-compilers may pack information into available storage in ways which require to be
+described using complex addresses. These considerations have led to the following types
+of address:</p>
+
+<table border="1" width="100%">
+  <tr>
+    <td width="14%" valign="top">OADDR</td>
+    <td width="86%">	Object address. Specifies the address of an object unit, in general the first
+unit in an object. <u>onone</u> designates no object. All other values of type
+OADDR will correspond to true machine addresses.</td>
+  </tr>
+  <tr>
+    <td width="14%" valign="top">AADDR</td>
+    <td width="86%">	Attribute address. Specifies the relative address of (the first atomic unit of) a
+record component. This is of course not a true address in the machine sense
+of the word, the component will not be accessible without the OADDR base.
+<u>anone</u> designates no attribute.</td>
+  </tr>
+  <tr>
+    <td width="14%" valign="top">GADDR</td>
+    <td width="86%">	General address. A pair (OADDR,AADDR) which uniquely identifies a
+particular atomic unit. The components of a GADDR value are not directly
+accessible, but they may be extracted by means of convert instructions.
+<u>gnone</u> designates no unit and is the pair (<u>onone</u>, <u>anone</u>). Values of this type
+will not necessarily correspond to pure machine addresses.</td>
+  </tr>
+</table>
+<br WP="BR2">
+
+<br WP="BR1"><br WP="BR2">
+<p>            (OADDR)&gt;</p>
+
+<p>                              (AADDR)                     </p>
+
+<p>                                                          </p>
+
+<p>                                     V                     </p>
+
+<p>            (GADDR)&gt;                     </p>
+
+<p>                                                           </p>
+
+<p>                                                           </p>
+
+<br WP="BR2">
+<p><center><u>Correspondence between the different data addresses</u></center>
+</p>
+
+<h4>
+
+<br WP="BR1">4.1.3.  <u>Instruction address types</u></h4>
+<table border="1" width="100%">
+  <tr>
+    <td width="17%" valign="top">PADDR</td>
+    <td width="83%">	Program address. Specifies the address of an instruction. It is independent
+of the other types of address. <u>nowhere</u> designates no program point.</td>
+  </tr>
+  <tr>
+    <td width="17%" valign="top">RADDR</td>
+    <td width="83%">	Routine address. Specifies the entry point address of a routine body. It is
+independent of (and inconvertible to) the other address types. <u>nobody</u>
+designates no entry point.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+
+<h3>4.2.  <u>Quantity descriptors</u></h3>
+
+<br WP="BR1">
+<p>	quantity_descriptor</p>
+
+<p>		::=	resolved_type &lt; Rep count:number &gt;?</p>
+
+<br WP="BR1">Any quantity in the S-program is described by a quantity descriptor. The type will define
+the internal structure of the quantity as well as the set of operations permitted.
+<p><br WP="BR2">
+<h4>4.2.1.  <u>Subrange of INT (range, SINT)</u></h4>
+
+<p>Quantities of type INT may be restricted in range, as shown. A range has a contiguous
+value domain which is part of the domain for INT.</p>
+
+<p>The motivation for range is storage economy for variables with a restricted value domain.
+Ranges are used extensively in the S-port run-time system, e.g. for some of the system
+attributes present in all user-defined objects.</p>
+
+<p>The S-compiler allocates a range to a storage unit which at least comprises the closed
+interval (lower..upper) specified for the range. The value domain of a range is system
+dependant and defined to be the domain of the storage unit allocated to the range.</p>
+
+<p>The type SINT corresponds to the type of variables declared <u>short</u> <u>integer</u> in a Simula
+program. The S-compiler treats SINT as a range specified with a suitable interval, at least
+including (-32000,32000), and (almost) symmetrical around zero.</p>
+
+<p>Although ranges occur in arithmetic S-code expressions, there is no arithmetic operations
+(or relations) defined on ranges. It is the responsibility of the S-compiler to convert to INT
+before the operation is performed, and to convert to range before assignment to a range.
+(This scheme is consistent with the Common Base specification of <u>short</u> <u>integer</u> which
+states that all operations on <u>short</u> <u>integer</u> should be performed in full integer arithmetic.)</p>
+
+<p>One consequence of this is that intermediate results (see chapter 7) never can be range
+restricted.</p>
+
+<p>It is required that the S-compiler checks domain overflow for assignment to ranges
+originating from SINTs, while such a check is not required for other ranges, e.g. ranges
+declared in the run-time system. The S-compiler may choose to always generate domain
+checks on assignment, hence treating any range as it must treat SINT.</p>
+
+<p>The predefined range SINT is the only possible tagged quantity descriptor.</p>
+
+&nbsp;
+<h4>4.2.2.  <u>Repetitions (rep)</u></h4>
+
+<p>A quantity may be defined as a repetition. If the count:number is greater than zero a
+vector of identical elements is defined, containing that number of elements and accessed
+through indexing (see <u>index</u>, chapter 6) with indices starting at zero. The allocation of the
+elements must be done in such a way that the size of each element provides enough
+information to permit access to one relative to another. A count of zero indicates that the
+number of elements is indefinite. Such indefinite repetitions are only permitted in record
+descriptors.</p>
+
+<p>It is important to realise that the repetition concept does not impose any structure upon
+the quantity (as e.g. an array declaration does). Whenever a repeated quantity is selected
+(by <u>push</u>, <u>select</u>, or <u>remote</u>) the first element is selected directly.</p>
+
+&nbsp;
+<h3>4.3.  <u>Type definition</u></h3>
+
+&nbsp;
+<p>	record_descriptor</p>
+
+<p>		::=	<u>record</u> record_tag:newtag &lt;record_info&gt;?</p>
+
+<p>			&lt;prefix_part&gt;? common_part</p>
+
+<p>			&lt;alternate_part&gt;* <u>endrecord</u></p>
+
+<br WP="BR1">
+<p>	record_info</p>
+
+<p>		::=	<u>info</u> &quot;TYPE&quot;  !  <u>info</u> &quot;DYNAMIC&quot;</p>
+
+<br WP="BR1">
+<p>	prefix_part</p>
+
+<p>		::=	<u>prefix</u>  resolved_structure</p>
+
+<br WP="BR1">
+<p>	common_part</p>
+
+<p>		::=	&lt;attribute_definition&gt;*</p>
+
+<br WP="BR2">
+<p>	alternate_part</p>
+
+<p>		::=	<u>alt</u>  &lt;attribute_definition&gt;*</p>
+
+<br WP="BR1">
+<p>	attribute_definition</p>
+
+<p>		::=	<u>attr</u> attr:newtag quantity_descriptor</p>
+
+<br WP="BR1">
+<p>	resolved_structure</p>
+
+<p>		::=	structured_type  &lt; <u>fixrep</u>  count:ordinal &gt;?</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	structured_type</p>
+
+<p>		::=	record_tag:tag</p>
+
+<br WP="BR1"><br WP="BR2">
+A record descriptor defines a structured type with the tag 'record tag'. This new type may
+then later be used either as a generator in variable or constant definitions, as a prefix or
+as an attribute type in further record descriptors; in all these cases an indefinite repetition
+must be resolved through the use of <u>fixrep</u>. Or the record tag may be used as a parameter
+to some instructions, in which case an indefinite repetition need not be so resolved.
+<p>  A set of incomplete type descriptors  will be associated with the record tag:newtag.
+These descriptors may be divided into several subsets: one describing part of the type
+with a fixed interpretation and the remainder describing a number of interpretations for the
+rest of the type. The SIZE of the structure will be the SIZE of the prefix plus the SIZE of
+the common part plus the SIZE of the &quot;largest&quot; alternative, that is the alternative
+occupying the largest number of object units (disregarding a possible indefinite repetition).
+Which of several alternatives determines the SIZE is implementation dependent.</p>
+
+&nbsp;
+<h4>4.3.1.  <u>Prefixing</u></h4>
+
+&nbsp;
+<p>If specified, the prefix must refer to a defined type descriptor, resulting in a type which is
+the prefix type extended by the specified attributes (an indefinite repetition in the prefix
+type must be resolved).</p>
+
+<p>&nbsp;</p>
+<h4>4.3.2.  <u>Attributes</u></h4>
+
+<p>Each attribute definition defines the type of an accessible attribute of the structure. There
+is no inherent correspondence between the order of the attributes in the record descriptor
+and the allocation order inside a record, but when the record descriptor is processed by
+the S-compiler, an AADDR value will be associated with each attribute tag defined. These
+associations cannot later be changed, which implies that the order prefix...common part
+must be preserved.</p>
+
+&nbsp;
+<h4>4.3.3.  <u>Indefinite repetitions and fixrep</u></h4>
+
+<p>An indefinite repetition in the record descriptor must be the (lexically) very last attribute
+defined, i.e. it occurs immediately before <u>endrecord</u>. The type so defined cannot generally
+be used (except in a few instructions) without being resolved through the application of
+the <u>fixrep</u> construction; this will determine the actual number of elements in the repetition.
+Note however that type compatibility checking is connected to the record tag, so that
+structures are of the same type even if they are resolved with different counts.</p>
+
+&nbsp;
+<h4>4.3.4.  <u>Alternatives (records with variants)</u></h4>
+
+<p>If several alternate parts are given, it specifies alternative interpretations of the same
+area, the correspondence between pairs of attributes from different alternatives is not
+defined. The alternate part(s) must be allocated following the common part.</p>
+
+&nbsp;
+<h4>4.3.5.  <u>Allocation order</u></h4>
+
+<p>The S-compiler is free to reorder or pack the attributes in any convenient way, as long as
+the above mentioned restrictions are observed, in summary:</p>
+
+<ul>
+  <li>the order prefix...common part...alternatives must be preserved,</li>
+  <li>once ordered and packed the order is invariant, that is a prefix cannot be
+re-packed,</li>
+  <li>an indefinite repetition must be allocated at the end of the structure,</li>
+  <li>records are always allocated with a size corresponding to the largest alternative (at
+allocation an indefinite repetition cannot occur).</li>
+</ul>
+&nbsp;
+<p>Examples:		<u>record</u>  COMPLEX</p>
+
+<p>				<u>attr</u>  RE  REAL  <u>attr</u>  IM  REAL</p>
+
+<p>			<u>endrecord</u></p>
+
+<p>			<u>record</u>  C</p>
+
+<p>				<u>attr</u>  D  BOOL</p>
+
+<p>				<u>attr</u>  E  COMPLEX  <u>rep</u>  2</p>
+
+<p>			<u>endrecord</u></p>
+
+<p>			<u>record</u>  F  <u>prefix</u>  C</p>
+
+<p>				<u>alt</u> <u>attr</u>  G  REAL</p>
+
+<p>				<u>alt</u> <u>attr</u>  H  PADDR</p>
+
+<p>				<u>alt</u> <u>attr</u>  J  BOOL  <u>rep</u>  0</p>
+
+<p>			<u>endrecord</u></p>
+
+<br WP="BR1">The type F will have the common part as defined by C, and three alternative parts; one
+contains an indefinite repetition. The indefinite repetition 'J' must be resolved whenever F
+is used either in a record descriptor or as a generator for allocation.
+<p>&nbsp;</p>
+<h4>4.3.6.  <u>Record information</u></h4>
+
+<p>The record info string is used to give information to the S-Compiler on the use of certain
+records. Three classes of records are distinguished, any record descriptor will be in one of
+these classes:</p>
+
+<ul>
+  <li> -	All structured types which may occur as TYPE in value mode stack descriptors
+shall contain the record <u>info</u> &quot;TYPE&quot;. This may be usefull when processing the
+protect construction.</li>
+  <li> -	A small set of structured types are used as prefixes to every dynamic quantity
+created by the run time system during execution; such types shall contain  <u>info</u>
+&quot;DYNAMIC&quot;. This information may be necessary in order to determine the size,
+since the target system may prohibit general use of the address space for such
+objects, e.g. dynamic reference should be to an even byte address).<br>
+	<u>dsize</u> is valid only for types in this set.</li>
+  <li> -	If a record descriptor does not contain (either directly or through a prefix) any such
+specification, the record will not be used for any of the two above mentioned
+purposes.<br>
+	It may not be necessary for the S-compiler to utilise the record information field; in
+that case the specifications may be ignored and no distinction should be made by
+the compiler.</li>
+</ul>
+<p>&nbsp;</p>
+<h3>4.4.  <u>Constant values</u></h3>
+
+&nbsp;
+<p>	value</p>
+
+<p>		::=  boolean_value			!   character_value</p>
+
+<p>		::=  integer_value			!   size_value</p>
+
+<p>		::=  real_value			!   longreal_value</p>
+
+<p>		::=  attribute_address		!   object_address</p>
+
+<p>		::=  general_address		!   program_address</p>
+
+<p>		::=  routine_address		!   record_value</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	repetition_value</p>
+
+<p>		::=  &lt;boolean_value&gt;+</p>
+
+<p>		::=  &lt;character_value&gt;+		!   text_value</p>
+
+<p>		::=  &lt;integer_value&gt;+		!   &lt;size_value&gt;+</p>
+
+<p>		::=  &lt;real_value&gt;+			!   &lt;longreal_value&gt;+</p>
+
+<p>		::=  &lt;attribute_address&gt;+	!   &lt;object_address&gt;+</p>
+
+<p>		::=  &lt;general_address&gt;+		!   &lt;program_address&gt;+</p>
+
+<p>		::=  &lt;routine_address&gt;+		!   &lt;record_value&gt;+</p>
+
+<br WP="BR1">
+<h4>4.4.1.  <u>Arithmetic values</u></h4>
+
+<br WP="BR1">	text_value
+
+<p>		::=	<u>text</u> long_string</p>
+
+<br WP="BR1">
+<p>	long_string</p>
+
+<p>		::=	( an ordinal with value N followed by N &quot;data bytes&quot;.			  Note that a text value cannot be empty. )</p>
+
+<br WP="BR2">
+<p>A text value is understood as a repetition of characters, e.g.</p>
+
+<br WP="BR1">
+<p>	<u>text</u> &quot;abcd&quot;  ==  <u>c-char</u> 'a' <u>c-char</u> 'b' <u>c-char</u> 'c' <u>c-char</u> 'd'.</p>
+
+<p><br WP="BR2">
+</p>
+<p>	boolean_value</p>
+
+<p>		::=	<u>true</u>  !  <u>false</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	character_value</p>
+
+<p>		::=	<u>c-char</u>  byte</p>
+
+<br WP="BR1">
+<p>	integer_value</p>
+
+<p>		::=	<u>c-int</u>  integer_literal:string</p>
+
+<br WP="BR1">
+<p>An integer literal is a string:</p>
+
+<blockquote>
+<p>	&lt; &lt;radix&gt; R&gt;?  &lt;sign&gt;?  &lt;digit&gt;+</p>
+
+</blockquote>
+<p>where digit is one of the (ISO coded) decimal digits, and sign may be + or -. The letter R,
+if included, signals that the integer is specified with a radix preceding R. The only legal
+radices are 2, 4, 8 and 16. If the radix is 16, &lt;digit&gt; may also be one of the (ISO-coded)
+letters A-F, with the obvious meaning.</p>
+
+<p><br WP="BR2">
+</p>
+<p>	real_value</p>
+
+<p>		::=	<u>c-real</u>  real_literal:string</p>
+
+<br WP="BR1"><br WP="BR2">
+	longreal_value
+
+<p>		::=	<u>c-lreal</u>  real_literal:string</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>A real literal is a string:</p>
+
+<blockquote>
+<p>	&lt;sign&gt;?  &lt;digit&gt;*  &lt; .  &lt;digit&gt;+ &gt;?  &lt; &amp;  &lt;sign&gt;?  &lt;digit&gt;+ &gt;?</p>
+
+</blockquote>
+<p>Note that neither an integer literal nor a real literal may contain spaces.</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	size_value</p>
+
+<p>		::=	<u>c-size</u>  type   !   <u>nosize</u></p>
+
+<br WP="BR1">
+<p>If the type contains an indefinite repetition the size is measured as if this attribute is
+absent, i.e. only the part(s) of the type preceding the indefinite repetition is measured.</p>
+
+<p>The size of the type is measured as the distance (see <u>dist</u> chapter 6) <u>from</u> the first object
+unit allocated <u>to</u> a record of the type to the first object unit following the record, i.e.</p>
+
+<blockquote>
+<p>		size = dist(first,next) .</p>
+
+</blockquote>
+<p>&nbsp;</p>
+<h4>4.4.2.  <u>Data address values</u></h4>
+
+&nbsp;
+<p>	attribute_address</p>
+
+<p>		::=	&lt; <u>c-dot</u>  attribute:tag &gt;*  <u>c-aaddr</u>  attribute:tag</p>
+
+<p>		::=	<u>anone</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>The value of an attribute address is the OFFSET of the attribute. This may be computed
+relative to any surrounding record by means of the <u>c-dot</u> construction. <u>anone</u> is an empty
+OFFSET, refering to no attribute. The interpretation of the construction</p>
+
+<blockquote>
+<p>	<u>c-dot</u> T1 <u>c-dot</u> T2 ... <u>c-aaddr</u> LT is &quot;T1.T2.. .LT&quot;.AADDR</p>
+
+</blockquote>
+<br WP="BR1"><br WP="BR2">
+<p>	object_address</p>
+
+<p>		::=	<u>c-oaddr</u>  global_or_const:tag</p>
+
+<p>		::=	<u>onone</u></p>
+
+<br WP="BR2">
+<p>The value is the object address of the global or constant quantity given. <u>onone</u> refers to
+no object unit.</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	general_address</p>
+
+<p>		::=	&lt; <u>c-dot</u>  attr:tag &gt;*  <u>c-gaddr</u>  global_or_const:tag</p>
+
+<p>		::=	<u>gnone</u></p>
+
+<br WP="BR1">
+<p>The value is the general address of the defined global or constant quantity designated by
+the lexically first tag. The general address of a sub-component of a structure component
+may be given by means of the <u>c-dot</u> construction; this is interpreted as for attribute
+addresses. gnone is the address of no atomic unit. The interpretation of the construction</p>
+
+<blockquote>
+<p>	<u>c-dot</u> T1 <u>c-dot</u> T2 <u>c-gaddr</u> T3   is  &quot;T3.T2.T1&quot;.GADDR</p>
+
+</blockquote>
+<p><br WP="BR2">
+</p>
+<h4>4.4.3.  <u>Instruction address values</u></h4>
+
+<br WP="BR1">	program_address
+
+<p>		::=  <u>c-paddr</u>  label:tag	!   <u>nowhere</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<br WP="BR1"><br WP="BR2">
+<p>The value is the program point designated by the label. <u>nowhere</u> designates no program
+point.</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>	routine_address</p>
+
+<p>		::=	<u>c-raddr</u>  body:tag	!   <u>nobody</u></p>
+
+<br WP="BR1"><br WP="BR2">
+<p>The value is (the entry point of) the routine specified; a peculiar routine cannot occur.
+<u>nobody</u> designates no routine body.</p>
+
+<br WP="BR1">
+<h4>4.4.4.  <u>Structured values</u></h4>
+
+&nbsp;
+<p>	record_value</p>
+
+<p>		::=	<u>c-record</u>  structured_type</p>
+
+<p>			 &lt;attribute_value&gt;+  <u>endrecord</u></p>
+
+<br WP="BR1">
+<p>	attribute_value</p>
+
+<p>		::=	<u>attr</u>  attribute:tag  type  repetition_value</p>
+
+<br WP="BR1"><br WP="BR2">
+<p>Strict type correspondence is required between an attribute, the given type and the
+repetition value. The attribute:tag defines which attribute is to be of a given value, i.e. the
+sequence need not be the same in the structured type and in the record value. With the
+exception of alternatives (see below), all attribute tags of the record descriptor must occur
+exactly once, otherwise: error.</p>
+
+<p>An indefinite repetition is resolved by the number of values in the corresponding attribute
+repetiton value.</p>
+
+<p>If the type contains alternative parts, a specific alternative is selected by naming one of its
+attributes. Once an alternative has been so selected, the S-program is in error if attributes
+from any other alternative occur, or if any attribute from this alternative is missing. If no
+alternative is selected then no alternative part is produced.</p>
+
+<br WP="BR2">
+<p>Example:		<u>c-record</u>  F  <u>attr</u>  E  COMPLEX</p>
+
+<p>(cf. 4.3)			<u>c-record</u>  COMPLEX</p>
+
+<p>					<u>attr</u>  IM  REAL  <u>c-real</u> &quot;0.0&quot;</p>
+
+<p>					<u>attr</u>  RE  REAL  <u>c-real</u> &quot;0.0&quot;</p>
+
+<p>				<u>endrecord</u> (first element of repetition E)</p>
+
+<p>				<u>c-record</u>  COMPLEX</p>
+
+<p>					<u>attr</u>  RE  REAL  <u>c-real</u> &quot;1.0&quot;</p>
+
+<p>					<u>attr</u>  IM  REAL  <u>c-real</u> &quot;-1.0&quot;</p>
+
+<p>				<u>endrecord</u> (second element of E)</p>
+
+<p>				<u>attr</u>  H  PADDR  <u>c-paddr</u> LABEL27</p>
+
+<p>				<u>attr</u>  D  BOOL   <u>true</u></p>
+
+<p>			<u>endrecord</u></p>
+
+<br WP="BR1">
+<p>Note that the attributes may be given in any order with the exception that the repetition
+elements must be given in sequence. Note also the specific selection of an alternative by
+naming H.</p>
+
+<br WP="BR2">
+<h3>4.5.  <u>Tagged constants</u></h3>
+
+&nbsp;
+<p>	constant_declaration</p>
+
+<p>		::=	constant_specification  !  constant_definition</p>
+
+<br WP="BR1">
+<p>	constant_specification</p>
+
+<p>		::=	<u>constspec</u>  const:newtag  quantity_descriptor</p>
+
+<br WP="BR1">
+<p>	constant_definition</p>
+
+<p>		::=	<u>const</u>  const:spectag</p>
+
+<p>			 quantity_descriptor  repetition_value</p>
+
+<br WP="BR1">
+<p>A constant area is created to hold the specified value. A descriptor (identified by the given
+tag) will represent this area, i.e. the descriptor will be of the general form (REF,
+constant.TYPE, ...). In case it is necessary to refer to a tagged constant before it is
+possible to give its value, the constant specification is used to bind the tag to a value of
+the given type. This constant must be given a value later in the program through a
+constant definition, and the types must be the same.</p>
+
+<p>A constant is always allocated an integral number of object units.</p>
+
+<br WP="BR2">
+<p>Examples:		<u>constspec</u>  PI  REAL</p>
+
+<p>			.</p>
+
+<p>			.</p>
+
+<p>			<u>const</u>  PI  REAL  <u>c-real</u>  &quot;+3.1416&quot;</p>
+
+<br WP="BR2">
+<p>			<u>const</u>  CZERO  COMPLEX</p>
+
+<p>				<u>c-record</u>  COMPLEX</p>
+
+<p>					<u>attr</u>  RE  REAL  <u>c-real</u>  &quot;0.0&quot;</p>
+
+<p>					<u>attr</u>  IM  REAL  <u>c-real</u>  &quot;0.0&quot;</p>
+
+<p>				<u>endrecord</u></p>
+
+</body>
+
+</html>

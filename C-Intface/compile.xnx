@@ -1,0 +1,4 @@
+set -kx
+date
+run pmtst $1 $2
+date

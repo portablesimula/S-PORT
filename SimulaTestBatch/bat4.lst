@@ -1,0 +1,131 @@
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: compile src/p40b.sim
+SIM: compile src/p40a.sim
+SIM: recompile src/p40c.sim
+SIM: compile src/simtst40.sim
+SIM: load
+simtst40 loaded
+SIM: simtst40 /w1
+--- START Simula a.s. TEST 40
+--- Test use of external procedures.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 40
+SIM: compile src/p41.sim
+SIM: compile src/simtst41.sim
+SIM: load
+simtst41 loaded
+SIM: simtst41 /w1
+--- START Simula a.s. TEST 41
+--- Test use of name paramter in external procedure.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 41
+SIM: compile src/simtst42.sim
+SIM: load
+simtst42 loaded
+SIM: simtst42 /w1
+--- START Simula a.s. TEST 42
+--- Test integer procedure which computes 'n-fac' iterativly.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 42
+SIM: compile src/simtst43.sim
+SIM: load
+simtst43 loaded
+SIM: simtst43 /w1
+--- START Simula a.s. TEST 43
+--- Test integer procedure which computes 'n-fac' recursively.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 43
+SIM: compile src/simtst44.sim
+SIM: load
+simtst44 loaded
+SIM: simtst44 /w1
+--- START Simula a.s. TEST 44
+--- Simple test of text procedures.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 44
+SIM: compile src/simtst45.sim
+Note!: (l. 64) 'IS c' will always be false
+Note!: (l. 66) 'IS e' will always be false
+Note!: (l. 68) 'IS b' will always be false
+Note!: (l. 69) 'IS d' will always be false
+Note!: (l. 73) 'IS c' will always be false
+Note!: (l. 74) 'IS e' will always be false
+Note!: (l. 76) 'IS b' will always be false
+Note!: (l. 78) 'IS d' will always be false
+Note!: (l. 86) 'QUA a' will be equal to none test only
+Note!: (l. 92) '... IN a' always true except for ... == NONE
+Note!: (l. 93) '... IN b' always true except for ... == NONE
+Note!: (l. 94) '... IN c' always true except for ... == NONE
+Note!: (l. 95) '... IN d' always true except for ... == NONE
+Note!: (l. 96) '... IN e' always true except for ... == NONE
+Note!: (l. 103) '... IN a' always true except for ... == NONE
+Note!: (l. 104) '... IN a' always true except for ... == NONE
+Note!: (l. 105) '... IN a' always true except for ... == NONE
+Note!: (l. 106) '... IN b' always true except for ... == NONE
+Note!: (l. 107) '... IN a' always true except for ... == NONE
+Note!: (l. 108) '... IN c' always true except for ... == NONE
+Note!: (l. 109) 'IN d' will always be false
+Note!: (l. 110) 'IN e' will always be false
+Note!: (l. 111) 'IN e' will always be false
+Note!: (l. 112) 'IN b' will always be false
+Note!: (l. 122) '... IN a' always true except for ... == NONE
+Note!: (l. 124) '... IN a' always true except for ... == NONE
+Note!: (l. 126) '... IN b' always true except for ... == NONE
+SIM: load
+simtst45 loaded
+SIM: simtst45 /w1
+--- START Simula a.s. TEST 45
+--- Test object relations - IS and IN.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 45
+SIM: compile src/simtst46.sim
+SIM: load
+simtst46 loaded
+SIM: simtst46 /w1
+--- START Simula a.s. TEST 46
+--- Test qualification of function designators.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 46
+SIM: compile src/simtst47.sim
+SIM: load
+simtst47 loaded
+SIM: simtst47 /w1
+--- START Simula a.s. TEST 47
+--- Test of this.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 47
+SIM: compile src/simtst48.sim
+Note!: (l. 87) 'QUA c' will be equal to none test only
+SIM: load
+simtst48 loaded
+SIM: simtst48 /w1
+--- START Simula a.s. TEST 48
+--- Test of Qua.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 48
+SIM: compile src/simtst49.sim
+SIM: load
+simtst49 loaded
+SIM: simtst49 /w1
+--- START Simula a.s. TEST 49
+--- Test For statement in connection block.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 49
+SIM: exit
+EXIT  SIMULA

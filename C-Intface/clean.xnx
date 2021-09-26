@@ -1,0 +1,5 @@
+rm *.out
+rm cproc test3 testtext tst2
+(cd dortmund; sh $HOME/cleaner.xnx)
+(cd gunnar; sh $HOME/cleaner.xnx)
+sh $HOME/cleaner.xnx

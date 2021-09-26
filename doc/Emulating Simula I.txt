@@ -1,0 +1,173 @@
+Note on a fundamental difference between SIMULA I and SIMULA 67.
+
+
+       This note was prepared for mr George Blanke of UNISYS, Frankfurt,
+       courtesy of simula a.s, Norway. Permission is granted UNISYS to
+       use and adapt the ideas presented for their own internal purposes,
+       including the project on which mr Blanke is working.
+
+
+The two languages handling of "processes" with respect to SET membership
+differ on an important point. In short, we may say that the OLD system
+never placed a process directly into a list. Instead representative objects,
+each containing a reference to the process object in question, occurred in
+the lists and consequently a process might be a member of several lists
+AT THE SAME TIME.
+
+In SIMULA 67, on the other hand, the process can be a member of at most one
+set. I will elaborate this in section 1. But, as a consequence of this change in
+philosophy, the procedure INCLUDE of SIMULA I has no counterpart in SIMULA 67,
+nor is it possible to implement it directly. Section 2 of this note contains a
+sketchy proposal for a solution. It should be noted, however, that the symmetric
+handling of one specific process from several sets, of which it was a member,
+possible in SIMULA I, cannot be achieved completely in SIMULA 67.
+
+
+1. The problem.
+
+Set membership in the old language was handled by means of Elements. An element
+is a very simple object containing three pointers:
+
+    PA (process aspect) - points to the process object
+    SUC, PRED           - points to the successor and predescessor
+                          of the process element within the set.
+
+Thus, a process (object) P may have membership in any number of sets, and the
+object can be manipulated through any of these sets.
+
+In standard SIMULA of today, set membership is direct. The process object
+itself is moved from set to set, and the necessary fields are embedded in
+the object (since the class 'process' is prefixed by 'link'). Consequently,
+a process can appear in only ONE set at a time. (Except for the SQS list:
+Membership of the sequencing set SQS is handled by means of the link class
+EVENT_NOTICE, i.e. in the same manner as the general set facility of the old
+language).
+
+This is one of several differences that makes translation of 'old' programs
+into standard SIMULA a non-trivial task.
+
+
+2. A possible solution.
+
+In cases where membership in several lists at the same time is required, one
+must adopt the old element technique. It depends upon the problem whether
+this should be extended to ALL sets, or whether one set should be regarded as
+a primary set (in which the process can occur directly) and al other sets as
+secondaries (where the processes are represented by elements).
+
+Below follows a suggestion for the necessary structures. Note that since we
+are within a SIMULATION block, the set handling tools are available at no
+extra expense.
+
+
+SIMULATION class SIMULA;
+begin
+      link class element(PA); ref(process) PA; ;
+
+      head class Ehead;
+      begin
+             ref(process) procedure first;
+             begin inspect suc
+                      when element do first:-PA
+                      when process do first:-this process
+             end *** redefined procedure first ***;
+
+             ref(process) procedure last;
+             begin inspect pred
+                      when element do last:-PA
+                      when process do last:-this process
+             end *** redefined procedure last ***;
+      end;
+
+      process class FRANKFURT;
+      begin
+            procedure terminate; goto STOP;
+
+            procedure follow(ptr); ref(linkage) ptr;
+            begin
+                 if ptr in element or ptr in Ehead
+                 then new element(this process).follow(ptr)
+                 else this process.follow(ptr);
+            end *** extended SIMSET'link procedure follow ***;
+
+            procedure precede(ptr); ref(linkage) ptr;
+            begin
+                 if ptr in element or ptr in Ehead
+                 then new element(this process).precede(ptr)
+                 else this process.precede(ptr);
+            end *** extended SIMSET'link procedure precede ***;
+
+            procedure into(S); ref(head) S;
+            begin
+                 if S in Ehead then new element(this FRANKFURT).into(S)
+                 else this FRANKFURT qua process.into(S);
+            end *** extended SIMSET'link procedure into ***;
+
+            inner;
+      STOP:
+      end *** process class FRANFURT ***;
+
+      procedure INCLUDE(X,S); ref(link) X; ref(head) S;
+      begin COMMENT this procedure will take care of all cases as follows
+        ***
+        ***                             Y in ..
+        ***     X in ..        Ehead               head
+        ***
+        ***    Element     if X is in no set,   move X.PA to Y, thereby
+        ***                insert it into Y.    possibly performing 'out'
+        ***                Otherwise insert a
+        ***                copy of X into Y.
+        ***
+        ***    process     insert a new         move X to Y, thereby
+        ***                element into Y       possibly performing 'out'
+        ***;
+
+            inspect X
+               when element do begin
+                    if Y in Ehead
+                    then begin if suc=/=none then new element(PA).into(Y)
+                               else into(Y) end
+                    else PA.into(Y) end
+               when process do begin
+                    if Y in Ehead then new element(this process).into(Y)
+                    else into(Y) end
+            ;
+      end *** emulated SIMULA I procedure INCLUDE ***;
+
+      procedure TERMINATE(X); ref(link) X;
+      begin if X in element then X:-X qua element.PA;
+            inspect X
+               when FRANKFURT do terminate
+               when process   do cancel(this process)
+      end *** emulated SIMULA I procedure TERMINATE ***;
+
+      procedure wait(S); ref(head) S;
+      begin inspect current do begin out; INCLUDE(this process,S) end;
+            passivate;
+      end *** redefined SIMULATION procedure wait ***:
+
+end *** class SIMULA ***;
+
+
+This class may be compiled separatedly and used instead of SIMULATION in
+your problem. For sake of completion I have added the FRANFURT 'wrapper'
+here, together with an updated version of the EXTERMINATE procedure, since
+it is part of the basic problem.
+
+If emulation of other procedures is needed, it should be fairly obvious how
+to add emulations to the class above.
+
+The 'element' philosophy has been included to the extent necessary. The
+mechanisms allow for a mixture of element objects and pure process objects
+in most contexts. The idea is to be able to (almost) forget about the
+difference between a process and its representative in some queue.
+
+The use of inspect is important for robustness in that parameters
+may be NONE without crashing the program.
+
+
+                                     Oslo, 3 august 1988
+
+
+
+                                        Peter Jensen

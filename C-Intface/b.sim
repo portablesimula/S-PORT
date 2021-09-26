@@ -1,0 +1,11 @@
+external class a;
+a class b;
+begin procedure outstring(t); name t; text t;
+      begin outtext("in b: "); outtext(t); outimage;
+            outstring2(t);
+      end;
+      procedure outstring2(t); name t; text t;
+      begin outtext("in b2: "); outtext(t); outimage;
+            this a.outstring(t);
+      end;
+end;

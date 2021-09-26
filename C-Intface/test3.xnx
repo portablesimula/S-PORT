@@ -1,0 +1,11 @@
+set -kv
+sim109.x32 <<endc
+set opt m
+set sys sport
+in text3.o
+set ver 1
+set sk1lin 1
+set sk1trc 1
+com test3.sim
+lo
+exit

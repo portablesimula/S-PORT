@@ -1,0 +1,351 @@
+      ACTIVATING THE SIMULA COMPILER
+      ==============================
+
+
+The SIMULA compiler may be invoked in three different manners:
+
+   - if the FIRST argument is '-w' (minus followed by lower case letter w),
+     the compiler enters window mode.
+
+   - if the compiler is called WITHOUT arguments, it enters special mode.
+
+   - in all other cases, command line mode is entered.
+
+
+A. The window mode compiler system
+   -------------------------------
+
+Window mode is entered if the FIRST argument is "-w", i.e. through
+
+       => sim -w <name of file to be compiled>? <ENTER>
+
+The window system should be fairly self-explanatory. The bottom
+line of the main window will always contain a simple explanation
+of the current field. Use arrow keys to move around, Enter to
+select a specific feature. The editor activated may be changed to
+your favorite editor by changed the EDITOR entry in the Simula
+INITFILE, see below.
+
+Notes: The system will, in case any diagnostic messages are issued,
+       create a file SOURCE.err where SOURCE is the prefix of the
+       Simula source file name. All messages are directed to this
+       file, which may be inspected after the compilation, as
+       indicated on the screen. This file is not deleted when you
+       leave the window system.
+       If no diagnostics, this file is not generated.
+
+
+B. The command line compiler system
+   --------------------------------
+
+The command line compiler will normally perform silently. It is
+activated by
+
+       => sim [-X {-X ...}]  source {options source} ...
+
+where X is one of the options from the table below, and source
+is the name of a file to be compiled. Note that any argument
+with first character different from '-' will be taken as a
+file name.
+   
+All compiler parameters are given on the command line (or read
+from the INIT file). It is possible to compile several files in
+one call, with different parameter settings for each compilation.
+
+Example: The following line will compile and link a main program
+         'main1', then compile a class 'prefcl' and a main
+         program 'main2'. Main2 will not be linked (-c) - but
+         the parameter file for the linker will be generated.
+         Main1 is compiled without simob info (-d0), prefcl and
+         main2 are compiled with full simob support (-d3), but
+         without generated array index and NONE checks (-OR).
+         Selector X is set (-SX) for prefcl and main2.
+
+         => sim -d0 main1.sim -d3 -OR -SX prefcl.sim -c main2.sim
+
+In the summary table below, each possible argument is given with
+the corresponding special mode parameter, the possible values
+and comments.
+See the indicated subsection of this chapter for an exhaustive
+definition.
+
+Section       Command mode   Value
+     Option    parameter     range       Comment
+
+2.1    a       executable    file name   Default: myprog.exe (DOS, OS2)
+                                                  myprog     (Unix, Xenix)
+2.7    c       NA            ONOFF       ON: do NOT link. Default OFF. Note
+                                         that autolink.par is always created
+                                         for a main program.
+2.2    d       DEBUG         0..3        Default 2
+2.5    i       INCLUDE       file name   include object file in autolink.par
+2.6    l       LIBRARY       file name   include library in autolink.par
+2.1    o       relocatable   file name   Default: myprog.obj (DOS, OS2, Xenix)
+                                                  myprog.o   (Unix)
+2.1    p       listing       file name   No default. Turns on listing.
+2.1    r       RECOMPILE     ONOFF       Default OFF
+       w       ------------------------> no effect except as first argument,
+                                         in which case it activates window mode
+ 
+2.11   C       CHKSTK        ONOFF       Default OFF
+2.11   I       IDXCHK        ONOFF       Default ON
+2.11   L       LINTAB        ONOFF       Default ON
+2.11   M       MASSLV        0..63       Default 63
+2.11   O       OPTION        - varies    Default no options set
+2.11   P       CBIND         0..2        Default 0 (Pascal/C interf. undef.)
+2.11   Q       QBFLIM        0..32000    Default 1500
+2.11   R       RNGCHK        0..3        Default 1
+2.11   S       SELECT        letters     Default no selectors set
+2.11   T       TSTOFL        ONOFF       Default OFF
+       V       NA            NA          Print Simula system identification
+2.11   X       STANDARD      ONOFF       Default OFF (extended language)
+2.11   Z       TARGET        0..7        Default as given in INIT file.
+
+   NA:    not applicable
+
+   ONOFF: the value must be an unsigned integer. If no value or ZERO is given
+          the corresponding compiler switch is turned OFF, otherwise it is
+          turned ON.
+
+
+C. The Simula compiler INITFILE
+   ----------------------------
+
+One of the files of your Simula system takes a special role. The name of
+that file, located in the bin (sim/dos, sim/os2) directory, is
+
+     DOS:      sim0s109.dos   OS2:      sim0s109.os2
+     Xenix286: sim0s109.x16   Xenix386: sim0s109.x32   Unix: sim0s109.unx
+
+This file is called the INITFILE in this manual. It is searched first in the
+current directory; if not found there it is searched along the defined PATH.
+The file is in the standard text format for your operating system, and may
+be changed either with some editor, or through the SAVE special mode command.
+
+Whenever the compiler is initiated, the internal parameters and switches are
+set to certain predefined values. The setting of such a value is done in three
+steps:
+
+   step 1: All parameters are initialised to some value.
+           
+   step 2: The compiler INITFILE is read. Parameters specified in this file
+           are set to their indicated value.
+
+   step 3: Certain parameters may be changed for a specific compilation by
+           some means specific to the activated compiler.
+
+The user may influence step 2 by changed the INITFILE. Such changes will
+influence all subsequent compilations under control of that INITFILE. But
+note that an INITFILE may be local to some directory.
+
+The INITFILE may contain one or more of the following parameters. Each 
+parameter must be on a separate line, with the parameter name first, separated
+from the value by one or more blanks. The case of the parameter is
+insignificant (it is given here in upper case to make it stand out), while
+the case of its value normally is significant as indicated below. $SLIB
+is used for the path of the Simula library directory, e.g. for DOS systems
+$SLIB is short for c:\sim\lib.
+
+Parameter    Possible value      Comments
+
+ STAPRE   *  $SLIB\s109prdf.ax1  Definition of SIMULA Standard Environment,
+                                 see ch. 9 of the Standard.
+
+ SIMPRE   *  $SLIB\s109prdf.at1  Definition of S-Port extended environment,
+                                 see ch. 9 of the Standard and ch. 5 of PRM.
+
+ SIMLIB   *  $SLIB\              Path to the directory containing the run
+                                 time system libraries.
+
+ EDITOR      ped.exe             Name of the editor to be invoked from the
+                                 window mode system.
+
+ ERRFIL   *  $SLIB\s109diag.msg  File containing diagnostics messages.
+
+ DOSLNK   *  link                DOS linker (DOS systems).
+
+ STANDARD    0                   Selects between STAPRE (standard=0) or SIMPRE
+
+ INPLTH      120                 Image length of standard input
+
+ OUTLTH      132                 Image length of standard output
+
+ LPPAGE      68                  Lines per page for listing output
+
+ MINALLOC    8                   Number of allocated work areas, before the
+                                 Garbage Collector is envoked.
+
+ MAXALLOC    50                  Maximum number of work areas.
+
+ STEPSIZE    32520               Size of each work area.
+
+ MINFREE     0                   Minimum free area after Garbage Collection.
+
+ BECDEB      0                   - system maintenance, value irrelevant.
+
+ DEBUG       2                   Level of SIMOB debug information included.
+
+ MASSLV      63                  Massage level.
+
+ QBFLIM      1500                Peephole size.
+
+ RNGCHK      1                   Integer arithmetic control.
+
+ IDXCHK      1                   Case statement bounds checking control.
+
+ TSTOFL      0                   Integer overflow checking.
+
+ LINTAB      1                   Include/exclude line number information.
+
+ BUFLNG      1024                Size of internal file buffer.
+
+ SEGLIM      20000               Approximate upper limit for code segment size.
+
+ TARGET      0                   Target system code (0 or 1 for DOS systems).
+
+ CHKSTK      0                   Stack overflow checking.
+
+ MAXERR      50                  Compilation will be aborted if more than
+                                 MAXERR error messages are generated.
+
+ CBIND       1                   C (Pascal) interface control.
+
+ SCRATCH  +  sim0000.tmp         Compiler scratch file (normally not present).
+
+ SCODE    +  sim0001.tmp         Compiler scratch file (normally not present).
+
+ INCLUDE  +  relocatable         Include 'relocatable' in autolink.par.
+
+ LIBRARY  +  libraryname         Include the named library in autolink.par.
+
+ OPTION   +  optionlist          Set options. The case of an option letter
+                                 is insignificant.
+
+ END                             - marks the end of the INITFILE
+
+  (*)  These must always be present in the INITFILE.
+
+  (+)  These values are not set by the SAVE command, they may only be included
+       by direct editing of the INIFILE.
+-----------------------------------------------------------------------------
+
+2.11  SET command
+
+Format     SET  mnemonic value
+
+The SET command may be used to alter the default values of certain compiler
+parameters and switches. The STATUS command will report these settings to
+standard output. Unless otherwise specified below value must be a natural
+number.
+
+
+MAXERR  value  Sets the number of error messages that will be accepted 
+               before the compilation is aborted. Default 50.
+
+MINFREE value  If this value is greater than zero, the compilation will be
+               aborted when a Garbage Collection does not reclaim at least
+               value bytes. Default 0.
+
+QBFLIM  value  Sets the size of the area used by the code optimizer to hold
+               code sequences being massaged. A value of zero implies the
+               use of all available memory for this purpose. Default 1500.
+               Note that a large (or "infinite" i.e. zero) value for this
+               parameter may improve the generated code, but the time spent
+               in the code generator may increase!
+
+MASSLV  0..255 Sets the optimisation level. Higher values imply better code
+               (but see remark under QBFLIM). Default 63. Higher values will
+               seldom have any effect!
+
+TARGET  0..7   Specifies the target system as follows
+
+                   0: DOS without coprocessor support (emulator used).
+                   1: DOS with numeric coprocessor
+                   2: OS/2 (coprocessor assumed)
+                   3: Xenix/286 (with Intel coprocessor or emulator)
+                   4: Xenix/386 (with Intel coprocessor or emulator)
+                   5: Xenix/386 (with Weitek x167 coprocessor or emulator)
+                   6: Unix (with Intel coprocessor or emulator)
+                   7: Unix (with Weitek x167 coprocessor or emulator)
+
+               Changing the default value of this parameter (from that given
+               in the INIT file) will normally lead to a system error, unless
+               your system is a cross compiler. The DOS coprocessor system
+               (TARGET 1) does, however, include the emulator system (TARGET 0).
+
+SELECT sel:fop Sets selector switches (see 5.3) from the character string
+               'sel'. The second part of the value, ':fop', sets compiler trace
+               switches, and may be excluded. The possible letters are
+
+                   O: produce summary pass information
+                   L: print line numbers during pass 2
+
+               The compiler trace switches are intended for system maintenance.
+
+OPTION optlst  Set one or more compiler option. Each element of the 'optlst'
+               must be a letter, possibly followed by a natural number. The
+               possible options are
+
+                   G:  generate code in spite of diagnosed errors.
+                   K:  do NOT generate code, i.e. perform a check compilation.
+                       Default code is generated if no serious errors were
+                       encountered.
+                   M:  set batch mode. Causes all commands to be echoed to
+                       standard output. Default no echo.
+                   N:  do NOT print notes (see 2.14). Default notes are given.
+                   R:  Turn off generation of NONE-, QUA- and array index checks
+                       (see 5.2). Default all such checks are generated.
+                   S:  (DOS only) Trace the swapping system.
+                   T:  List compilation time and number of garbage collections.
+                   V:  Do not delete the file 'inform.xcg'.
+                   X:  Do not delete the SCRATCH file.
+                   Y:  Do not delete the SCODE file.
+
+               Options S, T, V, X and Y are intended for system maintenance.
+               Normally, these options should not be used.
+
+LINTAB 0..1    1: generate line number table (default). If this table is
+               excluded, the executable will be smaller but no line numbers
+               can be given from SIMOB or in RTS error messages.
+
+SYSMODE        Sets maintenance mode. The command demands a password.
+
+MAXALLOC value These parameters governs the storage allocation strategy. The
+MINALLOC value storage is allocated in chunks of STEPSIZE, on request, until
+STEPSIZE value either storage is exhausted or MINALLOC areas have been allo-
+               cated. After that, the garbage collector is envoked before
+               further allocations. MAXALLOC sets an absolute limit to the
+               number of areas it is possible to allocate. These parameters
+               may be used to tune the system in a virtual memory system, so
+               that swapping caused by exhorbitant use of memory is avoided.
+               They are of minor interest to DOS systems. Default values are
+               as given in the INIT file.
+
+CHKSTK  0..1   1: check against stack overflow at selected points in the
+               generated code. Default no such checks are generated.
+
+STANDARD 0..1  0: restrict to pure Simula Standard. Normally the S-port
+               extensions (such as procedure loadchar) are allowed.
+
+DEBUG    0..3  - corresponds to the DEBUG command.
+
+BNKLNK   0..1  1: generate code designed for overlaid (banked) DOS systems.
+               Demands special system libraries not part of the standard
+               system. 
+
+CBIND    0..2  Determines the C and Pascal interfaces.
+                 0: no interface defined (default)
+                 1: Microsoft C interface
+                 2: Borland C interface
+
+RNGCHK   0..3  Determines code generation for integer arithmetic.
+                 0: wrap-around 8/16/32 bits arithmetic (dangerous!)
+                 1: standard arithmetic, no range checking (default)
+                 2: as 1, in addition the char function is range checked
+                 3: as 2, in addition short integers are range checked
+
+IDXCHK   0..1  0: do not generate case-statement range checks. Default 1.
+
+TSTOFL   0..1  1: generate overflow checks for integer arithmetic. Default,
+               no such checks are generated (resulting in wrap-around arith-
+               metic).

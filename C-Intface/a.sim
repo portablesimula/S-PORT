@@ -1,0 +1,4 @@
+class a;
+begin external c procedure outstring is
+      procedure outstring(t); name t; text t; ;
+end;

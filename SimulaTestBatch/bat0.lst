@@ -1,0 +1,93 @@
+sim109.x32 version:0 wrkmax:1
+SIMULA Version 109.2.1 under XENIX/386 (R) 
+Copyright (C) Simula a.s. 1990.
+
+SIM: SIM: set sysmode sport
+ Maintenance mode, RNGCHK:=0
+SIM: set version 0
+SIM: date
+Sat Jun 29 11:41:02 cdt 1991
+SIM: compile src/simtst01.sim
+SIM: load
+simtst01 loaded
+SIM: simtst01 /w1
+--- START Simula a.s. TEST 1
+--- Simple test of conditional statements
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 1
+SIM: compile src/simtst02.sim
+SIM: load
+simtst02 loaded
+SIM: simtst02 /w1
+--- START Simula a.s. TEST 2
+--- Test Boolean operators
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 2
+SIM: compile src/simtst03.sim
+SIM: load
+simtst03 loaded
+SIM: simtst03 /w1
+--- START Simula a.s. TEST 3
+--- Test text value relations
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 3
+SIM: compile src/simtst04.sim
+SIM: load
+simtst04 loaded
+SIM: simtst04 /w1
+--- START Simula a.s. TEST 4
+--- Test reading numbers from source text
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 4
+SIM: compile src/simtst05.sim
+SIM: load
+simtst05 loaded
+SIM: simtst05 /w1
+--- START Simula a.s TEST 5
+--- Test arithm. relations
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 5
+SIM: compile src/simtst06.sim
+SIM: load
+simtst06 loaded
+SIM: simtst06 /w1
+--- START Simula a.s. TEST 6
+--- Test of math. functions
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 6
+SIM: compile src/simtst07.sim
+SIM: load
+simtst07 loaded
+SIM: simtst07 /w1
+--- START Simula a.s. TEST 7
+--- Test math. functions
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 7
+SIM: compile src/simtst08.sim
+SIM: load
+simtst08 loaded
+SIM: simtst08 /w1
+--- START Simula a.s. TEST 8
+--- Simple scope test
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 8
+SIM: compile src/simtst09.sim
+SIM: load
+simtst09 loaded
+SIM: simtst09 /w1
+--- START Simula a.s. TEST 9
+--- Character relations etc.
+
+--- NO ERRORS FOUND IN THIS TEST
+--- END Simula a.s. TEST 9
+SIM: exit
+EXIT  SIMULA
+Sat Jun 29 11:45:32 cdt 1991

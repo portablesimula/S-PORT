@@ -1,0 +1,21 @@
+set -kv
+zim108.x16 <<endc
+set opt M
+set sys sport
+set ver 1
+com src/simtst50.sim
+load
+simtst50
+com src/simtst71.sim
+lo
+simtst71
+com src/simtst98.sim
+lo
+simtst98
+cp src/data96 data96
+com src/simtst96.sim
+lo
+simtst96
+exit
+endc
+rm simtst* data96

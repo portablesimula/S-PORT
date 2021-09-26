@@ -1,0 +1,147 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>16</title>
+</head>
+
+<body>
+
+<h2>16.  <strong>OTHER INSTRUCTIONS</strong></h2>
+
+&nbsp;
+<p>	eval_instruction</p>
+
+<p>		::=	<u>eval</u></p>
+
+&nbsp;
+<p>In certain cases the code specified by previuos program elements must be generated in
+order to ensure, that the generated program will behave correctly. As an example,
+consider the following SIMULA statement:</p>
+
+&nbsp;
+<p>			x.b  :=  a + f;</p>
+
+&nbsp;
+<p>where &quot;f&quot; is a function that, as a side effect, may change both &quot;a&quot; and &quot;x&quot;.</p>
+
+<p>However, the semantics of SIMULA demands strict left-to-right evaluation of statement
+components. The actual values to be used in the execution of the translated statement
+<u>must</u> be the values before the function f is executed. Thus it is necessary that the values
+of x and a used in the computation really are &quot;fetched&quot; into some temporary locations. A
+possible optimisation might instead remember that these values are stored in specific
+locations, and use these values directly from the locations &quot;x&quot; and &quot;a&quot;. In that case the
+computed result would be wrong. In such a situation the front end compiler will issue this
+instruction.</p>
+
+<p>The instruction forces the S-compiler to perform any operations previously specified in the
+S-program, which may have been deferred for optimisation purposes. All values and
+references must be fully evaluated and stored in the temporary area when an <u>eval</u> is
+done, unless they are constants. Following the instruction the internal state of the
+S-compiler must match the state implied by a strict application of the S-code definition.</p>
+
+&nbsp;
+<p>	delete_statement</p>
+
+<p>		::=	<u>delete</u>  from:tag</p>
+
+&nbsp;
+<p>   * check stacks empty;</p>
+
+&nbsp;
+<p>All tags defined with values greater than or equal to from:tag are made undefined, i.e. the
+corresponding descriptors may be released. The tags become available for reuse. The
+stack and all saved stacks must be empty, otherwise: error.</p>
+
+<p>The S-code generators (e.g. the SIMULA front-end compiler) will ensure that the following
+rules are obeyed; since it may be very costly in terms of execution time for the S-compiler
+to check these conditions, we recommend the use of an internal switch to govern such
+consistency checks.</p>
+
+<p>Let DEL be the set of tags to be deleted (i.e. the set of tags in the closed interval
+from...largest defined tag). The following conditions apply to elements of DEL:</p>
+
+&nbsp;
+<p> a)	If a record tag is in DEL, then</p>
+<ul>
+  <li>all quantities having this record as type,</li>
+  <li>all records having this record as prefix, and</li>
+  <li>all attributes of this record</li>
+</ul>
+<p>	are in DEL.</p>
+<p> b)	If an attribute tag is in DEL, then</p>
+<ul>
+  <li>the associated record tag is in DEL.</li>
+</ul>
+<p>c)	If a profile tag is in DEL, then</p>
+<ul>
+  <li>all body tags associated with this profile</li>
+  <li>all parameter tags of this profile</li>
+</ul>
+<p>	are in DEL.</p>
+<p> d)	If a parameter tag is in DEL, then</p>
+<ul>
+  <li>the associated profile tag is in DEL.</li>
+</ul>
+&nbsp;
+<p>These conditions may be summarised informally as follows: Once a tag is to be deleted,
+all tags which directly or indirectly refer to this tag are deleted in the same delete
+statement.</p>
+
+&nbsp;
+<p>	info_setting</p>
+
+<p>		::=	<u>decl</u> line:number</p>
+
+<p>		::=	<u>line</u> line:number</p>
+
+<p>		::=	<u>stmt</u> line:number</p>
+
+<p>		::=	<u>info</u>  string</p>
+
+<p>		::=	<u>setswitch</u>  switch:byte  setting:byte</p>
+
+&nbsp;
+<p>The <u>line</u>, <u>decl</u> and <u>stmt</u> instructions are used to inform about a mapping between a source
+program and its S-Code. The argument of the instructions refer to the numbering of the
+lines of the program listing from the S-Code producer. <u>decl</u> informs that the code following
+is for a SIMULA declaration starting on the line with the supplied number. <u>stmt</u> informs
+that the code following is for a SIMULA statement starting on the line with the supplied
+number. <u>line</u> informs that the current point in the S-Code corresponds to the start of the
+source program line with the given number. The intention is that the Front End Compiler
+will produce <u>decl</u> and <u>stmt</u> instructions, while <u>line</u> instructions will occur in the code for the
+Run-Time System.</p>
+
+<p>Eventually these instructions should be used to produce a mapping between the original
+source program and its corresponding machine-code. For this purpose none of them need
+occur in the final machine-code. The mapping may be represented by for instance a table.</p>
+
+<p>The <u>stmt</u> instruction may be used for another purpose as well, see chapter 11 of The
+Environment Interface.</p>
+
+<p><u>info</u> offers the possibility to communicate to the S-compiler information, which must be
+interpreted in a system-dependent manner.</p>
+
+<p><u>setswitch</u> is intended to control various aspects of the working of the S-compiler such as
+the production of debugging information.</p>
+
+<p>The compiler will maintain a set of switches which can be set to various values:
+SWITCH(switch) := setting. The meanings of the switches and their settings will be
+implementation-dependent with the following exceptions:</p>
+
+&nbsp;
+<ol type="a">
+  <li>SWITCH(1) controls the listing of the S-code as it is processed by the compiler.
+Such listing should be done using the mnemonics defined in this document
+(underline excepted).<br>
+	SWITCH(2) controls the stack activity trace.</li>
+  <li>The setting to zero of a switch inhibits the actions controlled by the switch. This
+should be the default setting of all switches.</li>
+</ol>
+&nbsp;
+
+</body>
+
+</html>

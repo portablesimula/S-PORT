@@ -1,0 +1,42 @@
+set -kv
+zim109.x32 <<endsml
+set opt M
+set sys sport
+set lang 1
+set version 1
+com xout.sml
+ex
+endsml
+zim109.x32 <<endc
+set opt M
+CC set select
+set sys sport
+set sk1trc 1
+set sk1lin 1
+com testtext.sim
+sh linkit
+testtext
+CC ex
+endc
+zim109.x32 <<endc
+set opt M
+set select N
+set sys sport
+set sk1trc 1
+set sk1lin 1
+com testtext.sim
+sh linkit
+testtext
+CC ex
+endc
+zim109.x32 <<endc
+set opt M
+set select V
+set sys sport
+set sk1trc 1
+set sk1lin 1
+com testtext.sim
+sh linkit
+testtext
+CC ex
+endc

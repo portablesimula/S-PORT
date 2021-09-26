@@ -1,0 +1,157 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>3</title>
+</head>
+
+<body>
+
+<h2>3.  <strong>GENERAL STRUCTURE OF S-PROGRAMS</strong></h2>
+
+<p>	S-program</p>
+
+<p>		::=	<u>program</u>  program_head:string</p>
+
+<p>			  program_body  <u>endprogram</u></p>
+
+<br WP="BR1">
+<p>	program_body</p>
+
+<p>		::=	interface_module</p>
+
+<p>		::=	macro_definition_module</p>
+
+<p>		::=	&lt;module_definition&gt;*</p>
+
+<p>		::=	<u>main</u> &lt;local_quantity&gt;* &lt;program_element&gt;*</p>
+
+<br WP="BR1"><br WP="BR2">
+	program_element
+
+<p>		::=	instruction</p>
+
+<p>		::=	label_declaration</p>
+
+<p>		::=	routine_profile		!   routine_definition</p>
+
+<p>		::=	skip_statement			!   if_statement</p>
+
+<p>		::=	protect_statement</p>
+
+<p>		::=	insert_statement</p>
+
+<p>		::=	delete_statement</p>
+
+<br WP="BR2">
+<p>	instruction</p>
+
+<p>		::=	constant_declaration</p>
+
+<p>		::=	record_descriptor		!   routine_specification</p>
+
+<p>		::=	stack_instruction		!   assign_instruction</p>
+
+<p>		::=	addressing_instruction	!   protect_instruction</p>
+
+<p>		::=	temp_control			!   access_instruction</p>
+
+<p>		::=	arithmetic_instruction	!   convert_instruction</p>
+
+<p>		::=	jump_instruction</p>
+
+<p>		::=	goto_instruction</p>
+
+<p>		::=	if_instruction			!   skip_instruction</p>
+
+<p>		::=	segment_instruction		!   call_instruction</p>
+
+<p>		::=	area_initialisation		!   eval_instruction</p>
+
+<p>		::=	info_setting			!   macro_call</p>
+
+<p>&nbsp;      </p>
+
+<p>The program head will contain the identification of the front-end compiler and other
+information; the exact format is defined in (4). Program elements are not permitted within
+routine bodies, while instructions are (see section 13.3).</p>
+
+<p>The distinction between program elements and instructions is syntactically ambiguous in
+the case of if-, skip-, protect- and segment-constructions; we emphasize that the syntax
+given is intended to be descriptive rather than the base of an automatic compiler
+generation scheme.</p>
+
+<p>Any local quantities and descriptors are visible only from within the body of the main
+program; all such tags are destroyed at <u>endprogram</u> and made available for re-use. They
+are statically allocated and part of the main program throughout an execution, by analogy
+with Algol's 'own'-variables. Their initial values are undefined.</p>
+
+<h3>3.1.  <u>The primitive syntax symbols</u></h3>
+
+<p>byte</p>
+
+<p>	::=	an (8-bit) unsigned integer value in the range 0..255.</p>
+
+<br WP="BR2">
+<p>number</p>
+
+<p>	::=	a two-byte value greater than or equal to zero. A number (or any other
+multi-byte structure) will always be transmitted with the most significant byte
+first. Let the bytes be &lt;B1&gt;&lt;B2&gt; in that sequence; the value will be 256 * B1
++ B2 .</p>
+
+<br WP="BR1">
+<p>ordinal</p>
+
+<p>	::=	a number with value greater than zero.</p>
+
+<br WP="BR1">
+<p>tag</p>
+
+<p>	::=	An ordinal (the &quot;tag-value&quot;) associated with a descriptor. See section 2.4.</p>
+
+<p>	::=	The number zero followed by an ordinal (the &quot;tag value&quot;) and an identifying
+string.</p>
+
+<p>		The second form is intended for debugging purposes and is used to
+associate an identification with the tag.</p>
+
+<br WP="BR1">
+<p>newtag</p>
+
+<p>	::=	A tag-value with no association, see section 2.4.</p>
+
+<br WP="BR1"><br WP="BR2">
+spectag
+
+<p>	::=	a tag-value which, if not undefined, must have been given an association in
+a specification (<u>labelspec</u>, <u>constspec</u>, <u>routinespec</u>), see section 2.4.</p>
+
+<p><br WP="BR2">
+</p>
+<p>index</p>
+
+<p>	::=	a byte within an implementation-defined range which identifies an internal
+label. An important side effect of its occurrence is that it looses its meaning.
+Thus an internal label can be the destination of exactly one jump-instruction.
+See section 11.2.</p>
+
+<br WP="BR1">
+<p>newindex</p>
+
+<p>	::=	an index-byte which is undefined; it becomes defined as an internal label
+through its occurrence. See section 11.2.</p>
+
+<br WP="BR2">
+<p>string</p>
+
+<p>	::=	a byte with the value N followed by N &quot;data bytes&quot;. The character count N
+must be greater than zero, thus a string cannot be empty.</p>
+
+<p>Definition of S-code	<a HREF="#N_22_"><sup>(22)</sup></a>      </p>
+
+</body>
+
+</html>

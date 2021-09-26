@@ -1,0 +1,8 @@
+set -kv
+sim108.x16 <<endc
+set opt M
+com look100.sim
+lo
+ex
+endc
+look100

@@ -1,0 +1,4 @@
+begin external C procedure printf
+      is integer procedure printf(t); name t; text t;;
+       printf("12345678223456783234567!10!!0!");
+end
