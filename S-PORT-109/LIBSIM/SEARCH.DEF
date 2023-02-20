@@ -1,0 +1,33 @@
+Module search_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent,fil;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("search")search;
+       import infix(txtqnt) m,c; export short integer res;
+       ---  return startpos of first m.sub, where m.sub=c, or m.length+1
+       begin character first;
+             range(0:MAX_TXT) mpos,clng; short integer lstpos;
+             clng:=c.lp-c.sp;
+             if clng=0 then res:=m.cp+1; goto F1 endif;
+             first:=c.ent.cha(c.sp); lstpos:=m.lp-clng;
+             repeat while m.cp < lstpos
+             do if first=m.ent.cha(m.cp)
+                then mpos:=m.cp+1; c.cp:=c.sp+1; res:=mpos-m.sp;
+                     repeat while c.cp < c.lp
+                     do if m.ent.cha(mpos)<>c.ent.cha(c.cp)
+                        then goto ADVANCEm endif;
+                        mpos:=mpos+1; c.cp:=c.cp+1;
+                     endrepeat;
+                     goto F2;
+                endif;
+     ADVANCEm:  m.cp:=m.cp+1;
+             endrepeat;
+             res:=m.lp-m.sp+1;
+       F1:F2: end;
+
+end;

@@ -1,0 +1,2 @@
+    external library procedure scanto is
+    text procedure scanto(t,c); name t; text t; character c; ;

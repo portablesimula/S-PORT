@@ -1,0 +1,20 @@
+Module frontcom_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("frontcompare")frontcompare;
+       import infix(txtqnt) s,c; export boolean res;
+       ---  return "s.sub(pos,c.length)=c"
+       begin res:=false;
+             repeat while c.sp < c.lp
+             do if s.cp >= s.lp then goto X1 endif;
+                if c.ent.cha(c.sp)<>s.ent.cha(s.cp) then goto X2 endif;
+                s.cp:=s.cp+1; c.sp:=c.sp+1 endrepeat;
+             res:=true;
+       X1:X2:end;
+end;

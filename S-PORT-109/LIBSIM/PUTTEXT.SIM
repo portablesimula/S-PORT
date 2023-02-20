@@ -1,0 +1,2 @@
+    external library procedure puttext is
+    boolean procedure puttext(ot,nt); name ot; text ot,nt; ;

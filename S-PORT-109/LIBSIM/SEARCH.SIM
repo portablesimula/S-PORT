@@ -1,0 +1,2 @@
+    external library procedure search is
+    short integer procedure search(t1,t2); text t1,t2; ;

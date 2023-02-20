@@ -1,0 +1,144 @@
+Module UEDIT("iAPX-286");
+begin insert UCOMN;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s., Oslo, Norway                                ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---     T  H  E     M  S  -  D  O  S     L  I  N  K  E  R     ---
+       ---                   Editing utilities                       ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     C - Includes Consistency Tests                        ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Generate code for MS-DOS                          ---
+       ---     O - Generate code for MS-OS2                          ---
+       ---     X - Generate code for XENIX                           ---
+       ---     E - Extended Mode I.e XENIX/386, UNIX/386             ---
+       -----------------------------------------------------------------
+
+character eChars(132);  infix(string) eString;
+
+Visible routine initEdit;
+begin eString.chradr:=@eChars end;
+
+Visible Routine ePrintout;
+begin if eString.nchr <> 0 then SYSPRI(eString); eString.nchr:=0 endif end;
+
+Visible Routine eEd; import infix(String) t;
+begin infix(String) s;
+-- ?? if (p+t.nchr) >= BF.nchr  
+-- ?? then PrintOut(BF); p:=0;  
+-- ??      if t.nchr>BF.nchr then t.nchr:=BF.nchr endif; 
+-- ?? endif;
+      s.chradr:=name(var(eString.chradr)(eString.nchr)); s.nchr:=t.nchr; 
+      APX_SMOVEI(s.nchr,s.chradr,t.chradr);
+      eString.nchr:=eString.nchr+s.nchr;
+end;
+
+Visible Routine ePrt; import infix(String) msg;
+begin ePrintOut; eEd(msg); ePrintOut end;
+
+Visible Routine ePickup; export infix(String) s;
+begin s:=eString; eString.nchr:=0;
+      if s.nchr=0 then s.chradr:=none endif;
+end;
+
+Visible Routine eSetPos; import byte p; 
+begin if p<1 then p:=0 elsif p>=132 then p:=131 endif; 
+      repeat while p>eString.pos do eEdChar(' ') endrepeat; BF.pos:=p;
+end;
+
+Visible Routine MovePos; import ref(EdBuff) B; byte p;
+begin SetPos(B,if B.Pos<p then p else B.Pos+1) end;
+
+Visible Routine eEdChar; import character c;
+begin
+      if (p+1) >= BF.nchr then PrintOut(BF); p:=0 endif; 
+      BF.pos:=p+1; BF.chr(p):=c; 
+end;
+
+Visible Routine EdChars;
+import ref(EdBuff) BF; name(character) c; byte n;
+begin infix(String) s; s.chradr:=c; s.nchr:=n; Ed(BF,s) end;
+
+Visible Routine EdSymb; import ref(EdBuff) F; Word i; 
+begin if i.val > 0 then Ed(F,DICREF(i)) endif end;
+
+Visible Routine EdSymbol; import ref(EdBuff) F; ref(Symbol) T;
+begin infix(String) s; if T=none then ed(F,"notext")
+      else s.chradr:=@T.chr; s.nchr:=T.nchr; ed(F,s) endif;
+end;
+
+Visible Routine EdHex; import ref(EdBuff) BF; integer val; byte n;  
+begin Dword x; x.AsInt:=val;
+      if n>4 then EdHexWrd(BF,x.AsWord(1).val,n-4); n:=4 endif;
+      EdHexWrd(BF,x.AsWord(0).val,n);
+end;
+
+Visible Routine EdHexWrd; import ref(EdBuff) BF; unsigned val; byte n;  
+begin byte d,p; p:=BF.pos;
+      if (p+n) >= BF.nchr then PrintOut(BF); p:=0 endif; BF.pos:=p+n; 
+      repeat while n > 0 
+      do n:=n-1; d:=wAND(val,15); val:=wSHR(val,4);
+         if d > 9 then d:=d+7 endif;
+         d:=d+(48); BF.chr(p+n) := d qua character;
+      endrepeat;
+end;
+
+Visible Routine EdWrd; import ref(EdBuff) BF; unsigned i;  
+begin byte n,p; p:=BF.pos;
+      if i<10      then n:=1 elsif i<100   then n:=2  
+      elsif i<1000 then n:=3 elsif i<10000 then n:=4 else n:=5 endif;
+      if (p+n) >= BF.nchr then PrintOut(BF); p:=0 endif; 
+      BF.pos:=p+n;
+      repeat if n = 0 then goto E1 endif;
+             n:=n-1; BF.chr(p+n):=((i rem 10)+48) qua character; i:=i/10
+      while i > 0 do endrepeat;
+      repeat while n > 0 do n:=n-1; BF.chr(p+n):=' ' endrepeat;
+E1:end;
+
+Visible Routine EdInt; import ref(EdBuff) BF; integer i;  
+begin byte n,p; p:=BF.pos;
+      if i<0 then EdChar(BF,'-'); i:=-i endif;  
+      if    i<10       then n:=1 elsif i<100       then n:=2  
+      elsif i<1000     then n:=3 elsif i<10000     then n:=4  
+      elsif i<100000   then n:=5 elsif i<1000000   then n:=6  
+      elsif i<10000000 then n:=7 elsif i<100000000 then n:=8  
+      else n:=9 endif;
+      if (p+n) >= BF.nchr then PrintOut(BF); p:=0 endif; 
+      BF.pos:=p+n;
+      repeat if n = 0 then goto E1 endif;
+             n:=n-1; BF.chr(p+n):=((i rem 10)+48) qua character; i:=i/10
+      while i > 0 do endrepeat;
+      repeat while n > 0 do n:=n-1; BF.chr(p+n):=' ' endrepeat;
+E1:end;
+
+%+D Visible Routine HexDump;
+%+D import integer Lpos,Cnt; name(character) chradr;
+%+D begin integer i,p,n; character c;
+%+D       i:=0; OutTrace; 
+%+D       repeat while i < Cnt
+%+D       do EdHex(TrcBuf,Lpos+i,6);
+%+D          p:=0; n:=Cnt-i; if n > 16 then n:=16 endif;
+%+D          repeat while p < n
+%+D          do if p=8 then EdChar(TrcBuf,' ') endif; EdChar(TrcBuf,' ')
+%+D             EdHexWrd(TrcBuf,var(chradr)(i+p) qua integer,2); p:=p+1;
+%+D          endrepeat;
+%+D          p:=0; SetPos(TrcBuf,56);
+%+D          repeat while p < n
+%+D          do c:=var(chradr)(i+p); p:=p+1;
+%+D             if c qua integer <   32 then c:='.' endif;
+%+D             if c qua integer >= 127 then c:='.' endif;
+%+D             EdChar(TrcBuf,c);
+%+D          endrepeat;
+%+D          OutTrace; i:=i+16;
+%+D       endrepeat;
+%+D end;
+
+
+end;

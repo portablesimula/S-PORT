@@ -1,0 +1,20 @@
+Module upto_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("upto")upto;
+       import infix(txtqnt) t; short integer i;
+       export infix(txtqnt) res;
+       ---  return "t.sub(1,pos-1)", if possible
+       begin if i<=0 then res:=notext
+             else res:=t;
+                  if i<=(t.lp-t.sp)
+                  then res.lp:=t.sp+i; res.cp:=res.sp endif;
+             endif;
+       end;
+end;

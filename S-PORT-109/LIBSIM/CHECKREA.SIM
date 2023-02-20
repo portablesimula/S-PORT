@@ -1,0 +1,2 @@
+    external library procedure checkreal is
+    short integer procedure checkreal(t); name t; text t; ;

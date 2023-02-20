@@ -1,0 +1,46 @@
+           MOV    BX,[BP]+6     ; X-coordinate
+           PSCHK  BX,NOPTE
+           MOV    CX,[SI]
+           ADD    CX,BX         ; last point
+           PSCHK  CX,NOPTE
+           MOV    CX,[BP]-2     ; save
+           MOV    AX,[BP]+8     ; Y-coordinate (line number)
+           LNCHK  AX,NOPTE
+           MOV    CX,SS:RASTINC    ; Fetch bytes per raster
+           MUL    CX            ; Compute offset past y raster
+           MOV    [BP]+8,AX     ; save for next time
+           MOV    DX,GRAFCTL
+           XOR    AL,AL
+           OUT    DX,AL         ; prepare write
+PNP: ; next point, AX = raster, BX = ps
+           MOV    CH,BL         ; Keep copy of X for later
+           MOV    CL,SS:DIVBY8
+           SHR    BX,CL
+           ADD    BX,[BP]+8     ; Add offset together and keep in BX
+           MOV    AX,SS:MEMB       ; Fetch segment and copy it into ES
+           MOV    ES,AX
+           MOV    CL,CH
+           AND    CL,7          ; Compute which bit in a byte
+           MOV    AL,80H        ; and use it to rotate mask into position
+           ROR    AL,CL
+           MOV    CL,AL         ; Keep mask in CL
+           MOV    AL,... color fra buffer
+           INC    DX
+           OUT    DX,AL
+           DEC    DX
+           MOV    AL,1
+           MOV    AH,0FH
+           OUT    DX,AX
+
+           OUTMASK CL,08H
+           MOV    AL,ES:[BX]    ; Must latch to preserve old bits
+           MOV    ES:[BX],AL    ; Set pixel color to new value
+           MOV    AX,[BP]+8
+           MOV    BX,[BP]+6
+           INC    BX
+           MOV    [BP]+6,BX
+           CMP    BX,[BP]-2     ; if not past last
+           JBE    PNP           ; then repeat paint;
+           
+           OUTMASK 00H,01H      ; select ENABLE RESET
+           OUTMASK 0FFH,08H     ; Select BIT MASK register, enable 8 bits

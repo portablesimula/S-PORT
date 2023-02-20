@@ -1,0 +1,119 @@
+Module UTRAP("iAPX286");
+begin insert UCOMN,UBASE;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---           T  H  E     D O S    L  I  N  K  E  R           ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     C - MS C modifications to XENIX                       ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+ Record AnyAddr; info "TYPE";
+ begin
+%-E    variant range(0:MaxWord) AsOfst;    -- 16 bit Offset
+%-E            range(0:MaxWord) AsSegm;    -- 16 bit Segment
+%+E    variant integer          AsOfst;    -- 32 bit Offset
+%+E    variant size             AsSize;
+%+E    variant field()          AsAaddr;
+       variant ref()            AsOaddr;
+       variant label            AsPaddr;
+       variant entry()          AsRaddr;
+ end;
+
+%+M Record TrapPkt; info "TYPE";
+%+M begin range(0:127) OsCode;
+%+M       range(0:127) SimCode;    -- S-Port trap code
+%+M       range(0:MaxWord) rSP;    -- Saved register SP
+%+M       range(0:MaxWord) rDS;    -- Saved register DS
+%+M       range(0:MaxWord) rES;    -- Saved register ES
+%+M       range(0:MaxWord) rDI;    -- Saved register DI
+%+M       range(0:MaxWord) rSI;    -- Saved register SI
+%+M       range(0:MaxWord) rBX;    -- Saved register BX
+%+M       range(0:MaxWord) rDX;    -- Saved register DX
+%+M       range(0:MaxWord) rCX;    -- Saved register CX
+%+M       range(0:MaxWord) rAX;    -- Saved register AX
+%+M       range(0:MaxWord) OldBP;  -- Old BP
+%+M       infix(AnyAddr) TADR;     -- Trap address (I.e. CS:IP)
+%+M       range(0:MaxWord) FLAGS;  -- Saved flags
+%+M end;
+
+%+O Record TrapPkt; info "TYPE";
+%+O begin range(0:127) OsCode;
+%+O       range(0:127) SimCode;    -- S-Port trap code
+%+O       range(0:MaxWord) rSP;    -- Saved register SP
+%+O       range(0:MaxWord) rDS;    -- Saved register DS
+%+O       range(0:MaxWord) rES;    -- Saved register ES
+%+O       range(0:MaxWord) rDI;    -- Saved register DI
+%+O       range(0:MaxWord) rSI;    -- Saved register SI
+%+O       range(0:MaxWord) rBX;    -- Saved register BX
+%+O       range(0:MaxWord) rDX;    -- Saved register DX
+%+O       range(0:MaxWord) rCX;    -- Saved register CX
+%+O       range(0:MaxWord) rAX;    -- Saved register AX
+%+O       range(0:MaxWord) OldBP;  -- Old BP
+%+O       infix(AnyAddr) TADR;     -- Trap address (I.e. CS:IP)
+%+O       range(0:MaxWord) FLAGS;  -- Saved flags
+%+O end;
+
+%+X %-E Record TrapPkt; info "TYPE";
+%+X %-E begin range(0:MaxWord) OsCode;  -- Signal number
+%+X %-E       range(0:MaxWord) SimCode; -- S-Port trap code
+%+X %-E       range(0:MaxWord) rSP;     -- Saved register SP
+%+X %-E       range(0:MaxWord) rDS;     -- Saved register DS
+%+X %-E       range(0:MaxWord) rES;     -- Saved register ES
+%+X %-E       range(0:MaxWord) rDI;     -- Saved register DI
+%+X %-E       range(0:MaxWord) rSI;     -- Saved register SI
+%+X %-E       range(0:MaxWord) rBX;     -- Saved register BX
+%+X %-E       range(0:MaxWord) rDX;     -- Saved register DX
+%+X %-E       range(0:MaxWord) rCX;     -- Saved register CX
+%+X %-E       range(0:MaxWord) rAX;     -- Saved register AX
+%+X %-E       range(0:MaxWord) FLAGS;   -- Saved flags
+%+X %-E       infix(AnyAddr) CONT;      -- Continuation address (or +0)
+%+X %-E       range(0:MaxWord) OldBP;   -- Old BP
+%+X %-E       range(0:MaxWord) UserBP;  -- User's BP
+%+X %-E       infix(AnyAddr) TADR;      -- Trap address
+%+X %-E end;
+
+%+XE Record TrapPkt; info "TYPE";
+%+XE begin integer OsCode;        -- Signal number
+%+XE       integer SimCode;       -- S-Port trap code
+%+XE       integer rESP;          -- Saved register ESP
+%+XE       integer rEDI;          -- Saved register EDI
+%+XE       integer rESI;          -- Saved register ESI
+%+XE       integer rEBX;          -- Saved register EBX
+%+XE       integer rEDX;          -- Saved register EDX
+%+XE       integer rECX;          -- Saved register ECX
+%+XE       integer rEAX;          -- Saved register EAX
+%+XE       integer FLAGS;         -- Saved flags
+%+XE       infix(AnyAddr) CONT;   -- Continuation address (or +0)
+%+XE       integer        OldBP;  -- Old EBP
+%+XE       integer      UserBP;   -- User's EBP
+%+XE       infix(AnyAddr) TADR;   -- Trap address
+%+XE end;
+
+Visible Routine TRAPH;  --- Trap handler
+export infix(TrapPkt) trap; -- NOTE: Also used as import, special case
+begin --- not really anything, just message and return
+      --- LATER: as TRAPH in ecent
+      ERROR("TRAP - No handler available");
+end;
+
+define max_eno=130;
+
+ Visible known("ERROR") KERROR; import range(0:MAX_ENO) eno;
+ begin --- not really anything, just message and return
+       ed(errmsg,"???  ERROR # "); edint(errmsg,eno); printout(errmsg);
+ end;
+
+end;

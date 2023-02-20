@@ -1,0 +1,342 @@
+external class tWindows;
+
+% ***********************************************************
+% Simula a.s, Oslo, Norway
+% 23.08.91
+% 
+%                S I M U L A    I N T E R F A C E
+%                         D E M O
+%
+% This program demonstrates some possibilities for interfacing to
+% a colour screen with class tWindows. Classes such as Form and
+% Field (and subclasses) are defined more extensively in class
+% Menues. This program does no really do anything. Compilation:
+%
+%  sim -SM twindows.def demo.sim       (under DOS, see tWindows)
+%
+% Execution: demo<Enter> - answer question with <Enter>
+%
+% ***********************************************************
+
+tWindows("OWN")
+begin integer Height,Width;
+      ref(Window) EXPL,EXIT;
+%page
+      Head Class Form;
+      begin
+            Procedure Paint(win); ref(Window) win;
+            begin ref(Field) f; f:-first;
+                  while f =/= none do
+                  begin f.Paint(win); f:-f.suc end;
+            end;
+
+            Integer Procedure Process(win,expl); ref(Window) win,expl;
+            begin integer State; ref(Field) f; f:-first;
+                  while f =/= none do
+                  begin State:=f.Process(win,expl);
+                        if State <> 0 then
+                        begin Process:=State; f:-none end
+                   else if LastKey.map = UpKey then
+                        begin f:-f.pred; if f==none then f:-last end
+                   else if LastKey.map = DownKey then
+                        begin f:-f.suc; if f==none then f:-first end
+                   else if LastKey.map = EscKey then f:-none;
+                  end;
+            end;
+      end;
+      
+      Link Class Field(Lin,Pos); short integer Lin,Pos;
+      Virtual: Procedure Paint,Process;
+      begin Procedure Paint(win); ref(Window) win; ;
+            Integer Procedure Process(win,xwn); ref(Window) win,xwn; ;
+      end;
+
+      Field Class DescrField(val); text val;
+      begin
+            Procedure Paint(win); ref(Window) win;
+            begin win.setpos(Lin,Pos); win.outtext(val) end;
+      end;
+
+      Field Class TextField(val); text val;
+      begin
+            Procedure Paint(win); ref(Window) win;
+            begin win.setpos(Lin,Pos); win.outtext(val) end;
+
+            Integer Procedure Process(win,xwn); ref(Window) win,xwn;
+            begin win.setpos(Lin,Pos); val:-win.intext(val.length) end;
+      end;
+
+      Field Class Numeric(val,width); integer val,width;
+      begin
+            Procedure Paint(win); ref(Window) win;
+            begin win.setpos(Lin,Pos); win.outint(val,width) end;
+
+            Integer Procedure Process(win,xwn); ref(Window) win,xwn;
+            begin win.setpos(Lin,Pos); val:=win.inint(width) end;
+      end;
+
+      TextField Class Button(Expl,State); text Expl; integer State;
+      begin Boolean Pressed;
+
+            Integer Procedure Process(win,xwn); ref(Window) win,xwn;
+            begin L: inspect xwn do
+                  begin EraseWindow; setpos(1,1); Outtext(Expl) end;
+                  win.show;
+                  win.setpos(Lin,Pos); val:-win.intext(val.length);
+                  if LastKey.map = CrKey then Process:=State;
+            end;
+      end;
+
+      TextField Class ReturnEntry(Expl); text Expl;
+      begin
+            Integer Procedure Process(win,xwn); ref(Window) win,xwn;
+            begin L: inspect xwn do
+                  begin EraseWindow; setpos(1,1); Outtext(Expl) end;
+                  win.show;
+                  win.setpos(Lin,Pos); val:-win.intext(val.length);
+                  if LastKey.map = CrKey then LastKey.map:=EscKey;
+            end;
+      end;
+
+      TextField Class MenuEntry(Expl,SubWin); text Expl; ref(Window) SubWin;
+      begin
+            Integer Procedure Process(win,xwn); ref(Window) win,xwn;
+            begin L: inspect xwn do
+                  begin EraseWindow; setpos(1,1); Outtext(Expl) end;
+                  win.show;
+                  win.setpos(Lin,Pos); val:-win.intext(val.length);
+                  if LastKey.map = CrKey then
+                  begin if This MenuEntry in SubMenu
+                        then SubWin.ShowAt(Lin+1,Pos+1);
+                        Call(SubWin); SubWin.Hide; goto L;
+                  end;
+            end;
+      end;
+
+      MenuEntry Class SubMenu;;
+%title ***    T O P    W I N D O W    ***
+      Window Class CmndWindow;
+      begin character c;
+            ref(Form) Fr;
+
+            CurAttr:-Colours(Yellow,Blue); EraseWindow;
+            Fr:-new Form;
+            new SubMenu(1,2," Database_Information "
+                ,"Examine the Project Management database schema and tables"
+                ,New DatabaseWindow(18,21,CurAttr)).into(Fr);
+            new SubMenu(1,25," Run_Application "
+                ,"Start the Project Management application"
+                ,New ApplicationWindow(16,16,CurAttr)).into(Fr);
+            new MenuEntry(1,43," OS "
+                ,"Exit to Operating System temporarily"
+                ,New SystemWindow(24,80,CurAttr)).into(Fr);
+            new MenuEntry(1,48," HELP "
+                ,"Obtaining Help Information"
+                ,New HelpWindow(20,24,CurAttr)).into(Fr);
+            new MenuEntry(1,55," EXIT "
+                ,"Final exit from Project Management"
+                ,EXIT).into(Fr);
+       L:   Detach;
+            Fr.Paint(This Window); Show; 
+            Fr.Process(This Window,EXPL);
+            goto L;
+
+      end;
+
+%title ***    Database Information SubSystem    ***
+
+      Window Class DatabaseWindow;
+      begin ref(Form) Fr;
+            Border1; Fr:-new Form;
+            new MenuEntry(2,3," Database Design "
+                ,""
+                ,New DbDesignWindow(10,24,CurAttr)).into(Fr);
+            new MenuEntry(4,3," Staff Table "
+                ,""
+                ,New StaffTabWindow(10,24,CurAttr)).into(Fr);
+            new MenuEntry(6,3," Tasks Table "
+                ,""
+                ,New TaskTabWindow(10,24,CurAttr)).into(Fr);
+            new MenuEntry(8,3," Projects Table "
+                ,""
+                ,New ProTabWindow(10,24,CurAttr)).into(Fr);
+            new MenuEntry(10,3," OS "
+                ,"Exit to Operating System temporarily"
+                ,New SystemWindow(24,80,CurAttr)).into(Fr);
+            new MenuEntry(12,3," HELP "
+                ,"Obtaining Help Information"
+                ,New HelpWindow(20,24,CurAttr)).into(Fr);
+            new ReturnEntry(14,3," RETURN "
+                ,"Return to enclosing window").into(Fr);
+            new MenuEntry(16,3," EXIT "
+                ,"Final exit from Project Management"
+                ,EXIT).into(Fr);
+       L:   Detach;
+            Fr.Paint(This Window); Show; 
+            Fr.Process(This Window,EXPL);
+            goto L;
+
+      end;
+
+      Window Class DbDesignWindow;
+      begin Border1;
+      L:    Detach; ShowAT(5,5);
+            setpos(4,4);  outtext(" Processing ");
+            Wait; goto L;
+      end;
+
+      Window Class StaffTabWindow;
+      begin Border1;
+      L:    Detach; ShowAT(5,5);
+            setpos(4,4);  outtext(" Processing ");
+            Wait; goto L;
+      end;
+
+      Window Class TaskTabWindow;
+      begin Border1;
+      L:    Detach; ShowAT(5,5);
+            setpos(4,4);  outtext(" Processing ");
+            Wait; goto L;
+      end;
+
+      Window Class ProTabWindow;
+      begin Border1;
+      L:    Detach; ShowAT(5,5);
+            setpos(4,4);  outtext(" Processing ");
+            Wait; goto L;
+      end;
+%title ***    A p p l i c a t i o n   S u b S y s t e m    ***
+
+      Window Class ApplicationWindow;
+      begin ref(Form) Fr;
+            Border1; Fr:-new Form;
+            new MenuEntry(2,3," Track "
+                ,"Run reports to check project progress"
+                ,New TrackWindow(10,24,CurAttr)).into(Fr);
+            new MenuEntry(4,3," Modify "
+                ,"Examine or change project and staff information"
+                ,New ModifyWindow(10,24,CurAttr)).into(Fr);
+            new MenuEntry(6,3," Any_Frame "
+                ,"Jump to a particular frame of this application"
+                ,New AnyFrameWindow(10,24,CurAttr)).into(Fr);
+            new MenuEntry(8,3," OS "
+                ,"Exit to Operating System temporarily"
+                ,New SystemWindow(24,80,CurAttr)).into(Fr);
+            new MenuEntry(10,3," HELP "
+                ,"Obtaining Help Information"
+                ,New HelpWindow(20,24,CurAttr)).into(Fr);
+            new ReturnEntry(12,3," RETURN "
+                ,"Return to enclosing window").into(Fr);
+            new MenuEntry(14,3," EXIT "
+                ,"Final exit from Project Management"
+                ,EXIT).into(Fr);
+       L:   Detach;
+            Fr.Paint(This Window); Show; 
+            Fr.Process(This Window,EXPL);
+            goto L;
+
+      end;
+
+      Window Class TrackWindow;
+      begin Border1;
+      L:    Detach; ShowAT(5,5);
+            setpos(4,4);  outtext(" Processing ");
+            Wait; goto L;
+      end;
+
+      Window Class ModifyWindow;
+      begin Border1;
+      L:    Detach; ShowAT(5,5);
+            setpos(4,4);  outtext(" Processing ");
+            Wait; goto L;
+      end;
+
+      Window Class AnyFrameWindow;
+      begin Border1;
+      L:    Detach; ShowAT(5,5);
+            setpos(4,4);  outtext(" Processing ");
+            Wait; goto L;
+      end;
+%title ***    S T A N D A R D    W I N D O W S    ***
+      Window Class SystemWindow;
+      begin text t;
+            CurAttr:-Colours(White,Black); EraseWindow; 
+      L:    Detach; Show;
+            Setpos(1,1); EraseLine; Setpos(1,1); t:-Intext(80);
+            Setpos(2,1); System(t.strip); Setpos(Height,1); EraseLine;
+            Setpos(Height,1); Outtext("Type any key to return to DEMO: ");
+            Intext(1); EraseWindow; goto L;
+      end;
+
+      Window Class ExitWindow;
+      begin ref(Form) Fr;
+            integer State;
+            integer GotoEXIT = 1;
+            integer GotoL2 = 2;
+
+            Border1;
+            setpos(4,4);  outtext("DO YOU REALY WANT TO");
+            setpos(6,4);  outtext("  LEAVE THE SYSTEM");
+            Fr:-new Form; CurAttr:-Colours(Yellow,Blue);
+            new Button(8,5," EXIT "
+                ,"Final exit from Project Management",GotoEXIT).into(Fr);
+            new Button(8,13," CONTINUE "
+                ,"Continue menu operations",GotoL2).into(Fr);
+      L1:   Detach;
+            Fr.Paint(This Window); ShowAT(7,27);
+            State:=Fr.Process(This Window,EXPL);
+            if State=GotoEXIT then goto DOEXIT;
+            goto L1;
+      end;
+
+      Window Class HelpWindow;
+      begin short integer incL,incP,lstL,lstP;
+            Border1;
+            setpos(1,8);  outtext(" Commands ");
+            setpos(3,4);  outtext("C - Colours");
+            setpos(4,4);  outtext("D - Delete");
+            setpos(5,4);  outtext("E - Exit");
+            setpos(6,4);  outtext("F - First page");
+            setpos(7,4);  outtext("H - Help");
+            setpos(8,4);  outtext("I - Insert");
+            setpos(9,4);  outtext("L - Last page");
+            setpos(10,4); outtext("N - Next page");
+            setpos(11,4); outtext("O - Output listing");
+            setpos(12,4); outtext("P - Previous page");
+            setpos(13,4); outtext("R - Read file");
+            setpos(14,4); outtext("W - Write file");
+            setpos(15,4); outtext("Z - Refresh screen");
+       L:   Detach; ShowAT(5,5); Wait; goto L;
+      end;
+
+      procedure Wait; TopWindow.Inchar;
+
+%title ***  M O N I T O R  ***
+
+      begin integer ScreenMode;
+            sysout.outtext("Enter Screen Mode and Size (Higth Width): ");
+            sysout.breakoutimage; sysin.inimage;
+            if sysin.image.strip =/= notext then
+            begin
+                  ScreenMode:=sysin.inint;
+                  Height:=sysin.inint; Width:=sysin.inint;
+            end else
+            begin ScreenMode:=22; Height:=24; Width:=80 end;
+
+            if not OpenScreen(Height,Width,Concealed) then goto DOEXIT;
+            SetScreenMode(ScreenMode);
+            Screen.CurAttr:-Colours(Yellow,Blue);
+            EditAttr:-Colours(Red,White);
+            MsgAttr:-Colours(Yellow,Red);
+      end;
+      Screen.Border(Colours(Brown,Brown)); Screen.setpos(1,1);
+      EXPL:- New Window(1,Width-4,Monochrome.Invers);
+      EXPL.ShowAT(Height-1,3);
+      EXIT:-New ExitWindow(12,26,Colours(Yellow,Red));
+
+      call(New CmndWindow(1,Width,Colours(Red,White)));
+
+DOEXIT: Screen.CurAttr:-Monochrome; CloseScreen(0);
+
+
+end of program

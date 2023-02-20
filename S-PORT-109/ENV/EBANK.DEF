@@ -1,0 +1,324 @@
+Module EBANK("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT;
+%-D begin insert ECOMN,EBASE,      ECENT;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+%title ******   B A N K    H A N D L I N G   ******
+
+%+M Macro GetLow(1);     begin wAND(%1,255)         endmacro;
+%+M Macro GetHigh(1);    begin wAND(wSHR(%1,8),255) endmacro;
+
+%+M Visible Routine BEGBNK; -- Initiate Bank-Handling
+%+M begin ref(BankDescr) Bnk,x; range(0:MaxWord) nBnk,nFrm,FrmBase;
+%+M       range(0:MaxByte) Frmx; Boolean InMem;
+%+M 
+%+M       --- Mark all Frames Not-in-Memory ---
+%+M       nFrm:=256; repeat while nFrm > 0
+%+M       do nFrm:=nFrm-1; FRMTAB(nFrm):=false; FRMBAS(nFrm):=0 endrepeat;
+%+M 
+%+M       --- Build Initial FRMTAB and FRMBAS ---
+%+M       x:=BNKINF+size(BankInfo); nBnk:=BNKINF.nBnk;
+%+M       repeat while nBnk > 0
+%+M       do InMem:=x.InMem; nFrm:=x.nFrm;
+%+M          repeat while nFrm > 0
+%+M          do nFrm:=nFrm-1; FrmBase:=x.FrmBase(nFrm); Frmx:=GetLow(%FrmBase%);
+%+M             FRMTAB(Frmx):=InMem; FRMBAS(Frmx):=GetHigh(%FrmBase%);
+%+M          endrepeat;
+%+M          x:=x+size(BankDescr:wOR(x.nFrm,1)); nBnk:=nBnk-1;
+%+M       endrepeat;
+%+M 
+%+MD      if BNKSW > 0
+%+MD      then BegTrace("*** BEGIN BANK HANDLING ***"); OutTrace;
+%+MD           ShowMemUsage; OutTrace; if BNKSW > 2 then Step endif;
+%+MD           ShowBankInfo; OutTrace; if BNKSW > 2 then Step endif;
+%+MD           ShowFrmTab;   OutTrace; if BNKSW > 2 then Step endif;
+%+MD      endif;
+%+M end;
+
+%+M Routine FindBank;
+%+M import range(0:MaxWord) FrmBase; export ref(BankDescr) Bnk;
+%+M begin range(0:MaxByte) nBnk,nFrm;
+%+M       Bnk:=BNKINF+size(BankInfo); nBnk:=BNKINF.nBnk;
+%+M       repeat while nBnk > 0
+%+M       do nFrm:=Bnk.nFrm;
+%+M          repeat while nFrm > 0
+%+M          do nFrm:=nFrm-1;
+%+M             if FrmBase=Bnk.FrmBase(nFrm) then goto E endif;
+%+M          endrepeat;
+%+M          nBnk:=nBnk-1; Bnk:=Bnk+size(BankDescr:wOR(Bnk.nFrm,1));
+%+M       endrepeat;
+%+M       TERMIN(3,"Bank-Load Table Scrapped");
+%+M E:end;
+%page
+
+%+M Visible Routine LDBNK; import label Addr; -- Load Bank
+%+M begin infix(AnyAddr) MemRef; ref(BankDescr) Bnk,x;
+%+M       range(0:MaxWord) Start,Stop,s,FrmBase;
+%+M       range(0:MaxByte) nBnk,nFrm,Frmx; Boolean InMem;
+%+MD      if BNKSW > 0
+%+MD      then BegTrace("LDBNK("); EdPadr(TrcBuf,Addr); EdChar(TrcBuf,')');
+%+MD           OutTrace; if BNKSW > 2 then Step endif;
+%+MD      endif;
+%+M       MemRef.AsPaddr:=Addr; Bnk:=FindBank(MemRef.AsSegm);
+%+M       LOAD(Bnk); Start:=Bnk.MemBase; Stop:=Start+Bnk.Length;
+%+M       x:=BNKINF+size(BankInfo); nBnk:=BNKINF.nBnk;
+%+M       repeat while nBnk > 0
+%+M       do if x.InMem
+%+M          then s:=x.MemBase;
+%+M               if (s+x.Length) <= Start then -- OK
+%+M               elsif Stop <= s          then -- OK
+%+M               else x.InMem:=false;
+%+M                    if BNKSW > 0
+%+M                    then BnkTrace("  - overwriting ",x);
+%+MD                        if BNKSW > 2 then Step endif;
+%+M                    endif;
+%+M               endif;
+%+M          elsif x=Bnk then x.InMem:=true endif;
+%+M          InMem:=x.InMem; nFrm:=x.nFrm;
+%+M          repeat while nFrm > 0
+%+M          do nFrm:=nFrm-1; FrmBase:=x.FrmBase(nFrm); Frmx:=GetLow(%FrmBase%);
+%+M             FRMTAB(Frmx):=InMem; FRMBAS(Frmx):=GetHigh(%FrmBase%);
+%+M          endrepeat;
+%+M          x:=x+size(BankDescr:wOR(x.nFrm,1)); nBnk:=nBnk-1;
+%+M       endrepeat;
+%+MD      if BNKSW > 2
+%+MD      then BegTrace("*** CONTINUE ***"); OutTrace;
+%+MD           ShowBankInfo;   Step;
+%+MD           ShowFrmTab;     Step;
+%+MD      endif;
+%+M end;
+%page
+
+%+M Routine LOAD; import ref(BankDescr) Bnk;
+%+M begin infix(AnyRef) path; infix(AnyAddr) MemPos; ref(RelPkt) Pkt;
+%+M       integer TxtPos,RelPos,Pos; infix(String) Fnam;
+%+M       range(0:MaxWord) h,Lng,n,m,k,nRel,BasSeg,Frmx;
+%+M       if BNKSW > 0
+%+M       then BnkTrace("*** LOAD BANK ",Bnk);
+%+MD           if BNKSW > 2 then Step endif;
+%+M       endif;
+%+M       path.rf:=BNKINF+Bnk.Fnam; path.ofst.AsWrd:=0;
+%+M       if BnkFil <> 0 then h:=BnkFil
+%+M       else EdEdtbuf(ASCIIZ2String(path.rf,72));
+%+M            EdcharEdt(0 qua character); Fnam:=PickupEdtbuf;
+%+MD           if BNKSW > 0
+%+MD           then BegTrace("*** OPEN BANKFILE: ");
+%+MD                Ed(TrcBuf,Fnam); OutTrace;
+%+MD           endif;
+%+M            BnkFil:=h:=OPFILE(Fnam,F_infile,nostring,0)-1;
+%+M            if Status<>0 -- try along $PATH
+%+M            then status:=0;
+%+M                 EdEdtbuf("$PATH\"); EdEdtbuf(ASCIIZ2String(path.rf,72));
+%+M                 EdcharEdt(0 qua character); Fnam:=PickupEdtbuf;
+%+M                 BnkFil:=h:=OPFILE(Fnam,F_infile,nostring,0)-1;
+%+M                 if Status<>0
+%+M                 then SWAPERR("Can't open .BNK file",h,0,0) endif;
+%+M            endif;
+%+M       endif;
+%+M 
+%+M       --- Read Code Text Image ---
+%+MD      if BNKSW > 1
+%+MD      then BegTrace("Read Code Text Image -- FilPos:");
+%+MD           EdInt(TrcBuf,Bnk.TxtPos);
+%+MD           Ed(TrcBuf,", MemPos:"); EdHex(TrcBuf,Bnk.MemBase,4);
+%+MD           Ed(TrcBuf,":0000, Length:"); EdInt(TrcBuf,Bnk.Length);
+%+MD           OutTrace; if BNKSW > 2 then Step endif;
+%+MD      endif;
+%+M       Pos:=DOS_FPTR(h,0,Bnk.TxtPos);
+%+M       if OsStat <> 0 then SWAPERR("TxtPos",h,Bnk.TxtPos,Pos) endif;
+%+M       MemPos.AsSegm:=Bnk.MemBase;
+%+M       MemPos.AsOfst:=0; Lng:=Bnk.Length;
+%+M       n:=65520; k:=4095;
+%+M       repeat while Lng <> 0
+%+M       do if Lng < 4095 then k:=Lng; n:=k*16 endif;
+%+MD         if BNKSW > 2
+%+MD         then BegTrace("Read Code Block, count: ");
+%+MD              EdInt(TrcBuf,n); Step;
+%+MD         endif;
+%+M          m:=DOS_READ(h,n,Ref2Name(MemPos.AsOaddr));
+%+M          if OsStat <> 0 then SWAPERR("Txt1",h,n,m) endif;
+%+M -- ? pj  if m <> n      then SWAPERR("Txt2",h,n,m) endif;
+%+MD         if m <> n      then SYSPRI ("LOAD: incomplete paragraph") endif;
+%+M          Lng:=Lng-k; MemPos.AsSegm:=MemPos.AsSegm+k;
+%+M       endrepeat;
+%+M 
+%+M       --- Read and Perform Relocations ---
+%+M       RelPos:=Bnk.RelPos; Pkt:=BNKBUF; Frmx:=0;
+%+M       MemPos.AsOaddr:=BNKINF; BasSeg:=MemPos.AsSegm;
+%+MD      if BNKSW > 2
+%+MD      then BegTrace("Read and Perform Relocations at ");
+%+MD           EdInt(TrcBuf,RelPos); Step;
+%+MD      endif;
+%+M    L: Pos:=DOS_FPTR(h,0,RelPos);
+%+M       if OsStat <> 0 then SWAPERR("RelPos",h,RelPos,Pos) endif;
+%+MD      if BNKSW > 3
+%+MD      then BegTrace("Read Relocation Block at ");
+%+MD           EdInt(TrcBuf,Pos); Step;
+%+MD      endif;
+%+M       k:=DOS_READ(h,512,Ref2Name(Pkt));
+%+M       if OsStat <> 0 then SWAPERR("Rel",h,512,k) endif;
+%+M       if k < 4
+%+M       then
+%+MD           if BNKSW > 0 then SYSPRI("LOAD: RelPkt not found -- EOF") endif;
+%+M            goto E1;
+%+M       endif;
+%+MD      if BNKSW > 3 then ShowRelPkt(Pkt) endif;
+%+M       nRel:=Pkt.nRel; RelPos:=RelPos+nRel+nRel+4;
+%+M       MemPos.AsSegm:=BasSeg+Pkt.Base;
+%+M   L2: if MemPos.AsSegm <> Bnk.FrmBase(Frmx)
+%+M       then Frmx:=Frmx+1; if Frmx < Bnk.nFrm then goto L2 endif;
+%+MD           if BNKSW > 0
+%+MD           then SYSPRI("LOAD: RelPkt does not belong to this Bank") endif;
+%+M            goto E2;
+%+M       endif;
+%+M       repeat while nRel > 0
+%+M       do nRel:=nRel-1; MemPos.AsOfst:=Pkt.Offset(nRel);
+%+M          MemPos.AsOaddr qua ref(Any2Byte).AsWrd :=
+%+M          MemPos.AsOaddr qua ref(Any2Byte).AsWrd + BasSeg;
+%+M       endrepeat;
+%+M       if Pkt.Last then  else goto L endif;
+%+M 
+%+M E1:E2: --- Close Input File ---
+%+MD      if BNKSW > 2
+%+MD      then BegTrace("Close BANK-File, Handle: ");
+%+MD           EdWrd(TrcBuf,h); Step;
+%+MD      endif;
+%+M end;
+
+%+M Routine SWAPERR;
+%+M import infix(String) mss; range(0:MaxWord) h; integer a1,a2;
+%+M begin BegTrace("BANK LOAD FAILED: "); Ed(TrcBuf,mss);
+%+M       if OsStat<>0 then Ed(TrcBuf,", STATUS="); EdWrd(TrcBuf,OsStat) endif;
+%+M       Ed(TrcBuf,", AUX="); EdWrd(TrcBuf,h);
+%+M       EdChar(TrcBuf,','); EdInt(TrcBuf,a1);
+%+M       EdChar(TrcBuf,','); EdWrd(TrcBuf,a2);
+%+M       OutTrace; TERMIN(3,"Simula is not installed properly");
+%+M end;
+
+%title ******   B A N K I N G   T R A C I N G   ******
+
+%+M  Routine BnkTrace; import infix(string) mess; ref(BankDescr) Bnk;
+%+M  begin ref() bnam; bnam:=BNKINF+Bnk.bnam;
+%+M        BegTrace(mess); Ed(TrcBuf,ASCIIZ2String(bnam,72)); OutTrace;
+%+M  end;
+
+%+MD Routine ShowMemUsage;
+%+MD begin infix(AnyAddr) a; infix(Any2Byte) w;
+%+MD       infix(WRKPAK) wrk; ref(BankDescr) b;
+%+MD       range(0:Maxword) ExeBeg,ExeLng,BnkBeg,BnkLng,WrkBeg,WrkLng;
+%+MD       a.AsOaddr:=BNKINF; b:=a.AsOaddr+size(BankInfo);
+%+MD       BnkBeg:=b.MemBase; BnkLng:=BNKINF.BnkLng;
+%+MD       ExeBeg:=a.AsSegm; ExeLng:=BnkBeg-BnkLng;
+%+MD       w.AsSize:=size(ParamBlock); a.AsOaddr:=ParBlk;
+%+MD       wrk:=DOS_ALOC(65535); OsStat:=0;
+%+MD       WrkBeg:=a.AsSegm; WrkLng:=w.AsWrd+wrk.maxs;
+%+MD       BegTrace("***   M E M O R Y   U S A G E   ***"); OutTrace;
+%+MD       BegTrace("ExeArea  Start: "); EdHex(TrcBuf,ExeBeg,4);
+%+MD       Ed(TrcBuf,":0000  Length: "); EdHex(TrcBuf,ExeLng,4);
+%+MD       Ed(TrcBuf,"0H"); OutTrace;
+%+MD       BegTrace("BnkArea  Start: "); EdHex(TrcBuf,BnkBeg,4);
+%+MD       Ed(TrcBuf,":0000  Length: "); EdHex(TrcBuf,BnkLng,4);
+%+MD       Ed(TrcBuf,"0H"); OutTrace;
+%+MD       BegTrace("WrkArea  Start: "); EdHex(TrcBuf,WrkBeg,4);
+%+MD       Ed(TrcBuf,":0000  Length: "); EdHex(TrcBuf,WrkLng,4);
+%+MD       Ed(TrcBuf,"0H"); OutTrace;
+%+MD end;
+
+%+MD Routine ShowFrmTab;
+%+MD begin range(0:MaxWord) i;
+%+MD       BegTrace("***   F R A M E S   I N   M E M O R Y   ***"); OutTrace;
+%+MD       i:=0; repeat i:=i+1 while i < 256
+%+MD       do if FRMTAB(i)
+%+MD          then if TrcBuf.pos > 60 then OutTrace endif;
+%+MD               EdHex(TrcBuf,FRMBAS(i),2); EdHex(TrcBuf,i,2);
+%+MD               Ed(TrcBuf,"  ");
+%+MD          endif;
+%+MD       endrepeat;
+%+MD end;
+
+%+MD Routine ShowBankInfo;
+%+MD begin range(0:MaxWord) i; ref() x; infix(String) FilNam;
+%+MD       x:=BNKINF; ShowBnkInf(x); x:=x+size(BankInfo);
+%+MD       i:=0; repeat i:=i+1 while i <= BNKINF.nBnk
+%+MD       do ShowBnkDsc(x);
+%+MD          x:=x+size(BankDescr:wOR(x qua BankDescr.nFrm,1));
+%+MD       endrepeat
+%+MD       FilNam:=ASCIIZ2String(x,72); x:=x+size(ASCIIZ:FilNam.nchr+1);
+%+MD       BegTrace("ExeFilNam:"); Ed(TrcBuf,FilNam); OutTrace;
+%+MD       i:=BNKINF.nNam-1;
+%+MD       if i > 0
+%+MD       then FilNam:=ASCIIZ2String(x,72); x:=x+size(ASCIIZ:FilNam.nchr+1);
+%+MD            BegTrace("BnkFilNam:"); Ed(TrcBuf,FilNam); OutTrace;
+%+MD       endif;
+%+MD       repeat i:=i-1 while i > 0
+%+MD       do FilNam:=ASCIIZ2String(x,72); x:=x+size(ASCIIZ:FilNam.nchr+1);
+%+MD          BegTrace("BnkNam:"); Ed(TrcBuf,FilNam); OutTrace;
+%+MD       endrepeat;
+%+MD end;
+
+%+MD Routine ShowBnkInf; import ref(BankInfo) x;
+%+MD begin BegTrace("***   B A N K   I N F O   T A B L E   ***"); OutTrace;
+%+MD       Ed(TrcBuf,"nBnk:");       EdWrd(TrcBuf,x.nBnk);
+%+MD       Ed(TrcBuf,", nNam:");     EdWrd(TrcBuf,x.nNam);
+%+MD       Ed(TrcBuf,", NamPos:");   EdSize(TrcBuf,x.NamPos);
+%+MD       Ed(TrcBuf,", LinBnk:");   EdSize(TrcBuf,x.LinBnk);
+%+MD       Ed(TrcBuf,", BnkLng:");   EdWrd(TrcBuf,x.BnkLng);
+%+MD       Ed(TrcBuf,", xGOTO:");    EdWrd(TrcBuf,x.xGOTO);
+%+MD       Ed(TrcBuf," xJMPF:");     EdWrd(TrcBuf,x.xJMPF);
+%+MD       Ed(TrcBuf," xCALL:");     EdWrd(TrcBuf,x.xCALL);
+%+MD       Ed(TrcBuf," xCALF:");     EdWrd(TrcBuf,x.xCALF);    OutTrace;
+%+MD end;
+
+%+MD Routine ShowBnkDsc; import ref(BankDescr) x;
+%+MD begin range(0:MaxWord) i;
+%+MD       BegTrace("***   B A N K   D E S C R I P T O R   ***"); OutTrace;
+%+MD       Ed(TrcBuf,"fnam:"); EdSize(TrcBuf,x.Fnam);
+%+MD       Ed(TrcBuf,", bnam:"); EdSize(TrcBuf,x.Bnam); Ed(TrcBuf,", InMem:");
+%+MD       if x.InMem then Ed(TrcBuf,"True") else Ed(TrcBuf,"False") endif;
+%+MD       Ed(TrcBuf,", nFrm:");   EdWrd(TrcBuf,x.nFrm); OutTrace;
+%+MD       Ed(TrcBuf,"MemBase: "); EdHex(TrcBuf,x.MemBase,4);
+%+MD       Ed(TrcBuf,", TxtPos:"); EdInt(TrcBuf,x.TxtPos);
+%+MD       Ed(TrcBuf,", RelPos:"); EdInt(TrcBuf,x.RelPos);
+%+MD       Ed(TrcBuf,", Length:"); EdWrd(TrcBuf,x.Length); OutTrace;
+%+MD       Ed(TrcBuf,"FrmBase:");
+%+MD       i:=0; repeat while i < x.nFrm
+%+MD       do if TrcBuf.Pos > 50 then OutTrace; SetPos(TrcBuf,8) endif;
+%+MD          EdChar(TrcBuf,' '); EdHex(TrcBuf,x.FrmBase(i),4); i:=i+1;
+%+MD       endrepeat;
+%+MD       OutTrace; if BNKSW > 2 then Step endif;
+%+MD end;
+
+%+MD Routine ShowRelPkt; import ref(RelPkt) Pkt;
+%+MD begin range(0:MaxWord) i;
+%+MD       BegTrace("***   R E L - P K T   ***"); OutTrace;
+%+MD       BegTrace("nRel:"); EdWrd(TrcBuf,Pkt.nRel);
+%+MD       if Pkt.Last then Ed(TrcBuf,", Last") endif;
+%+MD       Ed(TrcBuf,", Base:"); EdHex(TrcBuf,Pkt.Base,4); OutTrace;
+%+MD       i:=0; repeat while i < Pkt.nRel
+%+MD       do if TrcBuf.pos > 60 then OutTrace endif;
+%+MD          EdHex(TrcBuf,Pkt.Offset(i),4); Ed(TrcBuf,"  "); i:=i+1;
+%+MD       endrepeat;
+%+MD       OutTrace; if BNKSW > 2 then Step endif;
+%+MD end;
+
+%+MD Routine Step;
+%+MD begin range(0:MaxWord) n; Character img(5); OutTrace;
+%+MD       n:=DOS_READ(K_sysin,5,@img); OsStat:=0;
+%+MD end;
+
+end;

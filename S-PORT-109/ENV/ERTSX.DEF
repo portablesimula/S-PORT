@@ -1,0 +1,309 @@
+ Module ERTSX("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT;
+%-D begin insert ECOMN,EBASE,      ECENT;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+%title ******    R T S    U T I L I T I E S    ******
+Visible Routine DATTIM;  --- date_and_time;
+import infix(String) result; export integer filled;
+begin character W(23);     --- yyyy-mm-dd hh:nn:ss.ppp
+      infix(String) S;     --- Pointer to W
+      infix(String) D;     --- Default string
+%+M   infix(DATPAK) date; infix(TIMPAK) time;
+%+O   infix(TIMPAK) time;
+%+X   ref(TIMPAK) time; integer ctm;
+%+D   if TRCSW > 0
+%+D   then BegTrace("DATTIM("); Ed(TrcBuf,result);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if result.nchr > 23 then result.nchr := 23 endif;
+      S.chradr := name(W); S.nchr := 23; D:="yyyy-mm-dd hh:nn:ss.ppp";
+      APX_SMOVEI(23,S.chradr,D.chradr);
+%+M   date:=DOS_DATE; time:=DOS_TIME;
+%+M                            S.nchr := 4; PUTWRD(S,date.YY);
+%+M   S.chradr := name(W(5));  S.nchr := 2; PUTZWRD(S,date.MM);
+%+M   S.chradr := name(W(8));               PUTZWRD(S,date.DD);
+%+M   S.chradr := name(W(11));              PUTZWRD(S,time.HH);
+%+M   S.chradr := name(W(14));              PUTZWRD(S,time.MM);
+%+M   S.chradr := name(W(17));              PUTZWRD(S,time.SS);
+%+M   S.chradr := name(W(20)); S.nchr := 3; PUTZWRD(S,time.PP*10);
+%+M   S.chradr := name(W); S.nchr := 23;
+
+%+O   OS2_GTIME(name2ref(name(time)));
+%+O                            S.nchr := 4; PUTWRD(S,time.YY);
+%+O   S.chradr := name(W(5));  S.nchr := 2; PUTZWRD(S,time.MN);
+%+O   S.chradr := name(W(8));               PUTZWRD(S,time.DD);
+%+O   S.chradr := name(W(11));              PUTZWRD(S,time.HH);
+%+O   S.chradr := name(W(14));              PUTZWRD(S,time.MM);
+%+O   S.chradr := name(W(17));              PUTZWRD(S,time.SS);
+%+O   S.chradr := name(W(20)); S.nchr := 3; PUTZWRD(S,time.PP*10);
+%+O   S.chradr := name(W); S.nchr := 23;
+
+%+X   ctm:=XNX_TIME(none);
+%+X   time:=XNX_LOCALTIME(name2ref(name(ctm)));
+%+X                            S.nchr := 4; PUTWRD(S,1900+time.YY);
+%+X   S.chradr := name(W(5));  S.nchr := 2; PUTZWRD(S,time.MN+1);
+%+X   S.chradr := name(W(8));               PUTZWRD(S,time.DD);
+%+X   S.chradr := name(W(11));              PUTZWRD(S,time.HH);
+%+X   S.chradr := name(W(14));              PUTZWRD(S,time.MM);
+%+X   S.chradr := name(W(17));              PUTZWRD(S,time.SS);
+%+X   S.chradr := name(W(20)); S.nchr := 3; PUTZWRD(S,0);
+%+X   S.chradr := name(W); S.nchr := 23;
+
+      APX_SFILL(' ',result.nchr,result.chradr);
+      APX_SMOVEI(23,result.chradr,S.chradr); filled := result.nchr;
+%+D   if TRCSW > 0
+%+D   then BegTrace("DATTIM: Result = "); Ed(TrcBuf,result); OutTrace endif;
+end;
+
+Routine PUTZWRD;
+%-E import infix(String) item; range(0:MaxWord) val;
+%+E import infix(String) item; integer          val;
+begin
+%-E   range(0:MaxWord) n;
+%+E   integer          n;
+      n:=item.nchr; repeat while n > 0 do n:=n-1;
+         var(item.chradr)(n) := ((val rem 10)+ISO_0) qua character;
+         val:=val/10; endrepeat;
+end;
+
+%page
+
+Visible Routine CPUTIM; export long real result;
+begin
+%+X   integer cpt;
+%+D   if TRCSW > 0 then begtrace("CPUTIM"); outtrace endif;
+%+M   result:=CLOCKT;
+%+O   result:=CLOCKT;
+%+X   cpt:=XNX_CLOCK; result:=(cpt qua long real) * 1.0&&-6
+end;
+
+
+Visible known("CLOCKT") CLOCKT; export long real sec;
+begin
+%+M   infix(TIMPAK) tim;
+%+O   infix(TIMPAK) tim;
+%+X   integer clk;
+%+D   if TRCSW > 0 then begtrace("CLOCKT"); outtrace endif;
+%+M   tim:=DOS_TIME;
+%+M   sec:=(tim.HH qua long real)       * 60.0&&0
+%+M   sec:=(sec + tim.MM qua long real) * 60.0&&0
+%+M   sec:=(sec + tim.SS qua long real) * 10.0&&1
+%+M   sec:=(sec + tim.PP qua long real) / 10.0&&1
+%+O   OS2_GTIME(name2ref(@tim));
+%+O   sec:=(tim.HH qua long real)       * 60.0&&0
+%+O   sec:=(sec + tim.MM qua long real) * 60.0&&0
+%+O   sec:=(sec + tim.SS qua long real) * 10.0&&1
+%+O   sec:=(sec + tim.PP qua long real) / 10.0&&1
+%+X   clk:=XNX_TIME(none); sec:=(clk rem 86400) qua long real;
+end;
+
+Visible Routine GETLPP;  --- get_lpp;
+import range(1:255) key; export integer lpp;
+begin lpp :=60 end; --- Default lines per page - returned for all files
+
+Visible Routine NEWPAG; import range(1:255) key;
+begin if ParBlk=none then OUTBYT(key,ISO_FF) endif end;
+
+%title ******   PRINTO   ******
+
+Visible Routine PRINTO;  --- print_outimage;
+import range(1:255) key; infix(String) image; integer nl;
+begin ref(FileBufr) buf;
+%-E   range(0:MaxWord) n,i,h,cnt,rst;
+%+E   integer          n,i,h,cnt,rst;
+      i:=nl; h:=key-1;
+      buf:=Name2Ref(FTAB(key).buf);
+%+D   if TRCSW > 2
+%+D   then BegTrace("PRINTO("); EdWrd(TrcBuf,key); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,nl); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if image.nchr > 0
+      then image.nchr:=APX_STRIP(' ',image.nchr,
+                       name(var(image.chradr)(image.nchr-1)));
+%-V        CLD108;
+      endif;
+      if buf <> none
+      then
+----       cnt:=image.nchr; if cnt=0 then goto E0 endif;
+----       L: rst:=buf.cnt-buf.nxt;
+----       if cnt <= rst --- Complete write into buffer ---
+----       then APX_SMOVEI(cnt,@buf.byt(buf.nxt),image.chradr);
+----            buf.nxt:=buf.nxt+cnt; buf.mode:=2; goto E2;
+----       elsif rst > 0  --- Partial write into buffer ---
+----       then APX_SMOVEI(rst,@buf.byt(buf.nxt),image.chradr);
+----            cnt:=cnt-rst; buf.nxt:=buf.cnt; buf.mode:=2;
+----            image.chradr:=name(var(image.chradr)(rst));
+----       endif;
+----       TRMBUF(h,buf); if Status <> 0 then goto E3 endif;
+----       INIBUF(h,buf);
+----       if Status=xq_eof   then Status:=0 endif;
+----       if Status=xq_nread then Status:=0 endif;
+----       if Status=0 then goto L endif;
+      else --- Direct write into file ---
+           if image.nchr > 0      --- Write buffer to file
+           then
+%+M        L:   n:=DOS_WRITE(h,image.nchr,image.chradr);
+%+O             OS2_WRITE(h,name2ref(image.chradr),image.nchr,name2ref(@n));
+%+X             n:=XNX_WRITE(image.nchr,name2ref(image.chradr),h);
+                if OsStat<>0 then OS_STAT("PRINTO-1"); goto E1 endif;
+                if n <> image.nchr 
+                then
+%+M                  if var(image.chradr)(n) qua integer = 26
+%+M                  then var(image.chradr)(n):='Z'
+%+M                       image.chradr:=name(var(image.chradr)(n));
+%+M                       image.nchr:=image.nchr-n; goto L;
+%+M                  endif;
+                     STAT("PRINTO-2",xq_ffull); goto E2
+                endif;
+           endif;
+%+M        i:=i+1; n:=DOS_WRITE(h,i,@CRLFs);
+%+O        i:=i+1; OS2_WRITE(h,name2ref(@CRLFs),i,name2ref(@n));
+%+X        n:=XNX_WRITE(i,name2ref(@CRLFs(1)),h);
+           if OsStat <> 0 then OS_STAT("PRINTO-3"); goto E3 endif;
+           if n <> i then STAT("PRINTO-4",xq_ffull) endif;
+      endif;
+E1:E2:E3:end;
+
+%title ******   INITO - GETO - SETO   ******
+
+Visible Routine INITO; import ref(SaveRecord) x;
+begin SavePnt.rf:=x; SaveMap:=x.pm;
+%-E   SavePnt.ofst.AsWrd:=0;
+%+E   SavePnt.ofst.AsInt:=0;
+      if SaveMap = none then SaveIdx:=0
+      else SaveIdx:=SaveMap.n endif;
+%+D   if TRCSW > 0  --- SENERE 1
+%+D   then BegTrace("INITO("); EdRef(TrcBuf,x);
+%+D        EdChar(TrcBuf,')'); EdSave(TrcBuf); OutTrace;
+%+D   endif;
+end;
+
+Visible Routine GETO; export ref() x;
+begin
+%-E   infix(AnyAddr) xx; range(0:MaxArea) i;
+      repeat while SaveIdx > 0
+      do SaveIdx := SaveIdx - 1;
+%-E      SavePnt.ofst.AsWrd:=SaveMap.rela(SaveIdx);
+%+E      SavePnt.ofst.AsInt:=SaveMap.rela(SaveIdx);
+         x:=var(SavePnt.nrf);
+%-E      xx.AsOaddr:=x; i:=0;
+%-E      repeat while i <= narea
+%-E      do if xx.AsSegm = WRKBEG(i).AsSegm then goto OK endif;
+%-E         i:=i+1;
+%-E      endrepeat;
+
+%+E      if x >= WRKBEG(1).AsOaddr then goto OK endif;
+
+%+D      if TRCSW > 0  --- SENERE 2
+%+D      then BegTrace("GETO: Skipped "); EdRef(TrcBuf,x);
+%+D           EdSave(TrcBuf); OutTrace;
+%+D      endif;
+      endrepeat;
+      x := none; --- Indicates End-of-body
+OK:
+%+D   if TRCSW > 0  --- SENERE 1
+%+D   then BegTrace("GETO: "); EdRef(TrcBuf,x);
+%+D %-E    Ed(TrcBuf,"  in area "); EdWrd(TrcBuf,i);
+%+D        EdSave(TrcBuf); OutTrace;
+%+D   endif;
+end;
+
+
+Visible Routine SETO; import ref() x;
+begin
+%+D %-E infix(AnyAddr) xx; range(0:MaxArea) i;
+%+D %-E xx.AsOaddr:=x; i:=0;
+%+D %-E repeat while i <= narea
+%+D %-E do if xx.AsSegm = WRKBEG(i).AsSegm then goto OK endif;
+%+D %-E    i:=i+1;
+%+D %-E endrepeat;
+%+DE  if x >= WRKBEG(1).AsOaddr then goto OK endif;
+%+D   SYSPRI("*** ERROR *** SETO FAILED");
+%+D OK: if TRCSW > 0  --- SENERE 1
+%+D   then BegTrace("SETO("); EdRef(TrcBuf,x); EdChar(TrcBuf,')');
+%+D %-E    Ed(TrcBuf,"  in area "); EdWrd(TrcBuf,i);
+%+D        EdSave(TrcBuf); OutTrace;
+%+D    endif;
+       var(SavePnt.nrf):=x;
+end;
+
+%title ******   DWAREA   ******
+Visible Routine DWAREA;
+import size lng; range(0:MaxByte) sequ; export ref() area;
+begin
+%-E   infix(Any2Byte) x;
+%+E   infix(Any4Byte) x;
+%+M   infix(WRKPAK) y;
+%+O   infix(AnyAddr) y;
+%+D   if TRCSW > 0
+%+D   then BegTrace("DWAREA("); EdSize(TrcBuf,lng);
+%+D        EdChar(TrcBuf,','); EdWrd(TrcBuf,sequ);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if lng = nosize
+      then --- Delete Area ---  NOT IMPLEMENTED !!!!!!!!!!!!!!!
+           STAT("DWAREA-0",xq_unimp); area:=none;
+      elsif WRKBEG(sequ).AsOaddr <> none
+      then --- Re-Use Area ---
+           if sequ > narea then narea:=sequ endif;
+           area:=WRKBEG(sequ).AsOaddr;
+      else --- Allocate Area ---
+           if MAXALLOC=0 then  -- Nothing
+           elsif sequ>MAXALLOC then STAT("DWAREA-1",xq_argrange); goto E1 endif;
+           x.AsSize:=lng; if sequ > narea then narea:=sequ endif;
+%+M        y:=DOS_ALOC((x.AsWrd+15)/16);
+%+O        y.AsOfst:=0; OS2_ALOC(x.AsWrd,name2ref(@y.AsSegm),0);
+%+X %-CE   area:=XNX_ALOC(x.AsWrd);
+%+XC       OsStat:=0;
+%+XC %-E   area:=XNX_SBRK(x.AsWrd);
+%+XC       OsStat:=0;
+%+XE       area:=XNX_ALOC(x.AsInt);
+           if OsStat <> 0
+           then OS_STAT("DWAREA-2"); area:=none; goto E2;
+           else
+%+M             area:=y.area;
+%+O             area:=y.AsOaddr;
+           endif;
+           WRKBEG(sequ).AsOaddr:=area;
+-- ???? %+X        if STEPSIZE < 32016 then NEWBUF; NEWBUF endif; --- TEMP ????
+      endif;
+%+D   if TRCSW+BNKSW > 0
+-- %-D   if BNKSW > 0
+%+D   then BegTrace("*** MEMORY ALLOCATION *** Area: "); EdWrd(TrcBuf,sequ);
+%+D        Ed(TrcBuf,"  Start: "); EdRef(TrcBuf,area);
+%+D        Ed(TrcBuf," Length: "); EdSize(TrcBuf,lng); OutTrace;
+%+D   endif;
+-- ??? %+M   zeroarea(area,area+lng);  -- ????????????????????????????????
+-- ??? %+O   zeroarea(area,area+lng);  -- ????????????????????????????????
+E1:E2:end;
+
+Visible Routine LOCKFI;
+import range(1:255) key; real lim; integer loc1,loc2;
+export integer res;
+begin --------------------------------------
+      res := -2;
+      --------------------------------------
+end;
+
+Visible Routine UNLOCK;
+import range(1:255) key;
+begin --------------------------------------
+      --------------------------------------
+end;
+end;

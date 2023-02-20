@@ -1,0 +1,19 @@
+   outimage; outimage;
+   outtext("The following graphic mode (grm) codes may apply:"); outimage;
+   outtext("  4   CGA   4 colours    320x200    BIOS"); outimage;
+   outtext("  5   CGA   4 colours    320x200    BIOS"); outimage;
+   outtext(" 13   EGA  16 colours    320x200    Video"); outimage;
+   outtext(" 14   EGA  16 colours    640x200    Video"); outimage;
+   outtext(" 16   EGA  16 colours    640x350    Video"); outimage;
+   outtext(" 17   VGA  monochrome    640x480    Video"); outimage;
+   outtext(" 18   VGA  16 colours    800x600    Video"); outimage;
+   outtext(" 19   VGA  256 colours   320x200    BIOS "); outimage;
+   outtext(" 88   VGA  16 colours    800x600    Video"); outimage;
+   outtext(" 89   VGA  monochrome    800x600    BIOS "); outimage;
+   outtext(" 94   VGA  256 colours   640x400    BIOS "); outimage;
+   outimage;
+   outtext(" BIOS:  draw by calling BIOS routine "); outimage;
+   outtext(" Video: draw by writing into VDU memory"); outimage;
+   outimage; outimage;
+   outtext("Grm:   "); breakoutimage;
+

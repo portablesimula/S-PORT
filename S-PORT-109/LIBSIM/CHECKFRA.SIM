@@ -1,0 +1,2 @@
+    external library procedure checkfrac is
+    short integer procedure checkfrac(t); name t; text t; ;

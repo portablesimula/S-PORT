@@ -1,0 +1,19 @@
+Module depchar_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("depchar")depchar;
+       import infix(txtqnt) txt; short integer p; character c;
+       ---  stores c in pos p of txt, if possible
+       begin
+             if p > 0 then if p <= (txt.lp-txt.sp) -- avoid overflow
+             then if txt.ent.misc=0
+                  then txt.ent.cha(txt.sp+p-1):=c endif endif;
+             endif;
+       end;
+end;

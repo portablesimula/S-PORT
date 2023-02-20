@@ -1,0 +1,2 @@
+    external library procedure scanreal is
+    long real procedure scanreal(t); name t; text t; ;

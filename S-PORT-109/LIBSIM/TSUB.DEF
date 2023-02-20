@@ -1,0 +1,21 @@
+Module tsub_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("tsub")tsub;
+       import infix(txtqnt) t; short integer p,l;
+       export infix(txtqnt) res;
+       ---  return t.sub(p,l), or notext
+       begin if p<=0 then res:=notext
+             elsif l<=0 then res:=notext
+             elsif p > (t.lp-t.sp-l) then res:=notext
+             else res.ent:=t.ent;
+                  res.cp:=res.sp:=t.sp+p-1; res.lp:=res.sp+l;
+             endif;
+       end;
+end;

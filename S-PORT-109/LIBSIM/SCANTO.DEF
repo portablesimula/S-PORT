@@ -1,0 +1,27 @@
+Module scanto_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("scanto")scanto;
+       import name(infix(txtqnt)) tt; character c;
+       export infix(txtqnt) res;
+       ---  scan tt from pos to first occurrence of c (if any)
+       ---  return the scanned substring (excluding c)
+       begin range(0:MAX_TXT) pos;
+             res:=var(tt);
+             if res.cp=res.lp then res:=notext
+             else res.sp:=pos:=res.cp;
+                  repeat while pos < res.lp
+                  do if res.ent.cha(pos)=c
+                     then res.lp:=pos; goto X1 endif;
+                     pos:=pos+1 endrepeat;
+                  pos:=pos-1;
+            X1:   var(tt).cp:=pos+1;
+            endif;
+       end;
+ end;

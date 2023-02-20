@@ -1,0 +1,24 @@
+Module scanreal_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("scanreal")scanreal;
+       import name(infix(txtqnt)) tt;
+       export long real res;
+       ---  return t.getreal, if possible, else minlrl
+       ---  NOTE: DEC returns -maxlreal in "getreal error case"
+       begin infix(string) str; infix(txtqnt) txt;
+             txt:=var(tt); str.nchr:=txt.lp-txt.cp;
+             if str.nchr <> 0
+             then str.chradr:=name(txt.ent.cha(txt.cp));
+                  res:=GTREAL(str);
+                  if status<>0 then status:=0; res:=minlrl;
+                  else var(tt).cp:=txt.cp+itsize endif
+             else res:=minlrl endif
+       end;
+end;

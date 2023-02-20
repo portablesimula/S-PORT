@@ -1,0 +1,498 @@
+INSERT RT,KNWN,CENT,CINT,ARR,FIL,EDIT,FORM,LIBR,SMST,SML,MNTR;
+
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---  Oslo, Norway                                             ---
+       ---                                                           ---
+       ---                                                           ---
+       ---                 P O R T A B L E     S I M U L A           ---
+       ---                                                           ---
+       ---                  R U N T I M E     S Y S T E M            ---
+       ---                                                           ---
+       ---                                                           ---
+       ---               I n t e r f a c e    W i t h    F E C       ---
+       ---                                                           ---
+       -----------------------------------------------------------------
+DEFINE
+    ---     G  l  o  b  a  l  s     ---
+
+    Z_STRING      = string;
+    Z_STRING_NCH  = string.nchr;
+    Z_STRING_CHR  = string.chradr;
+    Z_NOSTRING    = nostring;
+
+    Z_BIO_SYSIN   = bioIns.sysin;
+    Z_BIO_SYSOUT  = bioIns.sysout;
+
+    Z_NOTEXT      = notext;
+
+    ---    M  O  D  U  L  E    I  N  F  O     ---
+
+    Z_MODVEC         = modvec;
+    Z_MODVEC_NMOD    = modvec.nmod;
+    Z_MODVEC_MOD     = modvec.mod;
+
+    Z_MODDES         = moddes;
+    Z_MODDES_PP      = moddes.pp;
+    Z_MODDES_CHECK   = moddes.check;
+
+    Z_MODINF         = modinf;
+    Z_MODINF_MODULV  = modinf.modulV;
+    Z_MODINF_SIMIDT  = modinf.simIdt;
+    Z_MODINF_SOURCE  = modinf.source;
+    Z_MODINF_MODIDT  = modinf.modIdt;
+    Z_MODINF_CHECK   = modinf.check;
+    Z_MODINF_RTSREL  = modinf.rtsRel;
+    Z_MODINF_FECREL  = modinf.fecRel;
+    Z_MODINF_OBSLVL  = modinf.obsLvl;
+
+    Z_IDFIER         = idfier;
+    Z_IDFIER_NCHA    = idfier.ncha;
+    Z_IDFIER_CHA     = idfier.cha;
+
+    Z_EXTPTP         = ptpExt;
+    Z_EXTPTP_IDT     = ptpExt.idt;
+    Z_EXTPTP_MODULI  = ptpExt.modulI;
+    Z_EXTPTP_ATTRV   = ptpExt.attrV;
+    Z_EXTPTP_BLKTYP  = ptpExt.blkTyp;
+
+    --- Predefined tags for BASE-module ---
+
+    Z_ERROR1 = ERROR;   Z_ERROR2 = ERROR.body;
+
+
+-- Records used by Schemes ------
+
+Z_PTP           = ptp;
+Z_PTP_REFVEC    = ptp.refVec;
+Z_PTP_REPVEC    = ptp.repVec;
+Z_PTP_XPP       = ptp.xpp;
+Z_PTP_LNG       = ptp.lng;
+
+Z_CLAPTP        = claPtp;
+Z_CLAPTP_PLV    = claPtp.plv;
+Z_CLAPTP_DCL    = claPtp.dcl;
+Z_CLAPTP_STM    = claPtp.stm;
+Z_CLAPTP_CNTINR = claPtp.cntInr;
+Z_CLAPTP_VIRTS  = claPtp.virts;
+Z_CLAPTP_PREFIX = claPtp.prefix;
+
+Z_PNTVEC        = pntvec;
+Z_PNTVEC_NCON   = pntvec.ncon;
+Z_PNTVEC_NPNT   = pntvec.npnt;
+Z_PNTVEC_PNT    = pntvec.pnt;
+
+Z_RPTVEC        = rptvec;
+Z_RPTVEC_NPNT   = rptvec.npnt;
+Z_RPTVEC_NREP   = rptvec.nrep;
+Z_RPTVEC_REP    = rptvec.rep;
+
+Z_REPDES        = repdes;
+Z_REPDES_NELT   = repdes.nelt;
+Z_REPDES_TYPE   = repdes.type;
+Z_REPDES_FLD    = repdes.fld;
+
+Z_VIRVEC        = virvec;
+Z_VIRVEC_NVIR   = virvec.nvir;
+Z_VIRVEC_VIR    = virvec.vir;
+
+Z_VIRDES        = virdes;
+Z_VIRDES_PPP    = virdes.ppp;
+Z_VIRDES_QAL    = virdes.qal;
+Z_VIRDES_DES    = virdes.des;
+Z_VIRDES_PAD    = virdes.pad;
+
+Z_SUBPTP        = subPtp;
+Z_SUBPTP_CNT    = subPtp.cnt;
+
+Z_PROPTP        = proPtp;
+Z_PROPTP_START  = proPtp.start;
+Z_PROPTP_PARVEC = proPtp.parVec;
+
+Z_ENTITY        = entity;
+Z_ENTITY_SL     = entity.sl;
+Z_ENTITY_SORT   = entity.sort;
+Z_ENTITY_MISC   = entity.misc;
+Z_ENTITY_LNG    = entity.lng;
+Z_ENTITY_PP     = entity.pp;
+
+Z_INST          = inst;
+Z_INST_GCL      = inst.gcl;
+Z_INST_DL       = inst.dl;
+Z_INST_LSC      = inst.lsc;
+
+Z_FILENT_IMG    = filent.img;
+
+Z_PARQNT        = parqnt;
+Z_PARQNT_FP     = parqnt.fp;
+Z_PARQNT_AP     = parqnt.ap;
+Z_PARQNT_ENT    = parqnt.ent
+Z_PARQNT_SEM    = parqnt.sem;
+Z_PARQNT_FLD    = parqnt.fld;
+Z_PARQNT_PAD    = parqnt.pad;
+Z_PARQNT_CLV    = parqnt.clv;
+Z_PARQNT_PPP    = parqnt.ppp;
+Z_PARQNT_QAL    = parqnt.qal;
+Z_PARQNT_DES    = parqnt.des;
+
+Z_ARBODY_HEAD   = arbody.head;
+
+Z_TXTENT        = txtent;
+Z_TXTENT_NCHA   = entity.ncha;
+Z_TXTENT_CHA    = txtent.cha;
+
+Z_TXTQNT        = txtqnt;
+Z_TXTQNT_ENT    = txtqnt.ent;
+Z_TXTQNT_CP     = txtqnt.cp;
+Z_TXTQNT_SP     = txtqnt.sp;
+Z_TXTQNT_LP     = txtqnt.lp;
+
+Z_ATRDES        = atrDes;
+Z_ATRDES_IDENT  = atrDes.ident;
+Z_ATRDES_FLD    = atrDes.fld;
+Z_ATRDES_MODE   = atrDes.mode;
+Z_ATRDES_KIND   = atrDes.kind;
+Z_ATRDES_TYPE   = atrDes.type;
+
+Z_REFDES        = refDes;
+-- dropped        Z_REFDES_RBL    = atrDes.rbl; -- NB
+-- dropped        Z_REFDES_CON    = refDes.con;
+Z_REFDES_QAL    = refDes.qal;
+
+Z_litdes        = litdes;
+Z_litdes_qnt    = litdes.qnt;
+
+Z_ATRVEC        = atrvec;
+Z_ATRVEC_NATR   = atrvec.natr;
+--  not used now : Z_ATRVEC_NPA = atrvec.npar;
+Z_ATRVEC_ATR    = atrvec.atr;
+
+Z_ARENT1        = arent1;
+Z_ARENT2        = arent2;
+Z_ARBODY        = arbody;
+
+ -----          = <type>Ar<dim>.elt    --------------------
+Z_BOOAR1_ELT    = booAr1.elt;
+Z_CHAAR1_ELT    = chaAr1.elt;
+Z_SINAR1_ELT    = sinAr1.elt;
+Z_INTAR1_ELT    = intAr1.elt;
+Z_REAAR1_ELT    = reaAr1.elt;
+Z_LRLAR1_ELT    = lrlAr1.elt;
+Z_REFAR1_ELT    = refAr1.elt;
+Z_TXTAR1_ELT    = txtAr1.elt;
+Z_PTRAR1_ELT    = ptrAr1.elt;
+
+Z_BOOAR2_ELT    = booAr2.elt;
+Z_CHAAR2_ELT    = chaAr2.elt;
+Z_SINAR2_ELT    = sinAr2.elt;
+Z_INTAR2_ELT    = intAr2.elt;
+Z_REAAR2_ELT    = reaAr2.elt;
+Z_LRLAR2_ELT    = lrlAr2.elt;
+Z_REFAR2_ELT    = refAr2.elt;
+Z_TXTAR2_ELT    = txtAr2.elt;
+Z_PTRAR2_ELT    = ptrAr2.elt;
+
+Z_BOOARR_ELT    = booArr.elt;
+Z_CHAARR_ELT    = chaArr.elt;
+Z_SINARR_ELT    = sinArr.elt;
+Z_INTARR_ELT    = intArr.elt;
+Z_REAARR_ELT    = reaArr.elt;
+Z_LRLARR_ELT    = lrlArr.elt;
+Z_REFARR_ELT    = refArr.elt;
+Z_TXTARR_ELT    = txtArr.elt;
+Z_PTRARR_ELT    = ptrArr.elt;
+
+Z_QUANT         = quant;
+---             = quant.<type>    ---------------
+Z_QUANT_BOO     = quant.boo;
+Z_QUANT_CHA     = quant.cha;
+Z_QUANT_SIN     = quant.sin;
+Z_QUANT_INT     = quant.int;
+Z_QUANT_REA     = quant.rea;
+Z_QUANT_LRL     = quant.lrl;
+Z_QUANT_PNT     = quant.pnt;   --- ref
+Z_QUANT_TXT     = quant.txt;
+Z_QUANT_PTR     = quant.ptr;
+
+Z_QUANT_LAB     = quant.lab;
+Z_QUANT_ARR     = quant.arr;
+Z_QUANT_SWT     = quant.swt;
+Z_QUANT_PRO     = quant.pro;
+Z_QUANT_INS     = quant.ins;
+Z_QUANT_FLD     = quant.fld;
+---  Z_QUANT_ANY     = quant.any;
+
+Z_PARDES        = pardes;
+Z_PARDES_CODE   = pardes.code
+Z_PARDES_KIND   = pardes.kind
+Z_PARDES_TYPE   = pardes.type
+
+Z_REFPAR        = refPar;
+Z_REFPAR_QAL    = refPar.qal;
+
+Z_THKPAR        = thkPar;
+Z_THKPAR_PAD    = thkPar.pad;
+
+Z_REFTHK        = refThk;
+Z_REFTHK_PAD    = refThk.pad;
+Z_REFTHK_QAL    = refThk.qal;
+
+Z_LITPAR        = litPar;
+----            = litPar.l_<type>; ---------------
+Z_LITPAR_BOO    = litPar.l_boo;
+Z_LITPAR_CHA    = litPar.l_cha;
+Z_LITPAR_SIN    = litPar.l_sin;
+Z_LITPAR_INT    = litPar.l_int;
+Z_LITPAR_REA    = litPar.l_rea;
+Z_LITPAR_LRL    = litPar.l_lrl;
+Z_LITPAR_REF    = litPar.l_ref;
+Z_LITPAR_TXT    = litPar.l_txt;
+Z_LITPAR_PTR    = litPar.l_ptr;
+
+-----           = <type>Pro;  -----------------------
+Z_BOOPRO        = booPro;
+Z_CHAPRO        = chaPro;
+Z_SINPRO        = sinPro;
+Z_INTPRO        = intPro;
+Z_REAPRO        = reaPro;
+Z_LRLPRO        = lrlPro;
+Z_REFPRO        = refPro;
+Z_TXTPRO        = txtPro;
+Z_PTRPRO        = ptrPro;
+
+-----           = <type>Pro.val;  -----------------------
+Z_BOOPRO_VAL    = booPro.val;
+Z_CHAPRO_VAL    = chaPro.val;
+Z_SINPRO_VAL    = sinPro.val;
+Z_INTPRO_VAL    = intPro.val;
+Z_REAPRO_VAL    = reaPro.val;
+Z_LRLPRO_VAL    = lrlPro.val;
+Z_REFPRO_VAL    = refPro.val;
+Z_TXTPRO_VAL    = txtPro.val;
+Z_PTRPRO_VAL    = ptrPro.val;
+
+Z_SWTQNT        = swtqnt;
+Z_SWTQNT_SL     = swtqnt.sl;
+Z_SWTQNT_DES    = swtqnt.des;
+
+Z_SWTDES        = swtdes;
+Z_SWTDES_ELT    = swtdes.elt;
+Z_SWTDES_NELT   = swtdes.nelt;
+
+Z_SWTELT        = swtelt;
+Z_SWTELT_THK    = swtelt.thk;
+Z_SWTELT_PAD    = swtelt.pad;
+Z_SWTELT_RBL    = swtelt.rbl;
+Z_SWTELT_FLD    = swtelt.fld;
+Z_SWTELT_CLV    = swtelt.clv;
+
+Z_LABQNT        = labqnt;
+Z_LABQNT_SL     = labqnt.sl;
+Z_LABQNT_PAD    = labqnt.pad;
+Z_LABQNT_CLV    = labqnt.clv;
+
+Z_PROQNT        = proqnt;
+Z_PROQNT_SL     = proqnt.sl;
+Z_PROQNT_PPP    = proqnt.ppp;
+Z_PROQNT_QAL    = proqnt.qal;
+
+Z_THUNK         = thunk;
+Z_THUNK_SIMPLE  = thunk.simple;
+Z_THUNK_VAL     = thunk.val;
+
+
+-- Routines for interface to C or Pascal --------
+
+
+Z_txt2c1     = txt2c;              Z_txt2c2     = txt2c.body;
+Z_obj2c1     = obj2c;              Z_obj2c2     = obj2c.body;
+Z_c2tmpt1    = c2tmpt;             Z_c2tmpt2    = c2tmpt.body;
+Z_c2valt1    = c2valt;             Z_c2valt2    = c2valt.body;
+Z_objN2c1    = objN2c;             Z_objN2c2    = objN2c.body;
+Z_A_cpro1    = A_cpro;             A_A_cpro2    = A_cpro.body;
+Z_A_cvir1    = A_cvir;             A_A_cvir2    = A_cvir.body;
+
+
+-- Routines in RTS called from Schemes -------
+
+
+Z_COPY1      = copy;               Z_COPY2      = copy.body;
+Z_CONCAT1    = concat;             Z_CONCAT2    = concat.body;
+
+Z_AR1NEW1    = ar1new;          Z_AR1NEW2    = ar1new.body;
+Z_AR2NEW1    = ar2new;          Z_AR2NEW2    = ar2new.body;
+Z_ARGNEW1    = arGnew;          Z_ARGNEW2    = arGnew.body;
+Z_ARACOP1    = arAcop;          Z_ARACOP2    = arAcop.body;
+Z_ARTCOP1    = arTcop;          Z_ARTCOP2    = arTcop.body;
+Z_ARRVAL1    = arrVal;          Z_ARRVAL2    = arrVal.body;
+
+Z_AR1IND1    = ar1ind;          Z_AR1IND2    = ar1ind.body;
+Z_AR2IND1    = ar2ind;          Z_AR2IND2    = ar2ind.body;
+Z_ARGIND1    = argind;          Z_ARGIND2    = argind.body;
+-- Z_PA1IND1    = pa1ind;          Z_PA1IND2    = pa1ind.body;
+-- Z_PA2IND1    = pa2ind;          Z_PA2IND2    = pa2ind.body;
+-- Z_PAGIND1    = pagind;          Z_PAGIND2    = pagind.body;
+
+
+Z_IIPOWR1   = iipowr;            Z_IIPOWR2   = iipowr.body;
+Z_RIPOWR1   = ripowr;            Z_RIPOWR2   = ripowr.body;
+Z_RRPOWR1   = rrpowr;            Z_RRPOWR2   = rrpowr.body;
+Z_RDPOWR1   = rdpowr;            Z_RDPOWR2   = rdpowr.body;
+Z_DIPOWR1   = dipowr;            Z_DIPOWR2   = dipowr.body;
+Z_DRPOWR1   = drpowr;            Z_DRPOWR2   = drpowr.body;
+Z_DDPOWR1   = ddpowr;            Z_DDPOWR2   = ddpowr.body;
+
+Z_B_FNP_ASS1 = BnpAss;          Z_B_FNP_ASS2 = BnpAss.body;
+-----        = Enp<type>;   -----
+Z_ENPBOO1 = EnpBoo;      Z_ENPBOO2 = EnpBoo.body;
+Z_ENPCHA1 = EnpCha;      Z_ENPCHA2 = EnpCha.body;
+Z_ENPSIN1 = EnpSin;      Z_ENPSIN2 = EnpSin.body;
+Z_ENPINT1 = EnpInt;      Z_ENPINT2 = EnpInt.body;
+Z_ENPREA1 = EnpRea;      Z_ENPREA2 = EnpRea.body;
+Z_ENPLRL1 = EnpLrl;      Z_ENPLRL2 = EnpLrl.body;
+Z_ENPREF1 = EnpRef;      Z_ENPREF2 = EnpRef.body;
+Z_ENPTXT1 = EnpTxt;      Z_ENPTXT2 = EnpTxt.body;
+Z_ENPPTR1 = EnpPtr;      Z_ENPPTR2 = EnpPtr.body;
+
+Z_B_FNP_ACC1 = BnpAcc;          Z_B_FNP_ACC2 = BnpAcc.body;
+----         = Enc<type>;  -----
+Z_ENCBOO1 = EncBoo;      Z_ENCBOO2 = EncBoo.body;
+Z_ENCCHA1 = EncCha;      Z_ENCCHA2 = EncCha.body;
+Z_ENCSIN1 = EncSin;      Z_ENCSIN2 = EncSin.body;
+Z_ENCINT1 = EncInt;      Z_ENCINT2 = EncInt.body;
+Z_ENCREA1 = EncRea;      Z_ENCREA2 = EncRea.body;
+Z_ENCLRL1 = EncLrl;      Z_ENCLRL2 = EncLrl.body;
+Z_ENCREF1 = EncRef;      Z_ENCREF2 = EncRef.body;
+Z_ENCTXT1 = EncTxt;      Z_ENCTXT2 = EncTxt.body;
+Z_ENCPTR1 = EncPtr;      Z_ENCPTR2 = EncPtr.body;
+
+Z_ENCLAB1 = EncLab;      Z_ENCLAB2 = EncLab.body;
+Z_ENCSWT1 = EncSwt;      Z_ENCSWT2 = EncSwt.body;
+Z_ENCPRO1 = EncPro;      Z_ENCPRO2 = EncPro.body;
+Z_ENCARR1 = EncArr;      Z_ENCARR2 = EncArr.body;
+
+Z_B_NPTA1 = B_npTA;      Z_B_NPTA2 = B_npTA.body;
+Z_E_NPTA1 = E_npTA;      Z_E_NPTA2 = E_npTA.body;
+
+Z_E_FNP_ADR1 = E_npA;       Z_E_FNP_ADR2 = E_npA.body;
+
+----         = npP<type>;  ----those types that may have convert
+Z_NPPSIN1 = npPsin;        Z_NPPSIN2 = npPsin.body;
+Z_NPPINT1 = npPint;        Z_NPPINT2 = npPint.body;
+Z_NPPREA1 = npPrea;        Z_NPPREA2 = npPrea.body;
+Z_NPPLRL1 = npPlrl;        Z_NPPLRL2 = npPlrl.body;
+
+Z_E_THK1     = e_thk;              Z_E_THK2     = e_thk.body;
+
+Z_B_PROG1    = b_prog;             Z_B_PROG2    = b_prog.body;
+Z_E_PROG1    = e_prog;             Z_E_PROG2    = e_prog.body;
+Z_B_CLA1     = b_cla;              Z_B_CLA2     = b_cla.body;
+Z_B_LOCAL1   = b_locl;             Z_B_LOCAL2   = b_locl.body;
+Z_A_LOCAL1   = a_locl;             Z_A_LOCAL2   = a_locl.body;
+Z_B_REC1     = b_rec;              Z_B_REC2     = b_rec.body; -- NEW
+Z_A_CLA1     = a_cla;              Z_A_CLA2     = a_cla.body;
+Z_I_CLA1     = i_cla;              Z_I_CLA2     = i_cla.body;
+-- Z_E_CLA_PRE1 = e_cla_pre;          Z_E_CLA_PRE2 = e_cla_pre.body;
+Z_E_OBJECT   = e_obj;
+
+Z_NXTDCL1   = nxtDcl;            Z_NXTDCL2   = nxtDcl.body;
+Z_NXTSTM1   = nxtStm;            Z_NXTSTM2   = nxtStm.body;
+
+Z_B_PRE1     = b_pre;              Z_B_PRE2     = b_pre.body;
+Z_A_PRE1     = a_pre;              Z_A_PRE2     = a_pre.body;
+Z_I_PRE1     = i_pre;              Z_I_PRE2     = i_pre.body;
+Z_B_SUB1     = b_sub;              Z_B_SUB2     = b_sub.body;
+
+Z_B_PRO1     = b_pro;              Z_B_PRO2     = b_pro.body;
+Z_A_PRO1     = a_pro;              Z_A_PRO2     = a_pro.body;
+Z_I_PRO1     = i_pro;              Z_I_PRO2     = i_pro.body;
+Z_E_PRO1     = e_pro;              Z_E_PRO2     = e_pro.body;
+Z_E_TYPE_P1  = e_func;             Z_E_TYPE_P2  = e_func.body;
+
+----         end prior procedure       -----
+Z_EPPRO      = eppro;              Z_EPPRV      = epprv;
+
+Z_B_FORM1    = B_form;          Z_B_FORM2    = B_form.body;
+Z_A_FORM1    = A_form;          Z_A_FORM2    = A_form.body;
+Z_B_VIRT1    = B_virt;          Z_B_VIRT2    = B_virt.body;
+Z_A_VIRT1    = A_virt;          Z_A_VIRT2    = A_virt.body;
+
+Z_B_FPT1     = b_fpt;              Z_B_FPT2     = b_fpt.body;
+Z_E_FPT1     = e_fpt;              Z_E_FPT2     = e_fpt.body;
+
+----         = fpt<type>;  -----------
+Z_FPTBOO1   = fptBoo;            Z_FPTBOO2   = fptBoo.body;
+Z_FPTCHA1   = fptCha;            Z_FPTCHA2   = fptCha.body;
+Z_FPTSIN1   = fptSin;            Z_FPTSIN2   = fptSin.body;
+Z_FPTINT1   = fptInt;            Z_FPTINT2   = fptInt.body;
+Z_FPTREA1   = fptRea;            Z_FPTREA2   = fptRea.body;
+Z_FPTLRL1   = fptLrl;            Z_FPTLRL2   = fptLrl.body;
+Z_FPTREF1   = fptRef;            Z_FPTREF2   = fptRef.body;
+Z_FPTTXT1   = fptTxt;            Z_FPTTXT2   = fptTxt.body;
+Z_FPTPTR1   = fptPtr;            Z_FPTPTR2   = fptPtr.body;
+
+Z_FPTARR1   = fptArr;            Z_FPTARR2   = fptArr.body;
+Z_FPTPRO1   = fptPro;            Z_FPTPRO2   = fptPro.body;
+Z_FPTLAB1   = fptLab;            Z_FPTLAB2   = fptLab.body;
+Z_FPTSWT1   = fptSwt;            Z_FPTSWT2   = fptSwt.body;
+
+Z_E_GOTO1    = e_goto;            Z_E_GOTO2    = e_goto.body;
+
+Z_ERRNON1    = errnon;            Z_ERRNON2    = errnon.body;
+Z_ERRQUA1    = errqua;            Z_ERRQUA2    = errqua.body;
+Z_ERRSWT1    = errswt;            Z_ERRSWT2    = errswt.body;
+
+-- Z_MAKE_LAB1  = make_lab;           Z_MAKE_LAB2  = make_lab.body;
+-- Z_MAKE_PRO1  = make_pro;           Z_MAKE_PRO2  = make_pro.body;
+-- Z_MAKE_SWT1  = make_swt;           Z_MAKE_SWT2  = make_swt.body;
+
+Z_MKVLAB1    = mkVlab;       Z_MKVLAB2    = mkVlab.body;
+Z_MKVPRO1    = mkVpro;       Z_MKVPRO2    = mkVpro.body;
+Z_MKVSWT1    = mkVswt;       Z_MKVSWT2    = mkVswt.body;
+Z_THK2PQ1    = thk2pq;       Z_THK2PQ2    = thk2pq.body;
+
+Z_B_S2LA1    = B_s2la;       Z_B_S2LA2    = B_s2la.body;
+Z_E_S2LA1    = E_s2la;       Z_E_S2LA2    = E_s2la.body;
+
+Z_TXTVAL1    = txtVal;         Z_TXTVAL2    = txtVal.body;
+Z_TXTAST1    = txtAsT;         Z_TXTAST2    = txtAsT.body;
+Z_TXTASS1    = txtAss;         Z_TXTASS2    = txtAss.body;
+Z_TXTREL1    = txtrel;         Z_TXTREL2    = txtrel.body;
+Z_TRFREL1    = trfrel;         Z_TRFREL2    = trfrel.body;
+
+Z_PRESAV1   = preSav;            Z_PRESAV2   = preSav.body;
+Z_RESTOR1   = restor;            Z_RESTOR2   = restor.body;
+Z_PRESTO1   = presto;            Z_PRESTO2   = presto.body;
+--  Z_POST_SAV1  = post_sav;           Z_POST_SAV2  = post_sav.body;
+
+--  Z_TRC_BEG1   = trc_beg;            Z_TRC_BEG2   = trc_beg.body;
+--  Z_TRC_END1   = trc_end;            Z_TRC_END2   = trc_end.body;
+
+-- Global variables i.e. variables in Bio (BasicIO) --------------
+
+Z_BIO        = bio;    -- the infixed bioIns object
+Z_BIOREF     = bioref; -- REF to bio
+-- Z_BIO_NXT    = bio.nxtAdr; -- next avail. address
+-- Z_BIO_LST    = bio.lstAdr; -- last avail. address
+
+--  Z_BASICIOPTP = bioPtp;
+--  Z_BIO_TRC    = bioIns.trc;
+
+-- Global temporary variables ------------------------------------
+
+Z_TMP        = tmp;
+Z_RSTR       = rstr;
+Z_TXTTMP     = txttmp;
+
+-- Global current instance ----------------------------------------
+
+Z_CURINS     = curins;
+Z_GLOBAL     = bioIns.globalI;
+
+-- SIMULATION TIME special entries --------------------------------
+
+Z_TIME1  = simltn.cur;   Z_TIME2  = rankin.rnk
+
+END
+TRACE

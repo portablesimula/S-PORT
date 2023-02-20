@@ -1,0 +1,26 @@
+Module compress_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("compress")compress;
+       import infix(txtqnt) txt; character ch;
+       export infix(txtqnt) res;
+       begin range(0:MAX_TXT) newp; character tc;
+             txt.cp:=txt.sp; newp:=0;
+             repeat while txt.cp < txt.lp
+             do tc:=txt.ent.cha(txt.cp); txt.cp:=txt.cp+1;
+                if tc <> ch
+                then if txt.ent.misc<>0 then goto E endif;
+                     txt.ent.cha(newp):=tc; newp:=newp+1 endif;
+             endrepeat;
+             if newp = 0 then E: res:=notext
+             else res.ent:=txt.ent;
+                  res.sp:=res.cp:=txt.sp; res.lp:=newp endif;
+       end;
+
+end;

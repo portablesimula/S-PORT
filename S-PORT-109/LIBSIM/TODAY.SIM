@@ -1,0 +1,2 @@
+    external library procedure today is
+    text procedure today; ;

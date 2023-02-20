@@ -1,0 +1,17 @@
+Module rest_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("rest")rest;
+       import infix(txtqnt) t; export infix(txtqnt) res;
+       ---  return "t.sub(pos .. last)", if possible
+       begin if t.lp=0 then res:=notext
+             else res.ent:=t.ent; res.sp:=res.cp:=t.cp; res.lp:=t.lp;
+             endif;
+       end;
+end;

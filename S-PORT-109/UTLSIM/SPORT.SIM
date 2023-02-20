@@ -1,0 +1,1371 @@
+begin
+%+T   external class tapefile;
+%+T   ref(SINTRAN) OS; ref(tapefile) tape;
+      ref(printfile) prnt;
+      Boolean batch,FixSpacing; integer WUNIT,BLKFAC,RECSIZE,LPP;
+      integer FONT,NAT,PITCH, DefaultFONT,DefaultNAT,DefaultPITCH,
+              NewFONT,NewNAT,NewPITCH;
+      text InputLine,TitleLine,TailLine,printer;
+
+      character array hexdigit(0:15);
+      integer corr;         ! correction for 'letter' hexdigits;
+
+      text procedure insymb;
+      begin integer p,lng; character c;
+      L1:   if InputLine.more then
+            begin c:=InputLine.getchar; if c=' ' then goto L1;
+                  p:=InputLine.pos-1; lng:=1;
+            L2:   if InputLine.more then
+                  begin c:=InputLine.getchar;
+                        if c <> ' ' and c <> ',' then
+                        begin lng:=lng+1; goto L2 end;
+                  end;
+                  insymb:-copy(InputLine.sub(p,lng));
+            end;
+      end;
+
+      text procedure inrest;
+      begin integer p,lng; character c;
+      L1:   if InputLine.more then
+            begin c:=InputLine.getchar; if c=' ' then goto L1;
+                  p:=InputLine.pos-1; lng:=InputLine.length-p+1;
+                  inrest:-copy(InputLine.sub(p,lng));
+            end;
+      end;
+
+      Boolean procedure number(t); text t;
+      if t =/= notext then
+      begin t.setpos(1); while t.more do
+            if not digit(t.getchar) then goto E;
+            number:=true;
+      E:end;
+
+      Boolean procedure match(s,t,unam); text s,t; integer unam;
+      match := if s.length = t.length then t = upcase(s)
+          else if s.length < unam then false   !ambiguous;
+          else if s.length < t.length then t.sub(1,s.length) = upcase(s)
+          else false;
+
+      procedure ERROR(t); text t;
+      begin sysout.outtext("*** ERROR *** ");
+            sysout.outtext(t); sysout.outimage;
+      end;
+
+      procedure WARN(t); text t;
+      begin sysout.outtext("*** Warning: ");
+            sysout.outtext(t); sysout.outimage;
+      end;
+
+      text procedure prompt(ms,meny); value ms,meny; text ms,meny;
+      begin text R;
+            if batch then
+            begin L1: inimage; R:-sysin.image.strip; if R==notext then goto L1;
+                  outtext(cat(ms,": ")); outtext(R); outimage;
+            end
+       else begin
+            L:    outtext(ms); outtext(": "); breakoutimage; inimage;
+                  if endfile then begin PRT("EOF on sysin"); goto EXIT end;
+                  R:-sysin.image.strip; R.setpos(R.length);
+                  if if R==notext then true else R.getchar='?' then
+                  begin outtext("Input Format: "); outtext(meny);
+                        outimage; goto L;
+                  end;
+            end;  prompt:-copy(R); sysin.setpos(sysin.length+1);
+      end *** prompt ***;
+
+      text procedure cat(s,t); value s,t; text s,t;
+      begin text u; cat:-u:-blanks(s.length+t.length);
+            u:=s; u.sub(s.length+1,t.length):=t;
+      end;
+
+      procedure PRT(t); text t;
+      begin outtext(t); outimage end;
+%title ******     Printer handling subroutines    ******
+
+      procedure OutFONT(i); integer i;
+      if i<>FONT then inspect prnt do begin
+            outchar(char(27)); outchar(char(91));
+            outint(i,1);       outchar(';');
+            outchar('0');      outchar(char(120));  NewFONT:=FONT:=i; end;
+
+      procedure OutNAT(i); integer i;
+      if i<>NAT then inspect prnt do begin
+            NewNAT:=NAT:=i;
+            i  := if i=1 then 10 else if i=2 then 3 else if i=3 then 1
+             else if i=4 then 8  else if i=5 then 7 else if i=6 then 6
+             else if i=7 then 7 !NB - \ystein patch - burde v{re 5;
+             else if i=8 then 4  else if i=10 then 9
+             else 7; !NB - NAT 9 finns ikke p} printer;
+            outchar(char(27)); outchar(char(91));
+            outint(i,if i<10 then 1 else 2);
+            outchar(char(119));
+      end;
+
+      procedure OutPITCH(i); name i; integer i;
+      begin integer pit;
+        if i<>PITCH then inspect prnt do begin
+           pit:=if i=10 then 1 else if i=15 then 3 else if i=100 then 4 else 2;
+           outchar(char(27)); outchar(char(91));
+           outchar('0');      outchar(';');
+           outint(pit,1);     outchar(char(120));  NewPITCH:=PITCH:=i;
+           FixSpacing := PITCH <> 100; end;
+      end;
+
+      procedure CheckPITCH;
+      if (NewPITCH=15  and NewFONT<>1)  or
+         (NewPITCH=100 and NewFONT=1)
+      then begin
+            NewPITCH := 12; WARN("Incompatible Pitch-Font - Pitch:=12");
+      end;
+
+      procedure OpenFormat(LPP); integer LPP;
+      begin prnt.linesperpage(LPP);
+            OutNAT(NewNAT); OutFONT(NewFONT); OutPITCH(NewPITCH);
+            prnt.breakoutimage;
+      end;
+
+      procedure ClosePrinter;
+      begin prnt.breakoutimage;
+            OutNAT(DefaultNAT);
+            OutFONT(DefaultFONT);
+            OutPITCH(DefaultPITCH);
+            prnt.close;  prnt:- none;
+      end;
+
+      procedure GetPrinterDefaults;
+      begin
+%+T         inspect new infile("(SYS)WP-PRINTERS") do
+%+T         begin  integer i; open(blanks(255));
+%+T                for i:=1 step 1 until 6 do inimage;
+%+T                setpos(140); NewPITCH:= PITCH:= DefaultPITCH:= inint;
+%+T                setpos(156); NewFONT := FONT := DefaultFONT := inint;
+%+T                setpos(160); NewNAT  := NAT  := DefaultNAT  := inint;
+%+T                close;
+%+T         end; 
+       end;
+
+%title ******     Open files for file-to-file op.    ******
+
+      boolean procedure OpenFile2File( inpt, oupt );
+      name inpt, oupt; ref(file) inpt; ref(file) oupt;
+      begin text src,dst;
+            src:-insymb; dst:-insymb;
+            if src == notext then
+            begin if batch then
+                  begin ERROR("No source file given"); goto EXIT end
+             else begin InputLine:-
+                        prompt("Source and Dest. Files",
+                               "Standard NORD File Format");
+                        src:-insymb; dst:-insymb;
+                  end;
+            end;
+
+            if dst == notext and oupt =/= none then inspect oupt
+            when printfile do dst:-"(SYS)PHI"
+            otherwise begin
+                  if batch then begin
+                        ERROR("No destination file given"); goto EXIT end
+             else begin InputLine:-
+                        prompt("Destination File","Standard NORD File Format");
+                        dst:-insymb;
+                  end;
+            end;
+
+            inspect inpt
+             when inbytefile do begin
+                  inpt:-new inbytefile(src);
+                  if not inpt qua inbytefile.open then begin
+                        ERROR(cat("Can't open inbytefile ",src)); goto EXIT end;
+              end
+             when infile do begin
+                  inpt :- new infile(src);
+                  if not inpt qua infile.open(blanks(RECSIZE)) then begin
+                     ERROR(cat("Can't open infile ",src)); goto EXIT end;
+              end;
+            if oupt==none then OpenFile2File:=true else
+            inspect oupt
+             when outbytefile do begin
+                  oupt :- new outbytefile(dst);
+                  if not oupt qua outbytefile.open then begin
+                     inspect inpt when infile do close when inbytefile do close;
+                     ERROR(cat("Can't open outbytefile ",dst)); end
+              end
+             when printfile do begin
+                  oupt:-new printfile(dst);
+                  if oupt qua printfile.open(blanks(RECSIZE+17))
+                  then OpenFile2File := true
+                  else begin oupt :- none;
+                     inspect inpt when infile do close when inbytefile do close;
+                     ERROR(cat("Can't open printfile ",dst)); end
+              end
+             when outfile do begin
+                  oupt:-new outfile(dst);
+                  if oupt qua outfile.open(blanks(RECSIZE))
+                  then OpenFile2File := true
+                  else begin
+                     inspect inpt when infile do close when inbytefile do close;
+                     ERROR(cat("Can't open outfile ",dst)); end
+            end;
+ EXIT:end;
+%title ******     D i r e c t i v e  -  H E L P    ******
+
+      Procedure HELP;
+      begin
+         PRT("  *************   SPORT Monitor ver. 105"
+             "  -  Command Summary   ************");
+         PRT("File-to-file operations, "
+             "general form COMMAND <source> <destination>");
+         PRT("  BYTE2DESI  BYTE2HEX  DESI2BYTE  DESI2HEX  HEX2BYTE  HEX2DESI");
+         PRT("");
+         PRT("Tape handling commands:");
+         PRT("  BLOCKFACTOR <number>                   DENSITY <number>");
+         PRT("  COPIN  <dest.> <tape-format>?          COPOUT "
+                                                "<source> <tape-format>?");
+         PRT("  LOAD   <tape-file-name> <EOT>?         UNLOAD");
+         PRT("  LOCATE <tape-file-number>              RECORDSIZE <number>");
+         PRT("  CHECK  <compare-file> <tape-format>?");
+         PRT("");
+         PRT("Listing commands:");
+         PRT("  FONT  ( 1 .. 6 )                       NAT  ( 0 .. 7 )");
+         PRT("  PITCH ( 10 ! 12 ! 15 ! 100 )");
+         PRT("  LIST  <source>                         SPERRY-LIST <source>"
+                                                                 " <dest.>?");
+         PRT("  PRINTER <format>?                      LPP <number>");
+         PRT("  TITLE <title-text>?                    TAIL <trailing-text>?");
+         PRT("");
+         PRT("Miscellaneous:");
+         PRT("  CC ........");
+         PRT("  EXIT                                   HELP");
+         PRT("  SINTRAN  <sintran-command>             STATUS");
+         PRT("  TAGSUBST <source> <dest.> <table-file>");
+         PRT("  PREPROC  <source> <dest.> "
+             "<selection-string>? <option-string>?");
+      end;
+%title ******     D i r e c t i v e  -  S T A T U S    ******
+
+      Procedure PrtStatus;
+      begin
+            if batch then PRT("In Batch") else PRT("Interactive");
+            outtext("WUNIT:   "); outint(WUNIT,6); outimage;
+            outtext("BLKFAC:  "); outint(BLKFAC,6); outimage;
+            outtext("RECSIZE: "); outint(RECSIZE,6); outimage;
+            outtext("FONT:    "); outint(FONT,6); outimage;
+            outtext("NAT:     "); outint(NAT,6); outimage;
+            outtext("PITCH:   "); outint(PITCH,6); outimage;
+            outtext("LPP:     "); outint(LPP,6); outimage;
+
+%+T         if tape == none then PRT("No tape attached") else
+%+T         begin outtext("Tape location:"); outint(tape.location,6);
+%+T               outimage;
+%+T         end;
+            if prnt == none then PRT("No printer attached") else
+            begin outtext("Printer: "); outtext(printer);
+                  outtext("   LinesPerPage:"); outint(LPP,6); outimage;
+                  outtext("TITLE:   "); outtext(TitleLine); outimage;
+                  outtext("TAIL:    "); outtext(TailLine); outimage;
+            end;
+      end;
+%title ******     D i r e c t i v e  -  @ C O M M A N D    ******
+
+      procedure DoCommand;
+      begin
+%+T         OS.COMND(cat(inrest,"'")); PRT("  ");
+%+T         if OS.status > 0 then
+%+T         begin ERROR("Illegal SINTRAN command"); OS.status:=0 end;
+      end;
+
+%title ******     D i r e c t i v e  -  P R I N T E R    ******
+
+      Procedure SetPrinter;
+      begin text P,F;
+            if prnt=/=none then ClosePrinter;
+            P:-insymb;
+            if P == notext then
+            begin if batch then P:-copy("PHI") else
+                  begin InputLine:-
+                        prompt("Printer","PHI ! L-P ! D-P ! user-file");
+                        P:-insymb;
+                  end;
+            end;
+            if P="L-P" then begin LPP:=60; P:-copy("(SYS)L-1-P") end
+       else if P="D-P" then begin LPP:=68; P:-copy("(SYS)D-P") end
+       else if P="PHI" then begin LPP:=68; P:-copy("(SYS)PHI-300") end
+       else begin F:-insymb;
+                  if F == notext then
+            L:    begin if batch then F:-copy("L-P") else
+                        begin InputLine:-prompt("Format","PHI ! L-P ! D-P");
+                              F:-insymb;
+                        end;
+                  end;
+                  if F="PHI" then LPP:=68 else if F="L-P" then LPP:=64
+             else if F="D-P" then LPP:=68 else goto L;
+            end;
+            printer:-P;
+            prnt:-new printfile(P); prnt.open(blanks(120));
+            OpenFormat(LPP);
+      end;
+%title ******     D i r e c t i v e s  -  F O N T , N A T , P I T C H    ******
+
+      procedure SetFONT;
+      begin integer F; text spec; spec:-insymb;
+            if spec == notext then
+            begin if batch then spec:-copy("1") else
+                  begin InputLine:- prompt("FONT","1..6 ! DRAFT ! PICO ! "
+                                                   "MINI ! BIG ! PROF");
+                        spec:-insymb;
+                  end;
+            end;
+            if match(spec,"PICO",4)  then spec :- "2"
+       else if match(spec,"DRAFT",5) then spec :- "1"
+       else if match(spec,"MINI",4)  then spec :- "4"
+       else if match(spec,"BIG",3)   then spec :- "5"
+       else if match(spec,"PROF",4)  then spec :- "6";
+       if number(spec) then begin
+             F := spec.getint; if F<1 or F>6 then goto EEX;
+             NewFONT := F;  CheckPITCH;
+             OutFONT(NewFONT); OutPITCH(NewPITCH); end
+       else  EEX:  ERROR("No such Font");
+      end;
+
+
+
+      procedure SetNAT;
+      begin text spec; spec:-insymb;
+            if spec == notext then
+            begin if batch then spec:-"1" else
+                  begin InputLine:-prompt("NAT","0..10 ! ASCII ! US ! DK ! N");
+                        spec:-insymb;
+                  end;
+            end;
+            if match(spec,"ASCII",5) then spec :- "1"
+       else if match(spec,"US",2)    then spec :- "1"
+       else if match(spec,"DK",2)    then spec :- "5"
+       else if match(spec,"N",1)     then spec :- "5";
+       if number(spec) then begin
+            NewNAT:=spec.getint; OutNAT(NewNAT); end
+       else ERROR("No such Nation");
+      end;
+
+
+
+      procedure SetPITCH;
+      begin integer P; text spec; spec:-insymb;
+            if spec == notext then
+            begin if batch then spec:-copy("12") else
+                  begin InputLine:- prompt("PITCH","10 ! 12 ! 15 ! 100");
+                        spec:-insymb;
+                  end;
+            end;
+            if number(spec) then begin
+                 P := spec.getint;
+                 if not (P=10 or P=12 or P=15 or P=100) then goto EEX;
+                 NewPITCH := P;  CheckPITCH;  OutPITCH(NewPITCH); end
+            else  EEX:  ERROR("No such Pitch");
+      end;
+%title ******     D i r e c t i v e  -  L I S T    ******
+      procedure ProgList;
+      begin text ident,title,tail; ref(infile) inpt;
+            integer sequ,pgg,lim; character c;
+
+            if prnt == none then
+            begin ERROR("No printer attached"); goto EXIT end;
+
+            title:-notext; sequ:=0; pgg:=0;
+            ident:-insymb;
+            if ident == notext then
+            begin if batch then
+                  begin ERROR("No source file given"); goto EXIT end
+             else begin InputLine:-
+                        prompt("Source File","Standard NORD File Format");
+                        ident:-insymb;
+                  end;
+            end;
+            inpt:-new infile(ident);
+            if not inpt.open(blanks(100)) then
+            begin outimage; outtext("*** The File """); outtext(ident);
+                  outtext(""" cannot be opened");
+                  outimage; outimage; goto EXIT;
+            end;
+
+% -----     if not batch then
+% -----     begin outtext(ident); outtext("  --> "); outtext(printer);
+% -----           outtext(" ?   Answer Yes/No: "); breakoutimage; inimage;
+% -----           if inchar ne 'Y' then begin inpt.close; goto EXIT end;
+% -----     end;
+
+            title:-TitleLine; tail:-TailLine;
+            lim:=if tail == notext then LPP else LPP-2;
+            if tail =/= notext then
+            while tail.length<70 do tail:-cat(" ",cat(tail," "));
+
+            inspect inpt do inspect prnt do
+            begin
+                  procedure fullpage;
+                  begin while line < LPP do outimage;
+                        setpos(14); outtext(tail); outimage;
+                  end;
+
+                  procedure newpage;
+                  begin if pgg>0 and tail =/= notext then fullpage;
+                        pgg:=pgg+1; eject(3);
+                        outtext(ident); setpos(46); outchar('-');
+                        outint(pgg,
+                           if pgg<10 then 2 else if pgg<100 then 3 else 4);
+                        outtext(" -"); outimage; outimage;
+                        outtext(date_time.sub(1,16));
+                        setpos(18); outtext(title); outimage; outimage;
+                  end;
+
+                  procedure print;
+                  begin if line > lim then newpage;
+                        if FixSpacing then begin
+                           outint(sequ,10); outtext(".      "); end;
+                        outtext(inpt.image); outimage;
+                  end;
+
+                  procedure percent;
+                  begin text id; id:-intext(5).strip;
+                        if match(id,"PAGE",4) then newpage
+                   else if match(id,"TITLE",5) then
+                        begin title:-
+                                copy(inpt.image.sub(8,inpt.length-7).strip);
+                              if title =/= notext then
+                              while title.length<62
+                              do title:-cat("*",cat(title,"*"));
+                              newpage;
+                        end
+                   else if match(id,"TAIL",4) then
+                        begin tail:-
+                                copy(inpt.image.sub(8,inpt.length-7).strip);
+                              if tail =/= notext then
+                              while tail.length<70
+                              do tail:-cat(" ",cat(tail," "));
+                        end
+                   else print;
+                  end;
+
+                  newpage; inimage; sequ:=sequ+1;
+                  while not endfile do
+                  begin c:=inchar;
+                        if c = '%' then percent
+                        else print;
+                        inimage; sequ:=sequ+1;
+                  end;
+                  if tail =/= notext then fullpage;
+            end;
+            inpt.close;
+ EXIT:end *** ProgList ***;
+%title ******     D i r e c t i v e  -  A 5 L I S T    ******
+procedure ProgListA5;
+begin text ident,title,tail; ref(infile) inpt;
+      integer sequ,pgg,lim,i; character c;
+      ref(A5ListFile) lf;
+
+      if prnt == none then
+      begin ERROR("No printer attached"); goto EXIT end;
+
+      title:-notext; sequ:=0; pgg:=0;
+      ident:-insymb;
+      if ident == notext then
+      begin if batch then
+            begin ERROR("No source file given"); goto EXIT end
+       else begin InputLine:-
+                  prompt("Source File","Standard NORD File Format");
+                  ident:-insymb;
+            end;
+      end;
+      inpt:-new infile(ident);
+      if not inpt.open(blanks(100)) then
+      begin outimage; outtext("*** The File """); outtext(ident);
+            outtext(""" cannot be opened");
+            outimage; outimage; goto EXIT;
+      end;
+
+% -----     if not batch then
+% -----     begin outtext(ident); outtext("  --> "); outtext(printer);
+% -----           outtext(" ?   Answer Yes/No: "); breakoutimage; inimage;
+% -----           if inchar ne 'Y' then begin inpt.close; goto EXIT end;
+% -----     end;
+
+      title:-TitleLine; tail:-TailLine;
+      lim:=if tail == notext then LPP else LPP-2;
+      if tail =/= notext then
+      while tail.length<70 do tail:-cat(" ",cat(tail," "));
+
+      prnt.Image:-Blanks(200);
+      lf:-new A5ListFile(prnt,LPP,88); lf.Open;
+      inspect inpt do inspect lf do
+      begin
+            procedure fullpage;
+            begin while line < LPP do outimage;
+                  setpos(14); outtext(tail); outimage;
+            end;
+
+            procedure newpage;
+            begin if pgg>0 and tail =/= notext then fullpage;
+                  pgg:=pgg+1; eject(3);
+                  outtext(ident); setpos(80); outint(pgg,4);
+                  outimage; outimage;
+                  outtext(date_time.sub(1,11));
+                  outtext(title); outimage; outimage;
+            end;
+
+            procedure print;
+            begin if line > lim then newpage;
+                  if FixSpacing then begin
+                     outint(sequ,5); outtext(": ");  end;
+                  outtext(inpt.image); outimage;
+            end;
+
+            procedure percent;
+            begin text id; id:-intext(5).strip;
+                  if match(id,"PAGE",4) then newpage
+             else if match(id,"TITLE",5) then
+                  begin title:-
+                          copy(inpt.image.sub(8,inpt.length-7).strip);
+                        if title =/= notext then
+                        while title.length<70
+                        do title:-cat("*",cat(title,"*"));
+                        newpage;
+                  end
+             else if match(id,"TAIL",4) then
+                  begin tail:-
+                          copy(inpt.image.sub(8,inpt.length-7).strip);
+                        if tail =/= notext then
+                        while tail.length<70
+                        do tail:-cat(" ",cat(tail," "));
+                  end
+             else print;
+            end;
+
+            newpage; inimage; sequ:=sequ+1;
+            while not endfile do
+            begin c:=inchar;
+                  if c = '%' then percent
+                  else print;
+                  inimage; sequ:=sequ+1;
+            end;
+            if tail =/= notext then fullpage;
+      end;
+      inpt.close; lf.Close;
+ EXIT:end *** ProgListA5 ***;
+%title ******     C l a s s   -   A 5 L i s t F i l e    ******
+Class A5ListFile(prnt,LPP,CPL);
+ref(PrintFile) prnt; !*** The Print File ***;
+integer LPP;         !*** Lines per page ***;
+integer CPL;         !*** Characters per line ***;
+begin 
+      text array BUFF(1:LPP); integer Line,FirstPos,LineLng;
+      text Image;
+
+      Procedure Open;
+      begin integer i; prnt.OutText("!27!L06!27!E08");
+            prnt.OutImage; prnt.eject(1);
+            for i:=1 step 1 until LPP do BUFF(i):-Blanks(CPL+CPL);
+            Line:=1; FirstPos:=1; LineLng:=CPL;
+            Image:-BUFF(1).sub(1,CPL);
+      end;
+
+      Procedure Close; EXHAUST;
+
+      Text Procedure FIELD(w); integer w;
+      begin integer lng;
+            lng:=Image.Length-Image.Pos-1;
+            if w > lng then w:=lng;
+            FIELD:-Image.sub(Image.Pos,w);
+            Image.SetPos(Image.Pos+w);
+      end;
+
+      Procedure OutText(T); text T;
+      begin text fld; fld:-FIELD(T.Length);
+            if T.Length > fld.Length then T:-T.sub(1,fld.Length);
+            fld:=T;
+      end;
+
+      Procedure Outint(i,w); integer i,w;
+      FIELD(w).Putint(i);
+
+      Procedure Outimage;
+      begin Line:=Line+1;
+            if Line > LPP then Image:-notext
+            else Image:-BUFF(Line).sub(FirstPos,CPL);
+      end;
+
+      Procedure Eject(n); integer n;
+      begin if n > LPP then n:=LPP;
+            if n < Line then
+            begin if FirstPos > 2 then EXHAUST;
+                  FirstPos:=if FirstPos=1 then CPL+1 else 1;
+            end;
+            Line:=n; Image:-BUFF(Line).sub(FirstPos,CPL);
+      end;
+
+      Procedure SetPos(p); integer p; Image.SetPos(p);
+
+      Procedure EXHAUST;
+      begin integer i,n;
+            for n:=LPP step 1 until 1 do
+            if BUFF(n).strip =/= notext then goto L;
+      L:    for i:=1 step 1 until n do
+            begin prnt.OutText(BUFF(i).strip); prnt.OutImage;
+                  BUFF(i):=notext;
+            end;
+      end;
+      
+end *** A5ListFile ***;
+%title ******     D i r e c t i v e  -  B Y T E 2 D E S I  or  H E X   ******
+
+      procedure byte2desi;
+      begin integer b; ref(inbytefile) inpt; ref(outfile) oupt;
+            inpt:-new inbytefile("dummy"); oupt:-new outfile("dummy");
+            if OpenFile2File(inpt,oupt) then
+            begin for b:=inpt.inbyte while not inpt.endfile
+                  do oupt.outint(b,4);
+                  oupt.outimage; oupt.close; inpt.close;
+            end;
+      end *** byte2desi ***;
+
+
+
+      procedure byte2hex;
+      begin integer b; ref(inbytefile) inpt; ref(outfile) oupt;
+            inpt:-new inbytefile("dummy"); oupt:-new outfile("dummy");
+            if OpenFile2File(inpt,oupt) then
+            begin for b:=inpt.inbyte while not inpt.endfile do
+                  begin oupt.outchar(hexdigit(b//16));
+                        oupt.outchar(hexdigit(mod(b,16)));
+                  end;
+                  oupt.outimage; oupt.close; inpt.close;
+            end;
+      end *** byte2hex ***;
+%title ******     D i r e c t i v e  -  H E X  or  D E S I 2 B Y T E   ******
+
+      procedure desi2byte;
+      begin ref(infile) inpt; ref(outbytefile) oupt;
+            inpt:-new infile("dummy"); oupt:-new outbytefile("dummy");
+            if OpenFile2File(inpt,oupt) then
+            begin while not inpt.lastitem do oupt.outbyte(inpt.inint);
+                  oupt.close; PRT("END-OF-FILE"); inpt.close;
+            end
+      end *** desi2byte ***;
+
+
+
+      procedure hex2byte;
+      begin integer ch1,ch2; ref(infile) inpt; ref(outbytefile) oupt;
+            inpt:-new infile("dummy"); oupt:-new outbytefile("dummy");
+            if OpenFile2File(inpt,oupt) then
+            begin while not inpt.lastitem do
+                  begin ch1 := isorank(inpt.inchar) - isorank('0');
+                        if ch1>9 then ch1 := ch1 + corr;
+                        ch2 := isorank(inpt.inchar) - isorank('0');
+                        if ch2>9 then ch2 := ch2 + corr;
+                        oupt.outbyte(ch1*16+ch2);
+                  end;
+                  oupt.close; PRT("END-OF-FILE"); inpt.close;
+            end
+      end *** hex2byte ***;
+%title ***   D i r e c t i v e s  -  H E X 2 D E S I  ,  D E S I 2 H E X   ***
+
+      procedure hex2desi;
+      begin ref(infile) inpt; ref(outfile)outpt; integer ch1, ch2;
+
+         inpt :- new infile("dummy"); outpt :- new outfile("dummy");
+         if not OpenFile2File(inpt,outpt) then goto EXIT;
+
+         inspect inpt do inspect outpt do begin
+            while not inpt.lastitem do begin
+                  ch1 := isorank(inchar) - isorank('0');
+                  ch2 := isorank(inchar) - isorank('0');
+                  if ch1>9 then ch1 := ch1 + corr;
+                  if ch2>9 then ch2 := ch2 + corr;
+                  outint(ch1*16+ch2,4);
+            end;
+            outpt.outimage;
+         end;
+EXIT:
+         inpt.close;  outpt.close;
+
+      end *** hex2desi;
+
+
+
+      procedure desi2hex;
+      begin ref(infile) inpt; ref(outfile)outpt; integer b;
+
+         inpt :- new infile("dummy"); outpt :- new outfile("dummy");
+         if not OpenFile2File(inpt,outpt) then goto EXIT;
+
+         inspect inpt do inspect outpt do begin
+            while not inpt.lastitem do begin
+                  b := inint;
+                  outchar(isochar(b//16)); outchar(isochar(mod(b,16)));
+            end;
+            outpt.outimage;
+         end;
+EXIT:
+         inpt.close;  outpt.close;
+
+      end *** desi2hex ***;
+%title ******     D i r e c t i v e  -  T A G S U B S T    ******
+procedure TAGSUBST;
+begin ref(infile)inpf,tabf; ref(outfile)outpf;
+      integer lmax; text fname,src,dst,tab;
+
+      text procedure nextitem(f); ref(infile)f;
+      begin integer i; if f.lastitem then goto E; i:=f.pos;
+            while f.more do if f.inchar=' ' then
+            begin f.setpos(f.pos-1); goto TRM end;
+      TRM:  nextitem:-copy(f.image.sub(i,f.pos-i));
+      E:end nextitem;
+
+      RECSIZE := 80;
+      inpf :- new infile("dummy");  outpf :- new outfile("dummy");
+      if not OpenFile2File(inpf,outpf) then goto EXIT;
+
+      tab :- insymb;
+      if tab == notext then
+      begin if batch then
+            begin ERROR("No table-file given"); goto EXIT end
+       else begin InputLine:-
+                  prompt("Table File","Standard NORD File Format");
+                  tab:-insymb;
+            end;
+      end;
+      tabf:-new infile(tab);
+      if not tabf.open(blanks(80)) then
+      begin outimage; outtext(cat("Can't open table file ",tab));
+            outimage; outimage; goto EXIT;
+      end;
+
+      lmax:=800;
+      begin text array lid,lmodid(1:lmax); integer array lreltag(1:lmax);
+            integer ii,jj,kk,reltag,lused; character c;
+            text tt,uu,lastmodid,id,modid,inpt;
+
+            lused:=0; tabf.inimage; tt:-nextitem(tabf);
+            while tt ne "***" do
+            begin lused:=lused+1; lid(lused):-tt;
+                  lmodid(lused):-nextitem(tabf);
+                  lreltag(lused):=tabf.inint;
+                  inspect prnt do
+                  begin outtext(tabf.image); outimage end;
+                  tabf.inimage;
+                  if tabf.lastitem then  tt:-copy("***")
+                                   else  tt:-nextitem(tabf);
+            end;
+            tabf.close; tabf:-none;
+            !*******   INPUT OF LIST FINISHED   *******;
+
+            inpf.inimage;
+            while not inpf.endfile do
+            begin inpt:-inpf.image.strip;
+                  while inpt.more do
+                  begin c:=inpt.getchar; if c='"' then lastmodid:-notext;
+                        if c='*' then
+                        begin ii:=inpt.pos;
+
+                              while inpt.more do
+                              begin c:=inpt.getchar;
+                                    if letter(c) or digit(c) or c='_' then
+                               else begin inpt.setpos(inpt.pos-1); goto TRM end;
+                              end;
+                        TRM:  uu:-inpt.sub(ii,inpt.pos-ii);
+
+                              for ii:=1 step 1 until lused do
+                              if uu=lid(ii) then goto FOUND;
+                              outpf.outtext("!?!"); outpf.outtext(uu);
+                              outtext("****  UNKNOWN:"); outtext(uu); outimage;
+                              goto EX;
+                       FOUND: if lmodid(ii)=lastmodid then
+                              outpf.outtext("*") else
+                              begin outpf.outtext(lmodid(ii));
+                                    lastmodid:-lmodid(ii);
+                              end;
+                              outpf.outint(lreltag(ii),4);
+                  EX:   end else outpf.outchar(c);
+
+                  end of inpf-line;
+                  inspect prnt do begin outtext(outpf.image); outimage end;
+                  outpf.outimage; inpf.inimage;
+            end of inpf-file;
+      end of array-block;
+
+EXIT: if inpf  =/= none then inpf.close;
+      if outpf =/= none then outpf.close;
+      if tabf  =/= none then tabf.close;
+end;
+%title ******     D i r e c t i v e  -  P R E P R O C    ******
+procedure PREPROC;
+begin integer skipmode; ! Means -1- are set to "% ",
+                                -2- are made blank,
+                                -3- are descarded.  ;
+      boolean followcopy; ! True means that copy should be followed;
+      text src,dst,sel,opt; ! parameters strings;
+      boolean array selector(0:255); ! True for selected characters;
+      integer imlng;  ! Longest input image, semiconstant=80;
+      integer impart; ! Significant part of inputimage, semiconst=72;
+      ref(infile)inpf; ref(outfile) outpf;
+      ref(infile) array stack(1:10); ! Maxdepth=10;
+      integer curdepth;
+      integer inlinenr, outlinenr, skippedlines;
+      integer maxdepth; ! Semiconstant=10;
+      text line,part,outline;
+      boolean listing,includethis;
+      text t,u,k,m; integer i; character c1,c2;
+
+
+      !********   Procedure LINEFIELD   ********;
+
+      text procedure linefield(i); integer i;
+      begin line.setpos(i);
+            while line.more do if line.getchar ne ' ' then goto L1;
+            linefield:-notext; goto E;
+      L1:   i:=line.pos-1;
+            while line.more do if line.getchar=' ' then
+            begin line.setpos(line.pos-1); goto L2 end;
+      L2:   linefield:-copy(line.sub(i,line.pos-i));
+      E:end;
+
+      !***********   I N I T I A T I O N S   ********* ;
+      imlng:=80; maxdepth:=10; impart:=72;
+      line:-blanks(impart+1); listing:=false;
+
+      !***********   READING OF PARAMETERS   ***********;
+
+      src:-insymb; dst:-insymb; sel:-insymb; opt:-insymb;
+      if src == notext then
+      begin if batch then
+            begin ERROR("No source file given"); goto EXIT end
+       else begin InputLine:-
+                  prompt("Source File","Standard NORD File Format");
+                  src:-insymb; dst:-insymb; sel:-insymb; opt:-insymb;
+            end;
+      end;
+      curdepth:=1;
+      inpf:-stack(1):-new infile(cat(src,":DEF"));
+      if not inpf.open(blanks(imlng)) then
+      begin outimage; outtext("The File """); outtext(src);
+            outtext(""" does not exist or is not accessible");
+            outimage; outimage; goto EXIT;
+      end;
+      part:-inpf.image.sub(1,impart);
+      outline:-inpf.image.sub(1,imlng);
+      if dst == notext then
+      begin if batch then
+            begin ERROR("No destination file given"); goto EXIT end
+       else begin InputLine:-
+                  prompt("Destination File","Standard NORD File Format");
+                  dst:-insymb; sel:-insymb; opt:-insymb;
+            end;
+      end;
+      outpf:-new outfile(dst);
+      if not outpf.open(blanks(imlng)) then
+      begin outimage; outtext("The File """); outtext(dst);
+            outtext(""" does not exist or is not accessible");
+            outimage; outimage; goto EXIT;
+      end;
+      outtext("Selection string: "); outtext(sel); outimage;
+      outtext("Option string:    "); outtext(opt); outimage;
+      for i:= 1 step 1 until 255 do selector(i):=false;
+      selector(rank(' ')):=true;
+      while sel.more do selector(rank(sel.getchar)):=true;
+      while opt.more do
+      begin c1:=opt.getchar;
+            if c1='C' then followcopy:=true
+       else if c1='R' then skipmode:=3
+       else if c1='B' then skipmode:=2
+       else if c1='%' then skipmode:=1
+       else begin outtext("Illegal option: "); outchar(c1);
+                  outtext(" ,ignored"); outimage;
+            end;
+      end;
+
+      !***********   MAIN LOOP READING LINES   ********;
+
+      while true do
+      begin inpf.inimage;
+
+            while inpf.endfile do
+            begin if inpf=/=sysin then inpf.close;
+                  stack(curdepth):-none;
+                  curdepth:=curdepth-1;
+                  if curdepth=0 then goto EXIT;
+                  inpf:-stack(curdepth);
+                  part:-inpf.image.sub(1,impart);
+                  outline:-inpf.image.sub(1,imlng);
+                  inpf.inimage;
+            end;
+
+            line:=part; inlinenr:=inlinenr+1;
+            includethis:=true; ! Assuming first that the line is for output;
+            line.setpos(1); c1:=line.getchar;
+
+
+            ! *********  FIRST LOOK FOR DIRECTIVES   ******* ;
+
+            if c1='%' then
+            begin c2:=line.getchar;
+                  if c2='+' then
+                  begin if not( selector(rank(line.getchar)) and
+                                selector(rank(line.getchar))       )
+                        then includethis:=false
+                        else outline.sub(1,4):="   ";
+                  end
+             else if c2='-' then
+                  begin if selector(rank(line.getchar)) then includethis:=false
+                                                  else outline.sub(1,3):="   ";
+                  end
+             else if line.sub(2,7)="SELECT " then
+                  begin t:-linefield(9); t.setpos(1);
+                        for i:= 1 step 1 until 255 do selector(i):=false;
+                        while t.more do selector(rank(t.getchar)):=true;
+                  end
+             else if line.sub(2,5)="COPY " then
+                  begin if followcopy then includethis:=false end;
+
+                  if not includethis then
+                  begin if skipmode=2 then outline:=notext else
+                        if skipmode=1 then outline.sub(1,3):="%  ";
+                        skippedlines:=skippedlines+1;
+                  end;
+            end;
+
+            !*****  OUTPUT OF LINE  *******;
+
+            if skipmode<3 or includethis then
+            begin outlinenr:=outlinenr+1;
+                  outpf.outtext(outline); outpf.outimage;
+                  if prnt =/= none and listing then
+                  begin prnt.outint(outlinenr,5);
+                        if skipmode=3 then
+                        begin prnt.outtext(" ("); prnt.outint(inlinenr,5);
+                              prnt.outtext(")");
+                        end;
+                        prnt.outtext(": ");
+                        prnt.outtext(outline); prnt.outimage;
+                  end;
+            end;
+
+
+            ! *********  SECOND LOOK FOR DIRECTIVES   ******* ;
+
+            if c1='%' then
+            begin if line.sub(2,5)="COPY " then
+                  begin if followcopy then
+                        begin t:-linefield(7); if t==notext then goto ERR;
+                              if curdepth>=maxdepth then goto ERR;
+                              inpf:-new infile(cat(t,":DEF"));
+                              if inpf.open(blanks(imlng)) then
+                              begin curdepth:=curdepth+1;
+                                    stack(curdepth):-inpf;
+                                    part:-inpf.image.sub(1,impart);
+                                    outline:-inpf.image.sub(1,imlng);
+                              end else
+                        ERR:  begin outtext("Can't perform ");
+                                    outtext(line.strip); outimage;
+                                    inpf:-stack(curdepth);
+                              end;
+                        end;
+                  end
+             else if line.sub(2,7)="SOURCE "   then listing:=true
+             else if line.sub(2,8)="LIST ON "  then listing:=true
+             else if line.sub(2,9)="LIST OFF " then listing:=false
+             else if line.sub(2,9)="NOSOURCE " then listing:=false
+            end;
+      end;
+
+EXIT: outtext("Input lines:"); outint(inlinenr,6);
+      outtext(", Skipped lines:"); outint(skippedlines,6); outimage;
+
+      if inpf=/=none then inpf.close;
+      if outpf=/=none then outpf.close;
+end;
+%title ***   T a p e  - -  C O P O U T   ***
+
+      procedure TapeCopout;
+      begin text src,form;
+%+T         if tape == none then
+%+T         begin ERROR("No tape attached"); goto EXIT end;
+%+T         src:-insymb; form:-insymb;
+%+T         if src == notext then
+%+T         begin if batch then
+%+T               begin ERROR("No source file given"); goto EXIT end
+%+T          else begin InputLine:-
+%+T                     prompt("Source File","Standard NORD File Format");
+%+T                     src:-insymb; form:-insymb;
+%+T               end;
+%+T         end;
+%+T         tape.image:-blanks(BLKFAC*RECSIZE);
+%+T
+%+T         if form = "DESI" or form = "HEX" then
+%+T         begin ref(inbytefile) inpt; integer b;
+%+T               inpt:-new inbytefile(src);
+%+T               if inpt.open then
+%+T               begin if form = "DESI" then begin
+%+T                          for b:=inpt.inbyte while not inpt.endfile
+%+T                          do tape.outint(b,4) end
+%+T                     else for b:=inpt.inbyte while not inpt.endfile
+%+T                          do begin
+%+T                             tape.outchar(hexdigit(b//16));
+%+T                             tape.outchar(hexdigit(b-(b//16)*16));
+%+T                     end;
+%+T                     tape.outimage; tape.mark; inpt.close;
+%+T                     PRT("END-OF-TAPE Mark Written");
+%+T               end else ERROR("Can't open source file");
+%+T         end else
+%+T         begin ref(infile) inpt;
+%+T               inpt:-new infile(src);
+%+T               if inpt.open(blanks(RECSIZE)) then
+%+T               begin inpt.inimage;
+%+T                     while not inpt.endfile do
+%+T                     begin tape.outtext(inpt.image); inpt.inimage end;
+%+T                     inspect tape do
+%+T                     begin if more then image.sub(pos,length-pos+1):=notext;
+%+T                           outimage; mark; PRT("END-OF-TAPE Mark Written");
+%+T                     end;
+%+T                     inpt.close;
+%+T               end else ERROR("Can't open source file");
+%+T         end;
+ EXIT:end;
+%title ***   T a p e  - -  C O P I N   ***
+
+      procedure TapeCopin;
+      begin text dst,form,t; integer i,lim;
+%+T         if tape == none then
+%+T         begin ERROR("No tape attached"); goto EXIT end;
+%+T         dst:-insymb; form:-insymb;
+%+T         if dst == notext then
+%+T         begin if batch then
+%+T               begin ERROR("No destination file given"); goto EXIT end
+%+T          else begin InputLine:-
+%+T                     prompt("Destination File","Standard NORD File Format");
+%+T                     dst:-insymb; form:-insymb;
+%+T               end;
+%+T         end;
+%+T         tape.image:-blanks(BLKFAC*RECSIZE);
+%+T
+%+T         if form = "DESI" or form = "HEX" then
+%+T         begin ref(outbytefile) oupt; integer b; integer ch1,ch2;
+%+T               oupt:-new outbytefile(dst);
+%+T               if oupt.open then
+%+T               begin tape.setpos(tape.length+1);
+%+T               L:    tape.inrecord;
+%+T                     if not tape.endfile then
+%+T                     begin lim:=tape.pos-1;
+%+T                        if form = "DESI" then begin
+%+T                           for i:=1 step 4 until lim do
+%+T                           begin t:-tape.image.sub(i,4);
+%+T                                 oupt.outbyte(t.getint);
+%+T                           end; end
+%+T                        else begin tape.image.setpos(1);
+%+T                           for i:=1 step 2 until lim do
+%+T                           begin ch1:=isorank(tape.inchar)-isorank('0');
+%+T                                 ch2:=isorank(tape.inchar)-isorank('0');
+%+T                                 if ch1>=9 then
+%+T                                    ch1:=ch1+isorank('0')-isorank('A');
+%+T                                 if ch2>=9 then
+%+T                                    ch2:=ch2+isorank('0')-isorank('A');
+%+T                                 oupt.outbyte(ch1*16+ch2);
+%+T                           end;
+%+T                        end;
+%+T                        goto L;
+%+T                     end;
+%+T                     oupt.close;
+%+T                     PRT("END-OF-FILE"); tape.locate(tape.location);
+%+T               end else ERROR("Can't open destination file");
+%+T         end else
+%+T         begin ref(outfile) oupt;
+%+T               oupt:-new outfile(dst);
+%+T               if oupt.open(blanks(RECSIZE)) then
+%+T               begin tape.setpos(tape.length+1);
+%+T               L:    tape.inrecord;
+%+T                     if not tape.endfile then
+%+T                     begin lim:=tape.pos-1;
+%+T                           for i:=1 step RECSIZE until lim do
+%+T                           begin t:-tape.image.sub(i,RECSIZE).strip;
+%+T                                 oupt.outtext(t); oupt.outimage;
+%+T                           end;
+%+T                           goto L;
+%+T                     end;
+%+T                     oupt.close;
+%+T                     PRT("END-OF-FILE"); tape.locate(tape.location);
+%+T               end else ERROR("Can't open destination file");
+%+T         end;
+ EXIT:end;
+%title ***   T a p e  - -  C H E C K   ***
+
+      procedure TapeCheck;
+      begin text src,form,t; integer i,lim;
+%+T         if tape == none then
+%+T         begin ERROR("No tape attached"); goto EXIT end;
+%+T         src:-insymb; form:-insymb;
+%+T         if src == notext then
+%+T         begin if batch then
+%+T               begin ERROR("No comparing file given"); goto EXIT end
+%+T          else begin InputLine:-
+%+T                     prompt("Comparing File","Standard NORD File Format");
+%+T                     src:-insymb; form:-insymb;
+%+T               end;
+%+T         end
+%+T         tape.image:-blanks(BLKFAC*RECSIZE);
+%+T
+%+T         if form = "DESI" then
+%+T         begin ref(inbytefile) comp; integer b;
+%+T               comp:-new inbytefile(src);
+%+T               if comp.open then
+%+T               begin tape.setpos(tape.length+1);
+%+T               L:    tape.inrecord;
+%+T                     if not tape.endfile then
+%+T                     begin lim:=tape.pos-1;
+%+T                           for i:=1 step 4 until lim do
+%+T                           begin t:-tape.image.sub(i,4);
+%+T                                 if comp.endfile then
+%+T                                 begin if t.strip =/= notext
+%+T                                       then goto ERR;
+%+T                                 end else
+%+T                                 if comp.inbyte <> t.getint then goto ERR;
+%+T                           end;
+%+T                           goto L;
+%+T                     end;
+%+T                     if not comp.endfile
+%+T                     then ERR: ERROR("TAPE-CHECK FAILED");
+%+T                     comp.close;
+%+T                     PRT("END-OF-FILE");
+%+T               end else ERROR("Can't open comparing file");
+%+T         end else
+%+T         begin ref(infile) comp;
+%+T               comp:-new infile(src);
+%+T               if comp.open(blanks(RECSIZE)) then
+%+T               begin tape.setpos(tape.length+1);
+%+T               L:    tape.inrecord;
+%+T                     if not tape.endfile then
+%+T                     begin lim:=tape.pos-1;
+%+T                           for i:=1 step RECSIZE until lim do
+%+T                           begin t:-tape.image.sub(i,RECSIZE);
+%+T                                 if comp.endfile then
+%+T                                 begin if t.strip =/= notext
+%+T                                       then goto ERR;
+%+T                                 end else
+%+T                                 begin comp.inimage;
+%+T                                       if comp.image <> t then goto ERR;
+%+T                                 end;
+%+T                           end;
+%+T                           goto L;
+%+T                     end;
+%+T                     if not comp.endfile
+%+T                     then ERR: ERROR("TAPE-CHECK FAILED");
+%+T                     comp.close;
+%+T                     PRT("END-OF-FILE");
+%+T               end else ERROR("Can't open comparing file");
+%+T         end;
+ EXIT:end;
+%title ***   T a p e  - -  LOAD/UNLOAD/LOCATE   ***
+
+      procedure TapeLoad;
+      begin
+%+T         text spec,eot; spec:-insymb; eot:-insymb;
+%+T         if tape =/= none then ERROR("Tape already loaded")
+%+T    else begin if spec == notext then
+%+T               begin if batch then spec:-copy("MAG-TAPE") else
+%+T                     begin InputLine:-
+%+T                           prompt("File-name","Mag-Tape file name");
+%+T                           spec:-insymb; eot:-insymb;
+%+T                     end;
+%+T               end;
+%+T               tape:-new tapefile(spec);
+%+T               if tape.open(notext) then
+%+T               begin if eot="EOT" then tape.locate(0)
+%+T                else if eot =/= notext then ERROR("Illegal spesification");
+%+T               end
+%+T          else begin ERROR("Can't open tape file"); tape:-none end;
+%+T         end;
+      end;
+
+      procedure TapeUnload;
+      begin
+%+T         if tape =/= none then
+%+T         begin
+%+T               tape.close; tape:-none;
+%+T         end else ERROR("No tape attached");
+      end;
+
+      procedure TapeLocate;
+      begin
+%+T         if tape =/= none then
+%+T         begin text spec; spec:-insymb;
+%+T               if spec == notext then
+%+T               begin if batch then spec:-copy("20") else
+%+T                     begin InputLine:-
+%+T                           prompt("Block-factor","Number");
+%+T                           spec:-insymb;
+%+T                     end;
+%+T               end;
+%+T               if number(spec) then tape.locate(spec.getint)
+%+T               else ERROR("Illegal specification");
+%+T         end else ERROR("No tape attached");
+      end;
+%title ***   T a p e  - -  BLOCKFACTOR/RECORDSIZE/DENSITY   ***
+
+      procedure TapeBlock;
+      begin text spec; spec:-insymb;
+            if spec == notext then
+            begin if batch then spec:-copy("20") else
+                  begin InputLine:- prompt("Block-factor","Number");
+                        spec:-insymb;
+                  end;
+            end;
+            if number(spec) then BLKFAC:=spec.getint
+            else ERROR("Illegal specification");
+      end;
+
+      procedure TapeRecord;
+      begin text spec; spec:-insymb;
+            if spec == notext then
+            begin if batch then spec:-copy("20") else
+                  begin InputLine:- prompt("Record-size","Number");
+                        spec:-insymb;
+                  end;
+            end;
+            if number(spec) then RECSIZE:=spec.getint
+            else ERROR("Illegal specification");
+      end;
+
+      procedure TapeDensity;
+      begin
+%+T         if tape =/= none then
+%+T         begin text spec; spec:-insymb;
+%+T               if spec == notext then
+%+T               begin if batch then spec:-copy("1600") else
+%+T                     begin InputLine:-prompt("Density","Number");
+%+T                           spec:-insymb;
+%+T                     end;
+%+T               end;
+%+T   %           if number(spec) then !*** SET DENSITY ***;
+%+T   %           else ERROR("Illegal specification");
+%+T         end else ERROR("No tape attached");
+      end;
+%title ******     D i r e c t i v e  -  S P E R R Y - L I S T    ******
+
+      procedure SperryList;
+      begin text ident,title,tail,savimag,blimag; ref(infile) inpt;
+            integer sequ,pgg,lim; character c; ref(printfile)pf;
+
+            if prnt == none then pf :- new printfile("dummy");
+            inpt :- new infile("dummy");
+            if not OpenFile2File(inpt,pf) then goto EXIT;
+            if pf =/= none then prnt :- pf;
+            ident :- inpt.filename;  printer :- prnt.filename;
+            sequ:=0; pgg:=0;
+
+            if not batch then
+            begin outtext(ident); outtext("  --> "); outtext(printer);
+                  outtext(" ?   Answer Yes/No: "); breakoutimage; inimage;
+                  if inchar ne 'Y' then begin
+                     inpt.close; goto EXIT end;
+            end;
+            LPP:=69; OpenFormat(LPP);
+            title:-cat(cat(blanks(17),ident),
+                       cat(blanks(10),date_time.sub(1,16)));
+            tail:-TailLine;
+            if tail == notext then lim:=LPP
+            else begin
+                 lim:=LPP-2;
+                 tail:-cat(blanks((RECSIZE+17-tail.length)/2),tail);
+            end;
+            inpt.image :- prnt.image.sub(18,RECSIZE);
+            blimag :- blanks(prnt.image.length);
+
+            inspect inpt do inspect prnt do
+            begin
+                  procedure fullpage;
+                  if pgg>0 then begin
+                        if line < LPP then eject(LPP);
+                        outtext(tail); outimage;
+                  end;
+
+                  procedure newpage;
+                  begin savimag :- image;  image :- blimag;
+                        if tail=/=notext then fullpage;
+                        pgg:=pgg+1; eject(1);
+                        outtext(title); setpos(image.length-8);
+                        outtext("page "); outint(pgg,
+                           if pgg<10 then 1 else if pgg<100 then 2 else 3);
+                        outimage; outimage;
+                        image :- savimag;
+                  end;
+
+                  procedure print;
+                  begin if line > lim then newpage; sequ := sequ+1;
+                        if FixSpacing then begin
+                           outint(sequ,10); outchar('.');  end;
+                        outimage;
+                  end;
+
+                  newpage; inimage;
+                  while not endfile do
+                  begin c:=inchar;
+                        if c = '/' then newpage;  print;
+                        inimage;
+                  end;
+                  if tail=/=notext then fullpage;
+            end;
+            inpt.close;
+ EXIT:end *** SperryList ***;
+%title ***    M  O  N  I  T  O  R    ***
+      begin text smb; integer i;
+%+T         OS:-new SINTRAN; WUNIT:=OS.JOBWUNIT;
+%+T         batch:=OS.JOBMODE > 0;
+            BLKFAC:=20; RECSIZE:=80;
+            FixSpacing := true;
+            for i := 0 step 1 until 9 do begin
+                hexdigit(i) := isochar(isorank('0')+i);
+                if i<6 then hexdigit(i+10):=isochar(isorank('A')+i); end;
+            corr := isorank('0')-isorank('A')+10;
+
+            GetPrinterDefaults;
+            outtext("SPORT MONITOR    VERSION 105");
+            outimage; outimage;
+
+            while true do
+            begin InputLine:-prompt("SPORT","COMMAND xxx,xxx, ...");
+                  smb:-insymb;
+                  ! ordered table so that third "match" param is correct;
+                  if match(smb,"BYTE2DESI",6)   then byte2desi
+             else if match(smb,"BYTE2HEX",6)    then byte2hex
+             else if match(smb,"BLOCKFACTOR",2) then TapeBlock
+             else if match(smb,"CC",2)          then
+             else if match(smb,"CHECK",2)       then TapeCheck
+             else if match(smb,"COPIN",4)       then TapeCopin
+             else if match(smb,"COPOUT",4)      then TapeCopout
+             else if match(smb,"DENSITY",3)     then TapeDensity
+             else if match(smb,"DESI2BYTE",6)   then desi2byte
+             else if match(smb,"DESI2HEX",6)    then desi2hex
+             else if match(smb,"EXIT",1)        then goto EXIT
+             else if match(smb,"FONT",1)        then SetFONT
+             else if match(smb,"HELP",3)        then HELP
+             else if match(smb,"HEX2BYTE",5)    then hex2byte
+             else if match(smb,"HEX2DESI",5)    then hex2desi
+             else if match(smb,"LIST",2)        then ProgList
+             else if match(smb,"A5LIST",2)      then ProgListA5
+             else if match(smb,"LOAD",3)        then TapeLoad
+             else if match(smb,"LOCATE",3)      then TapeLocate
+             else if match(smb,"NAT",1)         then SetNAT
+             else if match(smb,"PITCH",2)       then SetPITCH
+             else if match(smb,"PREPROC",3)     then preproc
+             else if match(smb,"PRINTER",3)     then SetPrinter
+             else if match(smb,"RECORDSIZE",1)  then TapeRecord
+             else if match(smb,"SINTRAN",2)     then DoCommand
+             else if match(smb,"SPERRY-LIST",2) then SperryList
+             else if match(smb,"STATUS",2)      then PrtStatus
+             else if match(smb,"TAIL",3)        then TailLine:-inrest
+             else if match(smb,"TAGSUBST",3)    then tagsubst
+             else if match(smb,"TITLE",2)       then TitleLine:-inrest
+             else if match(smb,"UNLOAD",1)      then TapeUnload
+             else WARN("Unknown or ambiguous command - try HELP!");
+            end;
+      end;
+EXIT: if prnt =/= none then ClosePrinter;
+%+T   if tape =/= none then tape.close;
+      outtext("EXIT -- SPORT MONITOR    VERSION 105");
+end of program

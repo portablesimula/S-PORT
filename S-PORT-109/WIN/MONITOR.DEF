@@ -1,0 +1,459 @@
+%SPORT ON
+External class filesel;
+
+filesel class monitor;
+
+% 
+% 
+% 
+% 
+%                     S I M U L A    M O N I T O R
+%                                
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+%                         Simula a.s., Oslo, Norway
+% 
+% 
+% 
+% 
+
+%title ***    T O P    M E N U    ***
+
+begin text prgid;
+
+      procedure exitSystem;
+      begin text fnam;
+            !*** delete temporary files ***;
+            DeleteScratch;
+            for fnam:-"inform.xcg","inform2.xcg" do DeleteFile(fnam);
+            !*** reset screen and exit from Simula ***;
+            closeScreen(0); EXIT(0);
+      end;
+
+      procedure callProgram(prog,parlist,redir); text prog,parlist,redir;
+      !*** parlist is either notext, or starts with an SP ! ***;
+      begin short integer i;
+%-M         if redir==notext then prog:-prog & parlist
+%-M         else prog:-prog & parlist & " 2>&1 >" & redir;
+            directbytefile("inform2.xcg") begin
+               setaccess("%NOBUFFER"); setaccess("ANYCREATE");
+               if open then begin
+%+M               i:=prog.length+1; outbyte(i);
+                  outtext(prog); outbyte(0);
+%+M               outbyte(parlist.length+1); !outbyte(32); !always SP!;
+%+M               outtext(parlist); outbyte(13);
+%+M               if redir=/=notext then begin
+%+M                  outbyte(redir.length+1); outtext(redir); outbyte(0);
+%+M               end else outbyte(0);
+                  close;
+               end
+               else begin
+                  Message(" Can't open file: inform2.xcg "); goto EX end;
+            end;
+%+D %-M     closeCode:= 13+TrcDisp.GetInt;
+%-D %-M     closeCode:= 13+rank(TrcDisp);
+%+M         closeCode:= 13              ;
+            OutParamblk;
+    EX: end;
+
+      boolean procedure checkInfile(nocreate); boolean nocreate;
+      !*** nocreate true: called from COMPILE ***;
+      begin text Template;
+            Template:-Source.Picture.strip;
+            if Template=/=notext then
+            infile(Template) begin
+               if not open(blanks(10)) then begin
+                  if nocreate then goto SELS end;
+               close;
+            end
+            else begin
+      SELS:    lastkey.map:='!0!'; checkinfile:=true;
+               if Template==notext then Template:-
+%+M                                               "*.sim"  ;
+%+O                                               "*.sim"  ;
+%+X                                               "./*.sim";
+%+f            newfilesel(Template); !*** avoid double swap ***;
+%-f            call(New fileSelectForm(13,76,YellowOnBlue,Template));
+               Source.PutText(FileSelected.Strip);
+               if nocreate then ExeFile.PutText(notext);
+            end;
+      end;   
+
+      Form Class CmndForm;
+      begin
+            Procedure Initiate;
+            begin ref(field) compIt,runIt,inErr;
+                  new MenuEntry(1,2," Simula "
+                               ,"System identification and manufacturer"
+                               ,New HelpForm(14,66,YellowOnRed
+                               ,Simlib.Picture.Strip & "simula.inf"));
+                  new SubMenu  (1,18," Edit " 
+                               ,"Edit source file, i.e. call "
+                                & editor.picture.strip
+                               ,New EditForm(16,36,YellowOnBlue));
+                  compIt:-
+                  new SubMenu  (1,25," Compile ","Activate Simula Compiler"
+                               ,New CompileForm(16,36,YellowOnBlue));
+                  if nErr.getint <> 0 then begin
+                     errorfile:-GETPID & ".err"; exefile.picture:=notext;
+                     inErr:-new MenuEntry(1,35," ERRORS  "
+                               ,"Errors found"
+                                " - press Enter to inspect errorfile: "
+                                & errorfile
+%                              ,New FileForm(20,80,YellowOnRed,errorFile));
+                               ,New FileForm(20,80,monochrome.invers
+                                             ,errorFile,outlth.getint));
+                  end;
+                  runIt:-
+                  new SubMenu  (1,45," Run ","Execute user program"
+                               ,New RunForm(16,36,YellowOnBlue));
+                  new SubMenu  (1,53," Debug "
+                               ,"Execute user program under SIMOB control"
+                               ,New DebugForm(16,36,YellowOnBlue));
+%-M               new MenuEntry(1,66," OS "
+%-M                            ,"Exit to Operating System shell "
+%+M               new MenuEntry(1,66," DOS "
+%+M                            ,"Temporary escape to DOS "
+                                "(type exit to return to SIMULA)"
+                               ,SYSWIN);
+                  new MenuEntry(1,72," EXIT "
+                               ,"Final exit from SIMULA",EXITWIN);
+                  if inErr =/= none then Current:-inErr
+             else if State='!0!' or State='!4!' then Current:-compIt
+                  else Current:-runIt;
+            end;
+
+            Paint; Show; Process;
+      end;
+
+%title ***    E d i t   --   S u b S y s t e m    ***
+
+Form Class EditForm;
+begin ref(Button) OK,RE;
+
+      Procedure Initiate;
+      begin Border1;
+            new TagField(2,3," Source: ","Text file to be edited"
+               ,New DataField(2,19,Source,False));
+
+            OK:-  new Button(9,3,"   OK   "
+                  ,"Enter: Edit selected source file");
+            RE:-  new Button(9,18," RETURN ","Close this window");
+      end;
+
+      Procedure EventHandler(Event); character Event;
+      if Event=ePressed then
+      begin if Current=/=OK then LastKey.map:=EscKey else
+            if checkInfile(false) then goto REP else
+            begin text edt,edef; character ch;
+                  edt:- editor.picture.strip;
+                  edef:-" " & source.picture.strip;
+                  State:='!4!'   ; Ccode:='!0!'   ;
+%+M               callProgram(edt,edef,notext);
+%-M               Call(New UserProgram(0,0,Monochrome,false         !** TEMP **;
+%-M                           , edt & " " & Source.Picture.strip)); !** TEMP **;
+%-M               LastKey.map:='!0!'; Current:-RE;                  !** TEMP **;
+            end;
+      end;
+
+      Paint; Show; Current:-OK;
+ REP: Process;
+
+end editform;
+
+%title ***    C o m p i l e   --   S u b S y s t e m    ***
+
+Form Class CompileForm;
+begin ref(button) OK;
+      character bCOM='!0!', bREC='!1!', !<= must have these values;
+                bMEM='!2!', bOPT='!3!', bLAY='!4!', bSYS='!5!',
+                bHLP='!6!', bMAX='!6!';
+
+      button class pushbutton(which); character which; ;
+
+      Procedure Initiate;
+      begin Border1;
+            new TagField(2,3," Source: ","Set Simula source file"
+               ,New DataField(2,19,Source,False));
+            new TagField(3,3," Language: "
+               ,"Select between Simula Standard or S-port extensions"
+               ,New DataField(3,19,Standard,False));
+            new TagField(4,3," Select: ","Set source code selectors - "
+                "type e.g. X to include lines with %+X"
+               ,New DataField(4,19,Select,False));
+            new TagField(5,3," Checkout: ",
+               "Controls the amount of debugging information produced "
+               "by the compiler"
+               ,New DataField(5,19,DebMod,False));
+            new TagField(6,3," Target: ","Select target Operating System"
+                " (this system may not support all)"
+               ,New DataField(6,19,Target,False));
+            new TagField(7,3," C-Binding: "
+               ,"Define parameter transmission to Pascal or C routines"
+               ,New DataField(7,19,Cbind,False));
+
+            OK:-new pushButton(9,3, "  COMP  "
+                ,"Enter: compile indicated source",bCOM);
+            new pushButton(9,18," RECOMP "
+                ,"Enter: recompile indicated source (if compatible)",bREC);
+
+            new MenuEntry(11,3," Include "
+                ,"Include object module (Mixed Language Support)"
+                ,New DataSetForm(15,IncSet.Width+2,YellowOnBlue
+                                 ,IncSet," Include Files "));
+%           new MenuEntry(11,18," SYSMODE "
+%               ,"Enter System Maintainace mode (Restricted)"
+%               ,New SysModeForm(5,23,YellowOnRed));
+            new pushbutton(11,18," SYSMODE "
+                ,"Change compiler parameters "
+                 "(set options, listfile etc)",bSYS);
+            new MenuEntry(12,3," Library "
+                ,"Include object module library (Mixed Language Support)"
+                ,NOTIMPL);
+            new MenuEntry(12,18," OS "
+                ,"Exit to Operating System shell "
+                 "(type exit to return to SIMULA)"
+                ,SYSWIN);
+            new pushButton(13,3," Layout "
+                ,"Change basic layout (Page size, no. of errors etc.)"
+                ,bLAY);
+%           new MenuEntry(13,3," Layout "
+%               ,"Basic Layout Options (Page size, no. of errors etc.)"
+%               ,New LayoutForm(11,44,YellowOnBlue));
+%           new MenuEntry(13,18," HELP "
+%               ,"Obtaining Help Information (currently not implemented)"
+%               ,New HelpForm(14,76,YellowOnBlue,"ingres.sim"));
+            new pushButton(13,18," HELP "
+                ,"Provides help Information (currently: scan source file)"
+                ,bHLP);
+            new pushButton(14,3," Optimizing "
+                ,"Code generation control",bOPT);
+%           new MenuEntry(14,3," Optimizing "
+%               ,"Code Generation Options"
+%               ,New OptimizeForm(9,44,YellowOnBlue));
+            new pushButton(15,3," Memory "
+                ,"Memory Management Options",bMEM);
+%           new MenuEntry(15,3," Memory "
+%               ,"Memory Management Options"
+%               ,New MemoryForm(13,46,YellowOnBlue));
+            new Button(15,18," RETURN ","Close this Window");
+      end;
+
+      Procedure EventHandler(Event); character Event;
+      begin ref(attributes) oldAtr;
+            if Event=ePressed then begin
+               inspect current when pushButton do begin
+                  switch('!0!':bMAX) which begin
+                  when bCOM,bREC do begin !*** (re)compile;
+%+D                    rts_utility(1,0);
+                       if checkInfile(true) then goto REP;
+                       CurAttr:-Monochrome; ! YellowOnRed;
+                       Explain(if which=bCOM
+                          then " -- Compiling and possibly linking "
+                               "- please wait --"
+                          else " -- Recompilation in progress "
+                               "- please wait --");
+                       !val:-"  BUSY  "; Paint;
+                       COMPILE(rank(which));
+                       end;
+                  when bMEM do begin !*** memory layout;
+                       call(New MemoryForm(13,46,YellowOnBlue));
+                       goto REP end;
+                  when bOPT do begin !*** code optim.;
+                       call(New OptimizeForm(9,44,YellowOnBlue));
+                       goto REP end;
+                  when bLAY do begin !*** misc.;
+                       call(New LayoutForm(11,44,YellowOnBlue));
+                       goto REP end;
+                  when bSYS do begin !*** ;
+                       Explain("Enter any character to continue "
+                               "(or q to quit)");
+                       wait; if lastkey.chr <> 'q' then
+                       call(New SysModeForm(5,23,YellowOnRed));
+                       goto ROK end;
+                  when bHLP do begin !*** currently: brows thru source;
+                       call(New FileForm(20,80,monochrome.invers
+                            ,Source.picture.strip,inplth.getint));
+                       goto REP end;
+                  end case;
+               end
+               otherwise LastKey.map:=EscKey;
+      EX:   end;
+      end;
+
+      Paint; Show;
+ ROK: Current:-OK;
+ REP: Process;
+
+end compileform;
+
+%title ***    D e b u g   --   S u b S y s t e m    ***
+
+Form Class DebugForm;
+begin ref(Button) OK,RE;
+
+      Procedure Initiate;
+      begin Border1;
+            new TagField(2,3," Program: ","Select program to be executed"
+               ,New DataField(2,19,ExeFile,False));
+
+            OK:-new Button(9,3,"   OK   "
+                ,"Enter: execute the indicated program");
+            RE:-new Button(9,18," RETURN ","Close this window");
+      end;
+
+      Procedure EventHandler(Event); character Event;
+      if Event=ePressed then
+      begin if Current=/=OK then LastKey.map:=EscKey else
+            begin
+                  Call(New UserProgram(0,0,Monochrome,true  !** TEMP **;
+                       ,ExeFile.Picture.strip & " /t"));    !** TEMP **;
+                  LastKey.map:='!0!'; Current:-RE;          !** TEMP **;
+            end;
+      end;
+
+      Paint; Show;
+      if ExeFile.Picture.Strip == Notext then
+      begin
+%+f         newfilesel( !*** avoid double swap ***;
+%-f         call(New fileSelectForm(13,76,YellowOnBlue,
+%+M                                                    "*.exe")
+%+O                                                    "*.exe")
+%+X                                                    "./*"  )
+%+f          ;
+%-f         );
+            ExeFile.PutText(FileSelected.Strip); Paint;
+      end;
+      Current:-OK; Process;
+
+end;
+
+Form Class UserProgram(delayit,t); boolean delayit; text t;
+begin Show; Setpos(1,1);
+      setFont(0); System(t); if delayit then Inchar; setFont(1);
+      Hide; EraseWindow;
+end;
+%title ***    R u n   --   S u b S y s t e m    ***
+
+DebugForm Class RunForm; ! to replace eventHandler ;
+begin
+
+      Procedure EventHandler(Event); character Event;
+      if Event=ePressed then
+      begin if Current=/=OK then LastKey.map:=EscKey else
+            begin
+                  Call(New UserProgram(0,0,Monochrome,true  !** TEMP **;
+                       ,ExeFile.Picture.strip));            !** TEMP **;
+                  LastKey.map:='!0!'; Current:-RE;          !** TEMP **;
+            end;
+      end;
+
+end;
+
+%title *****     D i r e c t i v e  -  C O M P I L E    *****
+Procedure COMPILE(re); short integer re;
+begin text Rext,Aext;
+      short integer p,lng; character c;
+
+      prgid:-GETPID;
+
+      if prgid=/=notext then begin
+         Recomp.PutInt(re);
+         !*** also prepare BEC call ***;
+%-M      switch (0:7) Target.GetInt begin
+%-M      when oMSDOS     do begin    !*** MS-DOS ***;
+%+M                         begin
+%+M           if target.getint=oMSDOS87 then Numid.PutInt(iAPX87) else
+              Numid.PutInt(NoNPX); Cpuid.PutInt(iAPX86);
+              Rext:-".obj"; Aext:-".exe"; BECversion:= '!0!' end;
+%-M      when oMSDOS87   do begin    !*** MS-DOS + 87 ***;
+%-M           Numid.PutInt(iAPX87); Cpuid.PutInt(iAPX86);
+%-M           Rext:-".obj"; Aext:-".exe"; BECversion:= '!0!' end;
+%-M      when oMSOS2     do begin    !*** MS-OS2 ***;
+%-M           Numid.PutInt(iAPX287); Cpuid.PutInt(iAPX286);
+%-M           Rext:-".obj"; Aext:-".exe"; BECversion:= '!0!' end;
+%-M      when oXENIX286  do begin    !*** XENIX 286 ***;
+%-M           Numid.PutInt(iAPX287); Cpuid.PutInt(iAPX286);
+%-M           Rext:-".obj";               BECversion:= '!0!' end;
+%-M      when oXENIX386  do begin    !*** XENIX 386 ***;
+%-M           Numid.PutInt(iAPX287); Cpuid.PutInt(iAPX386);
+%-M           Rext:-".obj";               BECversion:= '!1!' end;
+%-M      when oXENIX386W do begin    !*** XENIX 386 + WTL ***;
+%-M           Numid.PutInt(WTLx167); Cpuid.PutInt(iAPX386);
+%-M           Rext:-".obj";               BECversion:= '!1!' end;
+%-M      when oUNIX386   do begin    !*** UNIX 386 ***;
+%-M           Numid.PutInt(iAPX287); Cpuid.PutInt(iAPX386);
+%-M           Rext:-".o";                 BECversion:= '!1!' end;
+%-M      when oUNIX386W  do begin    !*** UNIX 386 + WTL ***;
+%-M           Numid.PutInt(WTLx167); Cpuid.PutInt(iAPX386);
+%-M           Rext:-".o";                 BECversion:= '!1!' end;
+%-M      end;
+         !*** set up file names ***;
+         if Relcode.Picture.strip == notext then begin
+%-M         if option(rank('A')) > '!0!' then Rext:-".asm";
+            Relcode.PutText(prgid & Rext);
+         end;
+         if ExeFile.Picture.strip == notext
+         then ExeFile.PutText(prgid & Aext);
+         if Scratch.Picture.strip==notext then Scratch.PutText(TempFile);
+         if Scode  .Picture.strip==notext then Scode  .PutText(TempFile); 
+         State:='!1!'   ; Ccode:='!255!'   ; nErr.putint(0);
+         errorfile:-prgid & ".err";
+%+O %+D  closeCode:= 11+Langua.GetInt+TrcDisp.GetInt;
+%+O %-D  closeCode:= 11+rank(TrcDisp);
+%+O      OutParamBlk;
+%-O      callProgram(fec,notext,errorfile);
+      end;
+end;
+
+%-o   character procedure option(c); short integer c;
+%-o         option:=Options.GetOpt(char(c));
+%title ******  M O N I T O R   -   M A I N   E N T R Y   ******
+
+%+M   Height:=25; !*** use all lines - beware of lower right corner!;
+%-M   Height:=24; !*** not last line - beware of lower right corner!;
+%+D   rts_utility(0,0); rts_utility(1,0);
+      if Getarg(1,blanks(3)) = "/P1"
+      then Default(InitFile) else RELOAD: inParamBlk;
+
+      switch('!0!':'!5!') State begin
+      when '!0!' do begin    !********* Initiate *********;
+% %+D         TrcDisp.PutInt(Version*20);
+% %-D         TrcDisp:=char( Version*20);
+%             Syspfx.PutText(EdSyspfx('s','s','z'));
+      end;
+      when '!1!' do begin    !********* End FEC *********;
+            if Ccode<>'!0!' and then nErr.getint=0
+            then nErr.putint(1); !there must have been at least one!;
+            if option(rank('G')) > '!0!' then Ccode:='!0!'   ;
+            if rank(option(rank('K'))) + rank(Ccode) <> 0
+            then begin State:='!0!'; closeCode:=0 end
+            else begin
+                  State:='!2!'   ; Ccode:='!255!'   ;
+%+D %-M           closeCode:=20+rank(BECversion)+TrcDisp.GetInt;
+%-D %-M           closeCode:=20+rank(BECversion)+rank(TrcDisp);
+%+M               closeCode:=20+rank(BECversion)              ;
+            end;
+            swapParamBlk;
+      end;
+      when '!2!' do begin    !********* End BEC *********;
+            MakeAUTOLINK; swapParamblk;
+      end;
+      when '!3!',            !********* End LNK *********;
+           '!4!' do begin    !********* End EDT *********;
+      end;
+      when NONE do goto TERMINATE;
+      end case;
+
+%     Reinit;
+
+      call(New CmndForm(1,Width,YellowOnBlue));
+
+   TERMINATE: exitsystem;
+
+end of program

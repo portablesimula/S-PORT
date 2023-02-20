@@ -1,0 +1,29 @@
+Module puttext_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("puttext")puttext;
+       import name(infix(txtqnt)) old; infix(txtqnt) new;
+       export boolean res;
+       ---  perform "old.sub(pos,new.length):=new", if possible
+       ---  return true if possible, otherwise false
+       begin infix(string) src,dst; range(0:MAX_TXT) lng,pos;
+             infix(txtqnt) oldt;
+             oldt:=var(old); lng:=new.lp-new.sp; pos:=oldt.cp+lng;
+             res:=false;
+             if pos < oldt.lp
+             then if lng <> 0 then if oldt.ent.misc=0
+                  then dst.chradr:=name(oldt.ent.cha(oldt.cp));
+                       src.chradr:=name(new.ent.cha(new.sp));
+                       dst.nchr:=src.nchr:=lng; C_MOVE(src,dst);
+                       var(old).cp:=pos;
+                       res:=true;
+                  endif endif;
+             endif;
+       end;
+end;

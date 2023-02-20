@@ -1,0 +1,2 @@
+    external library procedure lowc is
+    character procedure lowc(c); character c; ;

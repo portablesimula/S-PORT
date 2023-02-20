@@ -1,0 +1,34 @@
+Module checkext_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent,fil;
+       insert findtrig_,rest_;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+
+       DEF_TXTENT(%colon%,1,%(':')%);
+       const infix(txtqnt) colqnt = REC_TXTQNT(%colon%,%1%);
+       DEF_TXTENT(%dot%,1,%('.')%);
+       const infix(txtqnt) dotqnt = REC_TXTQNT(%dot%,%1%);
+
+       Visible routine ("checkextension")checkextension;
+       import infix(txtqnt) t,ext;
+       export infix(txtqnt) res;
+       begin boolean found; infix(txtqnt) t1;
+             if t.lp=0 then res:=notext
+             else t.cp:=t.sp;
+                  found:=FINDTRIGGER(name(t),colqnt)<>':';
+                  t1:=STRIP(REST(t));
+                  if found or (t1.lp<>0)
+                  then t.cp:=t.sp;
+                       if FINDTRIGGER(name(t),dotqnt) = '.'
+                       then ext:=notext endif;
+                       res:=CONCAT(2,(t,ext));
+                  else res:=t; res.cp:=res.sp endif;
+             endif;
+       end;
+
+end;

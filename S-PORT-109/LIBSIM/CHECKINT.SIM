@@ -1,0 +1,2 @@
+    external library procedure checkint is
+    short integer procedure checkint(t); name t; text t; ;

@@ -1,0 +1,657 @@
+Module EUTIL("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP,ECENT,EPERI,EEDIT,EKNWN;
+%-D begin insert ECOMN,EBASE,      ECENT,EPERI,EEDIT,EKNWN;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1989 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches: D                                    ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       -----------------------------------------------------------------
+
+Visible Routine TXT2STR; import infix(txtqnt) img; export infix(String) s;
+begin s.nchr:=img.lp-img.sp;
+      if s.nchr = 0 then s:=nostring
+      else s.chradr:=name(img.ent.cha(img.sp)) endif; 
+end;
+
+Visible Routine STR2TXT;
+import infix(txtqnt) txt; infix(String) src; export infix(txtqnt) res;
+begin res:=txt;
+      if src.nchr <= (txt.lp-txt.sp)
+      then if src.nchr = 0 then res.ent:=none; res.sp:=0 endif; --notext
+           res.lp:=res.sp+src.nchr;
+      endif;
+      res.cp:=res.sp; -- setpos(1)
+      C_MOVE(src,TXT2STR(txt)); -- move with truncate
+end;
+-- pje - below is WRONG if txt is subtext
+--       therefore changed to deliver subtext (no blankfill)
+-- begin SMOVE(src,TXT2STR(txt),' '); res:=txt;
+--       res.cp:=if src.nchr > txt.lp then txt.lp else src.nchr;
+-- end;
+%page
+
+--- External Library Procedure TempFile=E@UUTMPF" is
+--- text procedure TempFile(t); text t; ;
+Visible routine UUTMPF;
+-- import ref(inst) context; infix(txtqnt) txt; export infix(txtqnt) res;
+import infix(txtqnt) txt; export infix(txtqnt) res;
+begin
+%+M   if (txt.lp-txt.sp) < 12
+%+O   if (txt.lp-txt.sp) < 12
+%+X   if (txt.lp-txt.sp) < 17
+      then res.ent:=none; res.sp:=res.cp:=res.lp:=0;
+      else res:=STR2TXT(txt,Tempfile); endif;
+end;
+
+--- External Library Procedure DeleteFile=E@UUDELF" is
+--- procedure DeleteFile(t); text t; ;
+Visible routine UUDELF;
+import infix(txtqnt) txt;
+begin infix(string) s;
+      s:=TXT2STR(txt);
+      if s.nchr <> 0
+      then EdEdtbuf(s); EdcharEdt(0 qua character); s:=PickupEdtbuf;
+%+M        DOS_DELETE(s.chradr);
+%+O        OS2_DELETE(name2ref(s.chradr),0);
+%+X        XNX_UNLINK(name2ref(s.chradr));
+           UUSTATUS:=OsStat; OsStat:=0;
+      else UUSTATUS:=256 endif
+end;
+
+--- External Library Procedure OsStat="E@UUSTAT" is
+--- Short Integer Procedure OsStat; ;
+Visible Routine UUSTAT; export range(0:MaxWord) res;
+begin res:=UUSTATUS;
+%+D   if TRCSW > 2
+%+D   then BegTrace("UUSTAT: Result = "); EdWrd(TrcBuf,res); OutTrace;
+%+D   endif;
+end;
+
+
+--- External Library Procedure Exit="E@UUEXIT" is
+--- Procedure Exit(RetCode); short integer RetCode; ;
+Visible Routine UUEXIT; import range(0:MaxWord) RetCode;
+begin TERMIN(RetCode,nostring) end;
+
+--- External Library Procedure System="E@UUCMND" is
+--- Procedure System(cmd); text cmd; ;
+Visible Routine UUCMND; import infix(txtqnt) img;
+begin infix(String) s;
+%+X   infix(termio) ttyCur; --- Current value of TERMIO for sysin
+      s:=TXT2STR(img);
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUCMND("); Ed(TrcBuf,s);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+X   XNX_IOCTL(name2ref(@ttyCur),TCGETA,0);
+%+X   XNX_IOCTL(name2ref(@ttyPkt),TCSETA,0);
+      OSCMND(s); UUSTATUS:=OsStat; OsStat:=0;
+%+X   XNX_IOCTL(name2ref(@ttyCur),TCSETA,0);
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUCMND: Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure OsIdent="E@UUOSID" is
+--- Text Procedure OsIdent(val); value val; text val; ;
+Visible Routine UUOSID;
+import infix(txtqnt) val; export infix(txtqnt) res;
+begin EdOSID(ref(EdtBuffer)); res:=STR2TXT(val,PickupEdtbuf);
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUOSID: Result = "); Ed(TrcBuf,TXT2STR(res));
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+-- --- External Library Procedure GetInt="E@UUGINT" is
+-- --- Integer Procedure GetInt(txt); text txt; ;
+-- Visible Routine UUGINT;
+-- import infix(txtqnt) txt; export integer res;
+-- begin infix(string) s; s:=TXT2STR(txt); res:=GETINT(s);
+--       if itemsize <> s.nchr then Status:=27 endif;
+--       UUSTATUS:=Status; Status:=0;
+-- %+D   if TRCSW > 0
+-- %+D   then BegTrace("UUGINT: Result = "); EdInt(TrcBuf,res);
+-- %+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+-- %+D   endif;
+-- end;
+-- 
+-- --- External Library Procedure GetReal="E@UUGREA" is
+-- --- Integer Procedure GetReal(txt); text txt; ;
+-- Visible Routine UUGREA;
+-- import infix(txtqnt) txt; export long real res;
+-- begin infix(string) s; s:=TXT2STR(txt); res:=GTREAL(s);
+--       if itemsize <> s.nchr then Status:=27 endif;
+--       UUSTATUS:=Status; Status:=0;
+-- %+D   if TRCSW > 0
+-- %+D   then BegTrace("UUGREA: Result = "); EdHexLreal(TrcBuf,res);
+-- %+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+-- %+D   endif;
+-- end;
+-- 
+-- --- External Library Procedure GetFrac="E@UUGFRC" is
+-- --- Integer Procedure GetFrac(txt); text txt; ;
+-- Visible Routine UUGFRC;
+-- import infix(txtqnt) txt; export integer res;
+-- begin infix(string) s; s:=TXT2STR(txt); res:=GTFRAC(s);
+--       if itemsize <> s.nchr then Status:=27 endif;
+--       UUSTATUS:=Status; Status:=0;
+-- %+D   if TRCSW > 0
+-- %+D   then BegTrace("UUGFRC: Result = "); EdInt(TrcBuf,res);
+-- %+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+-- %+D   endif;
+-- end;
+
+--- External Library Procedure getenv="E@UUGENV" is
+--- Text Procedure getenv(nam,val); value val; text nam,val; ;
+Visible Routine UUGENV;
+import infix(txtqnt) nam,val; export infix(txtqnt) res;
+begin infix(String) s; s:=TXT2STR(nam);
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGENV("); Ed(TrcBuf,s);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      res:=STR2TXT(val,GENV(s)); UUSTATUS:=OsStat; OsStat:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGENV: Result = "); Ed(TrcBuf,TXT2STR(res));
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure getarg="E@UUGARG" is
+--- Text Procedure getarg(n,val); value val; short integer n; text val;;
+Visible Routine UUGARG;
+import range(0:MaxWord) n; infix(txtqnt) val;
+export infix(txtqnt) res;
+begin
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGARG("); EdWrd(TrcBuf,n);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      res:=STR2TXT(val,GARG(n)); UUSTATUS:=OsStat; OsStat:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGARG: Result = "); Ed(TrcBuf,TXT2STR(res));
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure getdrv="E@UUGDRV" is
+--- Short Integer Procedure getdrv; ;
+Visible Routine UUGDRV; export range(0:MaxWord) res;
+begin
+%+O   integer bitmap;
+%+D   if TRCSW > 0 then BegTrace("UUGDRV"); OutTrace endif;
+%+M   res:=DOS_GDRV+1;
+%+O   OS2_GDRV(name2ref(@res),name2ref(@bitmap));
+%+X   res:=0;
+      UUSTATUS:=OsStat; OsStat:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGDRV: Result = "); EdWrd(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure getdir="E@UUGDIR" is
+--- Text Procedure getdir(drv,val);
+--- value val; short integer drv; text val; ;
+Visible Routine UUGDIR;
+import range(0:MaxWord) n; infix(txtqnt) val;
+export infix(txtqnt) res;
+begin ref(ASCIIZ) dir; infix(String) s;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGDIR("); EdWrd(TrcBuf,n);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      s:=TXT2STR(val); dir:=name2ref(s.chradr);
+%+M   DOS_GDIR(n,s.chradr);
+%+O   OS2_GDIR(n,dir,name2ref(@s.nchr));
+%+X   XNX_GETCWD(s.nchr,dir);
+      UUSTATUS:=OsStat; OsStat:=0;
+      s:=ASCIIZ2String(dir,s.nchr); res:=STR2TXT(val,s);
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUGDIR: Result = "); Ed(TrcBuf,TXT2STR(res));
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+%+M --- External Library Procedure Open="E@UUOPEN" is
+%+M --- Short Integer Procedure Open(fnam,acode);
+%+M --- Text fnam; Short Integer acode; ;
+%+M Visible Routine UUOPEN;
+%+M import infix(txtqnt) fnam; range(0:MaxWord) acode;
+%+M export range(0:MaxWord) res;
+%+M begin infix(String) s; s:=TXT2STR(fnam);
+%+MD      if TRCSW > 0
+%+MD      then BegTrace("UUOPEN("); Ed(TrcBuf,s); EdChar(TrcBuf,',');
+%+MD           EdWrd(TrcBuf,acode); EdChar(TrcBuf,')'); OutTrace;
+%+MD      endif;
+%+M       EdEdtbuf(s); EdcharEdt(0 qua character); s:=PickupEdtbuf;
+%+M       res:=DOS_OPEN(acode,s.chradr); UUSTATUS:=OsStat; OsStat:=0;
+%+MD      if TRCSW > 0
+%+MD      then BegTrace("UUOPEN: Handle = "); EdWrd(TrcBuf,res);
+%+MD           Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+MD      endif;
+%+M end;
+
+%+O --- External Library Procedure Open="E@UUOPEN" is
+%+O --- Short Integer Procedure Open(fnam,acode,mode,oflg,actn);
+%+O --- Text fnam; Short Integer acode,mode,oflg,actn; ;
+%+O Visible Routine UUOPEN;
+%+O import infix(txtqnt) fnam;
+%+O        range(0:MaxWord) acode,mode,oflg,actn;
+%+O export range(0:MaxWord) res;
+%+O begin infix(String) s; s:=TXT2STR(fnam);
+%+OD      if TRCSW > 0
+%+OD      then BegTrace("UUOPEN("); Ed(TrcBuf,s); EdChar(TrcBuf,',');
+%+OD           EdWrd(TrcBuf,acode); EdChar(TrcBuf,',');
+%+OD           EdWrd(TrcBuf,mode); EdChar(TrcBuf,',');
+%+OD           EdWrd(TrcBuf,oflg); EdChar(TrcBuf,',');
+%+OD           EdWrd(TrcBuf,actn); EdChar(TrcBuf,')'); OutTrace;
+%+OD      endif;
+%+O       EdEdtbuf(s); EdcharEdt(0 qua character); s:=PickupEdtbuf;
+%+O       OS2_OPEN(name2ref(s.chradr),name2ref(@res),name2ref(@actn),
+%+O                                                  0,mode,oflg,acode,0);
+%+O       UUSTATUS:=OsStat; OsStat:=0;
+%+OD      if TRCSW > 0
+%+OD      then BegTrace("UUOPEN: Handle = "); EdWrd(TrcBuf,res);
+%+OD           Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+OD      endif;
+%+O end;
+
+%+X --- External Library Procedure Open="E@UUOPEN" is
+%+X --- Short Integer Procedure Open(path,oflag,mode);
+%+X --- Text path; Short Integer oflag,mode; ;
+%+X Visible Routine UUOPEN;
+%+X import infix(txtqnt) path;
+%+X        range(0:MaxWord) oflag,mode;
+%+X export range(0:MaxWord) fildes;
+%+X begin infix(String) s; s:=TXT2STR(path);
+%+XD      if TRCSW > 0
+%+XD      then BegTrace("UUOPEN("); Ed(TrcBuf,s); EdChar(TrcBuf,',');
+%+XD           EdWrd(TrcBuf,oflag); EdChar(TrcBuf,',');
+%+XD           EdWrd(TrcBuf,mode); EdChar(TrcBuf,')'); OutTrace;
+%+XD      endif;
+%+X       EdEdtbuf(s); EdcharEdt(0 qua character); s:=PickupEdtbuf;
+%+X       fildes:=XNX_OPEN(mode,oflag,name2ref(s.chradr));
+%+X       UUSTATUS:=OsStat; OsStat:=0;
+%+XD      if TRCSW > 0
+%+XD      then BegTrace("UUOPEN: Handle = "); EdWrd(TrcBuf,fildes);
+%+XD           Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+XD      endif;
+%+X end;
+
+---  External Library Procedure chsize="E@UUCHSZ" is
+---  Short Integer Procedure chsize(h,len); Short Integer h; Integer len; ;
+Visible Routine UUCHSZ;
+import range(0:MaxWord) h; integer len;
+export range(0:MaxWord) res;
+begin
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUCHSZ("); EdWrd(TrcBuf,h); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,len); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+X   XNX_CHSIZE(len,h); UUSTATUS:=OsStat; OsStat:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUCHSZ: Status = "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+---  External Library Procedure Fcntl="E@UUFCTL" is
+---  Short Integer Procedure Fcntl(h,req,arg);
+---  Short Integer h,req; Integer arg; ;
+Visible Routine UUFCTL;
+import range(0:MaxWord) h,req; integer arg;
+export range(0:MaxWord) res;
+begin
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUFCTL("); EdWrd(TrcBuf,h); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,req); EdChar(TrcBuf,',');
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+X   res:=XNX_FCNTL(arg,req,h); UUSTATUS:=OsStat; OsStat:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUFCTL: Status = "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+---  External Library Procedure Fcnt2="E@UUFCT2" is
+---  Short Integer Procedure Fcnt2(h,req,arg); name arg;
+---  Short Integer h,req,arg; ;
+Visible Routine UUFCT2;
+import range(0:MaxWord) h,req; name() arg;
+export range(0:MaxWord) res;
+begin
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUFCT2("); EdWrd(TrcBuf,h); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,req); EdChar(TrcBuf,',');
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+X   res:=XNX_FCNT2(name2ref(arg),req,h); UUSTATUS:=OsStat; OsStat:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUFCT2: Status = "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+---  External Library Procedure IoCtl="E@UUIOCT" is
+---  Short Integer Procedure IoCtl(h,req,arg); name arg;
+---  Short Integer h,req,arg; ;
+Visible Routine UUIOCT;
+import range(0:MaxWord) h,req; name() arg;
+export range(0:MaxWord) res;
+begin
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUIOCT("); EdWrd(TrcBuf,h); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,req); EdChar(TrcBuf,',');
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+X   res:=XNX_IOCTL(name2ref(arg),req,h); UUSTATUS:=OsStat; OsStat:=0;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUIOCT: Status = "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+
+--- External Library Procedure DevReady="E@UUDCHK" is
+--- Boolean Procedure DevReady(h,c); short integer h,c; ;
+Visible Routine UUDCHK;
+import range(0:MaxWord) h,c;
+export Boolean res;
+begin -- range(0:MaxWord) stat;
+%+M   infix(AnyRef) dum; infix(IOCPAK) x;
+%+O 
+%+X   range(0:MaxWord) r; infix(termio) tpkt;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUDCHK("); EdWrd(TrcBuf,h); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,c); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+M   --- Get Device Status ---
+%+M   if c=0 then c:=6 else c:=7 endif;
+%+M   x:=DOS_IOCTL(h,c,0,dum.nam); UUSTATUS:=OsStat; OsStat:=0;
+%+M   if UUSTATUS <> 0 then res:=false;
+%+M   else res:=wAND(x.Count,255) <> 0 endif;
+
+%+X   if c <> 0 then res:=true  -- Under XENIX: Output is always ready
+%+X   else r:=XNX_RDCHK(h); UUSTATUS:=OsStat; OsStat:=0;
+%+XD       if TRCSW > 0
+%+XD       then BegTrace("XNX_RDCHK: Result = "); EdHex(TrcBuf,r,4);
+%+XD            Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+XD       endif;
+%+X        if UUSTATUS <> 0 then res:=false;
+%+X        else res:=r>0 endif;
+%+X   endif;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUDCHK: Result = "); EdBool(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure DevRead="E@UUREAD" is
+--- Short Integer Procedure DevRead(h,buf);
+--- Short Integer h; text buf;
+Visible Routine UUREAD;
+import range(0:MaxWord) h; infix(txtqnt) buf; ;
+export range(0:MaxWord) res;
+begin range(0:MaxWord) n; name(character) chradr;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUREAD("); EdWrd(TrcBuf,h);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      n:=buf.lp-buf.sp;
+      if n = 0 then res:=0; UUSTATUS:=0;
+      else chradr:=name(buf.ent.cha(buf.sp)); 
+%+M        res:=DOS_READ(h,n,chradr);
+%+O        OS2_READ(h,name2ref(chradr),n,name2ref(@res));
+%+X        res:=XNX_READ(n,name2ref(chradr),h);
+           UUSTATUS:=OsStat; OsStat:=0;
+      endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("UUREAD: Result = "); EdWrd(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure DevWrite="E@UUWRIT" is
+--- Short Integer Procedure DevWrite(h,buf);
+--- Short Integer h; text buf;
+Visible Routine UUWRIT;
+import range(0:MaxWord) h; infix(txtqnt) buf; ;
+export range(0:MaxWord) res;
+begin range(0:MaxWord) n; name(character) chradr;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUWRIT("); EdWrd(TrcBuf,h);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      n:=buf.lp-buf.sp;
+      if n = 0 then res:=0; UUSTATUS:=0;
+      else chradr:=name(buf.ent.cha(buf.sp)); 
+%+M        res:=DOS_WRITE(h,n,chradr);
+%+O        OS2_WRITE(h,name2ref(chradr),n,name2ref(@res));
+%+X        res:=XNX_WRITE(n,name2ref(chradr),h);
+           UUSTATUS:=OsStat; OsStat:=0;
+      endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("UUWRIT: Result = "); EdWrd(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+
+--- External Library Procedure ReadByte="E@UURDBT" is
+--- Short Integer Procedure ReadByte(h); short integer h; ;
+Visible Routine UURDBT;
+import range(0:MaxWord) h;
+export range(0:MaxWord) res;
+begin range(0:MaxWord) n; character cc(2);
+%+D   if TRCSW > 0
+%+D   then BegTrace("UURDBT("); EdWrd(TrcBuf,h);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+M   n:=DOS_READ(h,1,@cc);
+%+O   OS2_READ(h,name2ref(@cc),1,name2ref(@n));
+%+X   n:=XNX_READ(1,name2ref(@cc),h);
+      UUSTATUS:=OsStat;
+      if UUSTATUS <> 0 then OS_STAT("INBYTE-3")
+      elsif n <> 1 then STAT("INBYTE-4",xq_eof)
+      else res:=cc qua integer endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("UURDBT: Result = "); EdWrd(TrcBuf,res);
+%+D        Ed(TrcBuf,"   Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure WriteByte="E@UUWRBT" is
+--- Procedure WriteByte(h,arg); short integer h,arg; ;
+Visible Routine UUWRBT;
+import range(0:MaxWord) h,arg;
+begin range(0:MaxWord) n; character cc(2);
+%+D   if TRCSW > 0
+%+D   then BegTrace("OUTBYT("); EdWrd(TrcBuf,h); EdChar(Trcbuf,',');
+%+D        EdWrd(TrcBuf,arg); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      cc:=arg qua character;
+%+M   n:=DOS_WRITE(h,1,@cc);
+%+O   OS2_WRITE(h,name2ref(@cc),1,name2ref(@n));
+%+X   n:=XNX_WRITE(1,name2ref(@cc),h);
+      UUSTATUS:=OsStat;
+      if UUSTATUS <> 0 then OS_STAT("OUTBYT-3")
+      elsif n <> 1 then STAT("OUTBYT-4",xq_ffull) endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("UUWRBT: Status: "); EdWrd(TrcBuf,UUSTATUS); OutTrace;
+%+D   endif;
+end;
+
+--- External Library Procedure DmpIOCtl="E@UUDIOC" is
+--- Procedure DmpIOCtl(h); short integer h; ;
+Visible Routine UUDIOC;
+import range(0:MaxWord) h; begin range(0:MaxWord) stats;
+%+M   infix(termio) tpkt; infix(AnyRef) dum; infix(IOCPAK) x;
+%+O 
+%+X   infix(termio) tpkt;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUDIOC("); EdWrd(TrcBuf,h);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+M   --- Get Device Information ---
+%+M   dum.rf:=none; dum.ofst.AsWrd:=0; x:=DOS_IOCTL(h,0,0,dum.nam);
+%+M   if OsStat=0 then stats:=0
+%+M   else x.DevInfo:=0; stats:=OsStat; OsStat:=0 endif;
+%+MD  if stats <> 0 then BegTrace("Status="); EdWrd(TrcBuf,stats)
+%+MD  else BegTrace("Device Info="); EdHex(TrcBuf,x.DevInfo,4) endif;
+%+MD  OutTrace;
+%+M   --- Get Device IOCTL-Block ---
+%+M   if wAND(x.DevInfo,16384)=0 then goto E1 endif;
+%+M   x:=DOS_IOCTL(h,2,18,@tpkt); stats:=OsStat; OsStat:=0;
+%+MD  if stats <> 0 then BegTrace("IOCTL:Status="); EdWrd(TrcBuf,stats)
+%+MD  else BegTrace("nBytes="); EdWrd(TrcBuf,x.Count) endif;
+%+MD  OutTrace;
+%+MD  DmpTpkt(tpkt);
+
+%+X   --- Get Device IOCTL-Block ---
+%+X   XNX_IOCTL(name2ref(@tpkt),TCGETA,h); stats:=OsStat; OsStat:=0;
+%+XD  if stats <> 0
+%+XD  then BegTrace("IOCTL: Handle="); EdWrd(TrcBuf,h);
+%+XD       Ed(TrcBuf,", Status="); EdWrd(TrcBuf,stats); OutTrace;
+%+XD  endif;
+%+XD  DmpTpkt(tpkt);
+%+M E1:
+end;
+
+--- External Library Procedure echo="E@UUECHO" is
+--- Procedure echo(F,b); ref(FILE) F; boolean b; ;
+Visible Routine UUECHO;
+import ref(Filent) f; Boolean on;
+begin
+%+X   infix(termio) tpkt; range(0:MaxWord) iMask,lMask; integer h;
+%+D   if TRCSW > 0
+%+D   then BegTrace("UUECHO("); EdRef(TrcBuf,f);
+%+D        EdChar(TrcBuf,','); EdBool(TrcBuf,on); OutTrace;
+%+D   endif;
+%+X   h:=f.key-1;
+%+XD  if TRCSW > 0
+%+XD  then BegTrace("IOCTL-1: Handle = "); EdInt(TrcBuf,h);
+%+XD       OutTrace; DmpTpkt(tpkt);
+%+XD  endif;
+%+X   XNX_IOCTL(name2ref(@tpkt),TCGETA,h); UUSTATUS:=OsStat; OsStat:=0;
+%+XD  if TRCSW > 0
+%+XD  then BegTrace("IOCTL-1: OsStat = "); EdInt(TrcBuf,UUSTATUS);
+%+XD       OutTrace; DmpTpkt(tpkt);
+%+XD  endif;
+%+X   iMask:=832; -- 832 = 1500okt = IUCLC+ICRNL+INLCR
+%+X   lMask:=11;  --  11 = 0013okt = ISIG+ECHO+ICANON
+%+X   if on
+%+X   then tpkt.cc(4):=4 qua character;
+%+X        tpkt.cc(0):=127 qua character;  -- INTR character is DEL
+%+X        tpkt.iflag:=wOR(tpkt.iflag,256); -- ICRNL
+%+X        tpkt.lflag:=wOR(tpkt.lflag,lMask);
+%+X   else iMask:= -(iMask+1); lMask:= -(lMask+1);
+%+X        tpkt.cc(0):=255 qua character;  -- INTR character is FFH
+%+X        tpkt.cc(4):=1 qua character;  -- EOF/MIN = 1
+%+X        tpkt.iflag:=wAND(tpkt.iflag,iMask); 
+%+X        tpkt.lflag:=wAND(tpkt.lflag,lMask); 
+%+X   endif;
+%+XD  if TRCSW > 0
+%+XD  then BegTrace("IOCTL-2: Handle = "); EdInt(TrcBuf,h);
+%+XD       OutTrace; DmpTpkt(tpkt);
+%+XD  endif;
+%+X   XNX_IOCTL(name2ref(@tpkt),TCSETA,h); UUSTATUS:=OsStat;
+%+XD  if TRCSW > 0
+%+XD  then BegTrace("IOCTL-2: OsStat = "); EdInt(TrcBuf,OsStat);
+%+XD       OutTrace; DmpTpkt(tpkt);
+%+XD  endif;
+%+X   OsStat:=0;
+end;
+
+%title ***  B a s i c    U t i l i e s  ***
+
+--- External Library Procedure bNOT="E@UUBNOT" is
+--- Short Integer Procedure bNOT(i); short integer i; ;
+Visible Routine UUBNOT; import range(0:MaxWord) i;
+export range(0:MaxWord) res; begin res:=bNOT(i) end;
+
+--- External Library Procedure wNOT="E@UUBNOT" is
+--- Short Integer Procedure wNOT(i); short integer i; ;
+Visible Routine UUWNOT; import range(0:MaxWord) i;
+export range(0:MaxWord) res; begin res:=wNOT(i) end;
+
+--- External Library Procedure dNOT="E@UUDNOT" is
+--- Short Integer Procedure dNOT(i); short integer i; ;
+
+--- External Library Procedure bAND="E@UUBAND" is
+--- Short Integer Procedure bAND(i,j); short integer i,j; ;
+Visible Routine UUBAND; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=bAND(i,j) end;
+
+--- External Library Procedure wAND="E@UUWAND" is
+--- Short Integer Procedure wAND(i,j); short integer i,j; ;
+Visible Routine UUWAND; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=wAND(i,j) end;
+
+--- External Library Procedure dAND="E@UUDAND" is
+--- Short Integer Procedure dAND(i,j); short integer i,j; ;
+
+--- External Library Procedure bOR="E@UUBOR" is
+--- Short Integer Procedure bOR(i,j); short integer i,j; ;
+Visible Routine UUBOR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=bOR(i,j) end;
+
+--- External Library Procedure wOR="E@UUWOR" is
+--- Short Integer Procedure wOR(i,j); short integer i,j; ;
+Visible Routine UUWOR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=wOR(i,j) end;
+
+--- External Library Procedure dOR="E@UUDOR" is
+--- Short Integer Procedure dOR(i,j); short integer i,j; ;
+
+--- External Library Procedure bXOR="E@UUBXOR" is
+--- Short Integer Procedure bXOR(i,j); short integer i,j; ;
+Visible Routine UUBXOR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=bXOR(i,j) end;
+
+--- External Library Procedure wXOR="E@UUWXOR" is
+--- Short Integer Procedure wXOR(i,j); short integer i,j; ;
+Visible Routine UUWXOR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=wXOR(i,j) end;
+
+--- External Library Procedure dXOR="E@UUDXOR" is
+--- Short Integer Procedure dXOR(i,j); short integer i,j; ;
+
+--- External Library Procedure bSHL="E@UUBSHL" is
+--- Short Integer Procedure bSHL(i,j); short integer i,j; ;
+Visible Routine UUBSHL; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=bSHL(i,j) end;
+
+--- External Library Procedure wSHL="E@UUWSHL" is
+--- Short Integer Procedure wSHL(i,j); short integer i,j; ;
+Visible Routine UUWSHL; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=wSHL(i,j) end;
+
+--- External Library Procedure dSHL="E@UUDSHL" is
+--- Short Integer Procedure dSHL(i,j); short integer i,j; ;
+
+--- External Library Procedure bSHR="E@UUBSHR" is
+--- Short Integer Procedure bSHR(i,j); short integer i,j; ;
+Visible Routine UUBSHR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=bSHR(i,j) end;
+
+--- External Library Procedure wSHR="E@UUWSHR" is
+--- Short Integer Procedure wSHR(i,j); short integer i,j; ;
+Visible Routine UUWSHR; import range(0:MaxWord) i,j;
+export range(0:MaxWord) res; begin res:=wSHR(i,j) end;
+
+--- External Library Procedure dSHR="E@UUDSHR" is
+--- Short Integer Procedure dSHR(i,j); short integer i,j; ;
+
+end;

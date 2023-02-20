@@ -1,0 +1,18 @@
+Module lowc_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("lowc")lowc;
+       import character c;
+       export character res;
+       ---  convert c to lower case, if letter
+       begin if c>='A' then if c<='Z'
+             then res:= (c qua integer + 32) qua character
+             else res:=c endif else res:=c endif;
+       end;
+end;

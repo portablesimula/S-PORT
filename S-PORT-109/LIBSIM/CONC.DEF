@@ -1,0 +1,41 @@
+Module conc_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routines    ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       --- all procedures are superfluous, provided for cmpatibility
+
+       Visible routine ("cptime")cptime;
+       --- use cputime instead
+       export long real res;
+       begin res:=Tused; end;
+
+       Visible routine ("conc2")conc2;
+       --- use conc operator instead
+       import infix(txtqnt) txt1,txt2;
+       export infix(txtqnt) res;
+       begin res:=CONCAT(2,(txt1,txt2)) end;
+
+       Visible routine ("conc3")conc3;
+       --- use conc operator instead
+       import infix(txtqnt) txt1,txt2,txt3;
+       export infix(txtqnt) res;
+       begin res:=CONCAT(3,(txt1,txt2,txt3)) end;
+
+       Visible routine ("conc4")conc4;
+       --- use conc operator instead
+       import infix(txtqnt) txt1,txt2,txt3,txt4;
+       export infix(txtqnt) res;
+       begin res:=CONCAT(4,(txt1,txt2,txt3,txt4)) end;
+
+       Visible routine ("conc5")conc5;
+       --- use conc operator instead
+       import infix(txtqnt) txt1,txt2,txt3,txt4,txt5;
+       export infix(txtqnt) res;
+       begin res:=CONCAT(5,(txt1,txt2,txt3,txt4,txt5)) end;
+
+end;

@@ -1,0 +1,2 @@
+    external library procedure fetchar is
+    character procedure fetchar(t,i); text t; short integer i; ;

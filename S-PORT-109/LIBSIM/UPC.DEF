@@ -1,0 +1,17 @@
+Module upc_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("upc")upc;
+       import character c; export character res;
+       ---  convert c to upper case, if letter
+       begin if c>='a' then if c<='z'
+             then res:= (c qua integer - 32) qua character
+             else res:=c endif else res:=c endif;
+       end;
+end;

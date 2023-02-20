@@ -1,0 +1,2 @@
+    external library procedure scanchar is
+    character procedure scanchar(t); name t; text t; ;

@@ -1,0 +1,20 @@
+Module from_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("from")from;
+       import infix(txtqnt) t; short integer i;
+       export infix(txtqnt) res;
+       ---  return "t.sub(i .. last)", if possible
+       begin if    i <= 0          then res:=notext
+             elsif i > (t.lp-t.sp) then res:=notext
+             else res.lp:=t.lp; res.ent:=t.ent;
+                  res.cp:=res.sp:=t.sp+i-1;
+             endif;
+       end;
+end;

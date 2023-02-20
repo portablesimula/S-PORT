@@ -1,0 +1,2 @@
+    external library procedure upcompare is
+    boolean procedure upcompare(s,c); text s,c; ;

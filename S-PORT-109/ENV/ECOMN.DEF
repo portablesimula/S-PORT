@@ -1,0 +1,3174 @@
+ Global ECOMN("iAPX286");
+ begin
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     C - MS C modifications to XENIX                       ---
+       ---     F - Info-exchange for FEC                             ---
+       ---     B - Info-exchange for BEC                             ---
+       ---     L - Info-exchange for SML                             ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+
+%visible
+ Define MaxFile=21;            --- Max number of file descriptors + 1
+ Define MaxIntDigs = 10;       --- Max. digits allowed for integer
+ Define MaxLib = 10;           --- Max. number of default directories
+ Define MaxArea = 127;         --- Max. number of work areas
+ Define MaxBreak = 60;         --- Max. number of break-points
+ Define MaxByte = 255;         --- Max. value in unsigend byte.
+ Define MaxWord = 32000;       --- Max. value in unsigend word (2 bytes)
+ Define LMAX = 512;            --- Size of MonitorBlock.LBUFF
+
+ Define cNONE=0;               --- No C-Binding defined
+ Define cMS=1;                 --- Simula used together with MicroSoft C
+ Define cTURBO=2;              --- Simula used together with TURBO C
+
+ Define ISO_CR = 13            --- Carriage return
+ Define ISO_LF = 10            --- Line feed
+ Define ISO_FF = 12            --- Form feed
+ Define ISO_0  = 48            --- Digit 0
+ Define ISO_QT = 39            --- Character '
+ Define ISO_AA = 65            --- Character A
+
+ --- File types
+ Define F_infile=1,F_outfile=2,F_printfile=3,F_directfile=4;
+ Define F_inbytefile=5,F_outbytefile=6,F_dirbytefile=7,F_reloutfile=8;
+ Define F_max=8;
+
+ --- System file Handles for MS-DOS:
+%+M Define K_sysin=0,K_sysout=1,K_systrace=2,K_sysaux=3,K_sysprn=4;
+%+M Define nsysfile = 5;          --- Number of system files
+
+ --- System file Handles for MS-OS2:
+ --- See Programmer's Guide pp. 67 (Redirection of Input and output).
+%+O Define K_sysin=0,K_sysout=1,K_systrace=2;
+%+O Define nsysfile = 3 --???-- 10;         --- Number of system files
+
+ --- System file Handles for XENIX:
+%+X Define K_sysin=0,K_sysout=1,K_systrace=2;
+%+X Define nsysfile = 3;          --- Number of system files
+
+ --- Environment Mode Codes
+ Define M_USER=0;  --- User mode
+ Define M_ENVM=1;  --- Within environment
+ Define M_EXCP=2;  --- Treating an exception
+ Define M_CONT=3;  --- Terminate trap handler signal
+ Define M_max=3;
+
+ --- Exception Codes
+ Define EX_UNSP=0;   --- Unspecified
+ Define EX_FLOP=1;   --- Invalid floating operation
+ Define EX_FLDZ=2;   --- Floating division by zero
+ Define EX_FLOV=3;   --- Floating overflow
+ Define EX_FLUN=4;   --- Floating underflow
+ Define EX_IXAC=5;   --- Inexact result (floating operation)
+ Define EX_OVFL=6;   --- Integer overflow
+ Define EX_DIVZ=7;   --- Integer division by zero
+ Define EX_IADR=8;   --- Illegal address trap
+ Define EX_IOPR=9;   --- Illegal instriction trap
+ Define EX_BRKP=10;  --- Breakpoint trap
+ Define EX_ATNK=11;  --- User interrupt (attention key)
+ Define EX_TIME=12;  --- CPU time limit
+ Define EX_IMPS=13;  --- Continuation is impossible
+ Define EX_STMS=14;  --- Start of statement exception
+ Define EX_ARRX=15;  --- Array index is out of range
+ Define EX_NONE=16;  --- Attribute access through none
+ Define EX_max=16;
+
+ --- Error Status codes:
+ Define xq_invkey     = 01 --- Invalid filekey
+ Define xq_ndef       = 02 --- File not Defined
+ Define xq_nexist     = 03 --- File does not exist
+ Define xq_exist      = 04 --- File already exists
+ Define xq_nopen      = 05 --- File not open
+ Define xq_open       = 06 --- File already open
+ Define xq_closed     = 07 --- File already closed
+ Define xq_illuse     = 08 --- Illegal use of file
+ Define xq_illrec     = 09 --- Illegal record format for directfile
+ Define xq_illfn      = 10 --- Illegal file name
+ Define xq_imlong     = 11 --- Output image too long
+ Define xq_imshort    = 12 --- Input image too short
+ Define xq_eof        = 13 --- End of file on input
+ Define xq_space      = 14 --- Not enough space available
+ Define xq_ffull      = 15 --- File full on output
+ Define xq_locrange   = 16 --- Location out of range
+ Define xq_io         = 17 --- I/O error (e.g. hardware)
+ Define xq_cannot     = 18 --- Specified action cannot be performed
+ Define xq_imposs     = 19 --- Impossible
+ Define xq_nwrite     = 20 --- No write access to this file
+ Define xq_nonnum     = 21 --- Non-numeric item as first character
+ Define xq_value      = 22 --- Value out of range
+ Define xq_icsynt     = 23 --- Incomplete syntax
+ Define xq_tshort     = 24 --- Text string too short
+ Define xq_flt0       = 25 --- Error status: fraction < 0
+ ---                    26 --- Currently not in use
+ Define xq_argrange   = 27 --- Error status: argument out of range
+ Define xq_keydef     = 28 --- Key previously Defined
+ Define xq_nkeyx      = 29 --- Maximum number of keys exceeded
+ Define xq_unimp      = 30 --- This service function not implemented
+ Define xq_synterr    = 31 --- Syntax error in dsetspec
+ Define xq_nread      = 32 --- No read access
+ Define xq_illact     = 33 --- Illegal action
+ Define xq_part       = 34 --- Partial record read
+ Define xq_undrec     = 35 --- Undefined record on directfile
+ Define xq_maxbrk     = 36 --- Maximum number of breakpoints set
+ Define xq_brknop     = 37 --- Breakpoint set/reset had no effect
+
+ Record string; info "TYPE";
+ begin name(character) chradr;
+       integer nchr;
+ end;
+
+ Profile Xhandlerp;        --- Exception Handler
+ import range(0:13) code; infix(string) msg; label addr;
+ export label cont end;
+
+ Global Profile pSYSSWP;
+ import range(0:4) code;
+ end;
+
+ Global Profile pSYSPRI;
+ import infix(String) img;
+ end;
+
+ Global Profile pSYSPRO;
+ import infix(String) msg,img;
+ export integer res;
+ end;
+
+%+O Record WINDOW;
+%+O begin character Block(0) end;
+
+%+O Global Profile pWINPROC;
+%+O import ref(WINDOW) hwnd;
+%+O        range(0:MaxWord) msg;
+%+O        ref() mp1,mp2;
+%+O export ref() res;
+%+O end;
+
+Profile Palloc; -- ALLOCO --- Allocate Dynamic Objects in Simula's Pool  ---
+import integer nbytes;        -- No.of available bytes in object
+       entry(Pmovit) movrut;  -- Routine which is called from GC
+export name() Nobj;           -- The allocated object+size(..) <> noname
+end;
+
+Global Profile Pmovit;        -- GC is about to move an object from 'old'
+import name() old, new;       -- to 'new'. NOTE: called before the move.
+end;
+
+Profile Pfree; -- FREEOB --- Free - Dynamic Objects in Simula's Pool  ---
+import name() Nobj;           -- Notifies GC that 'Nobj' is released
+end;
+
+ Record EdBuff;
+ begin range(0:132) nchr;        --- Number of characters in buffer
+       range(0:132) pos;         --- Position indicator (0..131)
+       character chr(132);       --- Buffer area
+ end;
+
+ Record Any2Byte; info "TYPE";
+ begin variant range(0:MaxWord) AsWrd;
+       variant range(0:MaxByte) AsByte(2);
+       variant character        AsChar(2);
+%-E    variant size             AsSize;
+%-E    variant field()          AsAaddr;
+ end;
+
+ Record Any4Byte; info "TYPE";
+ begin variant character        AsChar(4);
+       variant integer          AsInt;
+       variant real             AsReal;
+       variant short integer    AsSint(2);
+       variant range(0:MaxWord) AsWord(2);
+       variant range(0:MaxByte) AsByte(4);
+%+E    variant size             AsSize;
+%+E    variant field()          AsAaddr;
+ end;
+
+%+D Record Any8Byte; info "TYPE";
+%+D begin variant character        AsChar(8);
+%+D       variant integer          AsInt(2);
+%+D       variant long real        AsLreal;
+%+D       variant range(0:MaxWord) AsWord(4);
+%+D       variant range(0:MaxByte) AsByte(8);
+%+D end;
+
+ Record AnyAddr; info "TYPE";
+ begin
+%-E    variant range(0:MaxWord) AsOfst;    -- 16 bit Offset
+%-E            range(0:MaxWord) AsSegm;    -- 16 bit Segment
+%+E    variant integer          AsOfst;    -- 32 bit Offset
+%+E    variant size             AsSize;
+%+E    variant field()          AsAaddr;
+       variant ref()            AsOaddr;
+       variant label            AsPaddr;
+       variant entry()          AsRaddr;
+ end;
+
+ Record AnyRef; info "TYPE"           -- Record to perform conversion
+ begin variant name() nam;            -- between GADDR and OADDR
+       variant
+%-E            infix(Any2Byte) ofst;  -- OADDR = rf + ofst
+%+E            infix(Any4Byte) ofst;  -- OADDR = rf + ofst
+               ref() rf;
+       variant name(ref()) nrf;
+ end;
+
+ Record identifier;
+ begin range(0:255) nchr;
+       character chr(0);
+ end;
+
+ Record ASCIIZ;
+ begin character chr(0) end;
+
+ Record FileBufr;
+ begin ref(FileObj) fobj;
+       integer FileLoc;
+       range(0:MaxWord) nxt,lim,cnt;
+       range(0:2) mode;
+       Boolean PrevCR;            -- Previous buffer was terminated by CR
+       character byt(0);
+ end;
+
+ Record FileObj; info "TYPE";    --- File object
+ begin range(0:F_max) type;       -- File type (infile, outfile, etc.)
+       range(0:MaxByte) Amode;    -- Access mode
+       range(0:MaxWord) fac;      -- Multiplication factor at locate:
+       integer DifLoc;            -- Byte dist from FileLoc to CurLoc
+       name(infix(FileBufr)) buf; -- File Buffer
+       infix(identifier:70) FNAM; -- ASCIIZ Path name (term by NUL)
+ end;
+
+%-V %+M ------ Program Segement Prefix under MS-DOS --- See Norton p.260-267
+%-V %+M Record PSP;
+%-V %+M begin character F1(2);
+%-V %+M       range(0:MaxWord) MemSize; -- Memory size in paragraphs
+%-V %+M       character F3(40);
+%-V %+M       range(0:MaxWord) EnvStr;  -- Seg-addr of Environment strings
+%-V %+M       character F10(82);
+%-V %+M       range(0:127) npar;        -- Parameter length in characters
+%-V %+M       character par(127);       -- Parameters
+%-V %+M end;
+
+%+X Record XNX;  --------- Initial Stack under XENIX
+%+X begin
+%+X %-E   range(0:MaxWord) argc;    -- Argument count
+%+XE      integer          argc;    -- Argument count
+%+X       ref(RefArr) argv;      -- Pointer to array of pointers to args
+%+X       ref(RefArr) envp;      -- Pointer to array of pointers to envs
+%+X end;
+
+%+V %+M Record XNX;  --------- Initial Stack under DOS
+%+V %+M begin
+%+V %+M       range(0:MaxWord) argc;    -- Argument count
+%+V %+M       ref(RefArr) argv;      -- Pointer to array of pointers to args
+%+V %+M       ref(RefArr) envp;      -- Pointer to array of pointers to envs
+%+V %+M end;
+
+%-V %-M Record RefArr;
+%-V %-M begin ref(ASCIIZ) elt(0) end;
+
+%+V Record RefArr;
+%+V begin ref(ASCIIZ) elt(0) end;
+
+ Record SaveRecord;
+ begin ref(PntMap) pm;
+       character SaveBody(0);
+ end;
+
+ Record PntMap;
+ begin range(0:32000) n;
+       range(0:32000) rela(0);
+ end;
+
+ Record PROGPNT; info "TYPE"
+ begin label addr;
+       range(0:255) byt;
+ end;
+
+%+M Record TrapPkt; info "TYPE";
+%+M begin range(0:127) OsCode;
+%+M       range(0:127) SimCode;    -- S-Port trap code
+%+M       range(0:MaxWord) rSP;    -- Saved register SP
+%+M       range(0:MaxWord) rDS;    -- Saved register DS
+%+M       range(0:MaxWord) rES;    -- Saved register ES
+%+M       range(0:MaxWord) rDI;    -- Saved register DI
+%+M       range(0:MaxWord) rSI;    -- Saved register SI
+%+M       range(0:MaxWord) rBX;    -- Saved register BX
+%+M       range(0:MaxWord) rDX;    -- Saved register DX
+%+M       range(0:MaxWord) rCX;    -- Saved register CX
+%+M       range(0:MaxWord) rAX;    -- Saved register AX
+%+M       range(0:MaxWord) OldBP;  -- Old BP
+%+M       infix(AnyAddr) TADR;     -- Trap address (I.e. CS:IP)
+%+M       range(0:MaxWord) FLAGS;  -- Saved flags
+%+M end;
+
+%+O Record TrapPkt; info "TYPE";
+%+O begin range(0:127) OsCode;
+%+O       range(0:127) SimCode;    -- S-Port trap code
+%+O       range(0:MaxWord) rSP;    -- Saved register SP
+%+O       range(0:MaxWord) rDS;    -- Saved register DS
+%+O       range(0:MaxWord) rES;    -- Saved register ES
+%+O       range(0:MaxWord) rDI;    -- Saved register DI
+%+O       range(0:MaxWord) rSI;    -- Saved register SI
+%+O       range(0:MaxWord) rBX;    -- Saved register BX
+%+O       range(0:MaxWord) rDX;    -- Saved register DX
+%+O       range(0:MaxWord) rCX;    -- Saved register CX
+%+O       range(0:MaxWord) rAX;    -- Saved register AX
+%+O       range(0:MaxWord) OldBP;  -- Old BP
+%+O       infix(AnyAddr) TADR;     -- Trap address (I.e. CS:IP)
+%+O       range(0:MaxWord) FLAGS;  -- Saved flags
+%+O end;
+
+%+X %-E Record TrapPkt; info "TYPE";
+%+X %-E begin range(0:MaxWord) OsCode;  -- Signal number
+%+X %-E       range(0:MaxWord) SimCode; -- S-Port trap code
+%+X %-E       range(0:MaxWord) rSP;     -- Saved register SP
+%+X %-E       range(0:MaxWord) rDS;     -- Saved register DS
+%+X %-E       range(0:MaxWord) rES;     -- Saved register ES
+%+X %-E       range(0:MaxWord) rDI;     -- Saved register DI
+%+X %-E       range(0:MaxWord) rSI;     -- Saved register SI
+%+X %-E       range(0:MaxWord) rBX;     -- Saved register BX
+%+X %-E       range(0:MaxWord) rDX;     -- Saved register DX
+%+X %-E       range(0:MaxWord) rCX;     -- Saved register CX
+%+X %-E       range(0:MaxWord) rAX;     -- Saved register AX
+%+X %-E       range(0:MaxWord) FLAGS;   -- Saved flags
+%+X %-E       infix(AnyAddr) CONT;      -- Continuation address (or +0)
+%+X %-E       range(0:MaxWord) OldBP;   -- Old BP
+%+X %-E       range(0:MaxWord) UserBP;  -- User's BP
+%+X %-E       infix(AnyAddr) TADR;      -- Trap address
+%+X %-E end;
+
+%+XE Record TrapPkt; info "TYPE";
+%+XE begin integer OsCode;        -- Signal number
+%+XE       integer SimCode;       -- S-Port trap code
+%+XE       integer rESP;          -- Saved register ESP
+%+XE       integer rEDI;          -- Saved register EDI
+%+XE       integer rESI;          -- Saved register ESI
+%+XE       integer rEBX;          -- Saved register EBX
+%+XE       integer rEDX;          -- Saved register EDX
+%+XE       integer rECX;          -- Saved register ECX
+%+XE       integer rEAX;          -- Saved register EAX
+%+XE       integer FLAGS;         -- Saved flags
+%+XE       infix(AnyAddr) CONT;   -- Continuation address (or +0)
+%+XE       integer        OldBP;  -- Old EBP
+%+XE       integer      UserBP;   -- User's EBP
+%+XE       infix(AnyAddr) TADR;   -- Trap address
+%+XE end;
+
+---  Records for Line Number Information  ---
+
+Record ModuleInfo;        --- The module information table entry
+begin ref(SegmentInfo) first  --- First SegmentInfo of module
+      range(0:255) nchr;      --- number of characters in ident
+      character chr(0);       --- module identifier
+end;
+
+Record LinePkt; info "TYPE"   --- Line packet in SegmentInfo
+begin range(0:MaxWord) lno;   --- source line number
+      range(0:MaxWord) rela;  --- first relative prog.address of line
+end;
+
+Record SegmentInfo;       --- Segment Info with Line-number-table
+begin infix(AnyAddr) base;    --- Segment's Start Address
+      range(0:MaxWord) lim;   --- Segment's LastOffset+1
+      range(0:MaxWord) npkt;  --- Number of line-number-packets
+      infix(LinePkt) pkt(0);  --- Line-number-table
+end;
+
+---  Records For BANK-Handling  ---
+--
+-- NOTE: DO NOT CHANGE WITHOUT ALSO CHANGE MODULE  ../lnk/lcomn  !!!!!
+--
+-- NOTE: MUST BE INDEPENDENT OF 2/4-BYTE ALIGNMENT               !!!!!
+--
+
+%+M Record BankInfo;
+%+M begin range(0:255) nBnk;          --00--
+%+M       range(0:255) nNam;          --01--
+%+M       size NamPos;                --02--
+%+M       size LinBnk;                --04-- Rel.pos of LinBnk's BankDescr
+%+M       Range(0:MaxWord) BnkLng;    --06-- Size of Bank-area in paragraphs
+%+M       Range(0:MaxByte) xGOTO;     --08-- INT-Vector index
+%+M       Range(0:MaxByte) xJMPF;     --09-- INT-Vector index
+%+M       Range(0:MaxByte) xCALL;     --10-- INT-Vector index
+%+M       Range(0:MaxByte) xCALF;     --11-- INT-Vector index
+%+M --    Infix(BankDescr) BnkTab;    --12--
+%+M end;
+
+%+M Record BankDescr;
+%+M begin size fnam;                   --00-- File Name Offset
+%+M       size bnam;                   --02-- Bank Name Offset
+%+M       Boolean InMem;               --04-- 0:Not in Memory
+%+M       range(0:255) nFrm;           --05-- no.of local Frames
+%+M       range(0:MaxWord) Length;     --06-- Length in Paragraphs
+%+M       integer TxtPos;              --08-- First Pos in File (Load Text)
+%+M       integer RelPos;              --12-- First Pos in File (Relocs)
+%+M       range(0:MaxWord) MemBase;    --16-- First Paragraph Addr in Memory
+%+M       range(0:MaxWord) FrmBase(0); --18-- Local Frame Base Addresses
+%+M end;
+
+%+M Record RelPkt;
+%+M begin range(0:255) nRel;
+%+M       Boolean Last;
+%+M       range(0:Maxword) Base;
+%+M       range(0:Maxword) Offset(0);
+%+M end;
+%title ******    G L O B A L    D A T A    ******
+
+    Record quant;   info "TYPE";
+    begin -- ..................
+          variant integer       int; -- integer quantity
+          -- ..................
+    end;
+
+    Range(0:MaxWord) OsStat   system "OSSTAT";
+    Range(0:37) status        system "STATUS";
+    Entry(Palloc) AllocObj    system "ALLOCO"; -- Alloc obj in SimPool
+    Entry(Pfree)  FreeObj     system "FREEOB"; -- Free  obj in SimPool
+    Range(0:MaxWord) itemsize system "ITSIZE";
+%-E Range(0:MaxWord) InitSP   system "INITSP"; -- SP when stack empty
+%+E Integer          InitSP   system "INITSP"; -- SP when stack empty
+    Range(0:M_max) EXMODE     system "EXMODE"; -- Exception mode
+    Infix(TrapPkt) STATE      system "STATE";  -- Saved State at trap
+    Label TROUTM              system "TROUTM"; -- Trap's OuterMost
+%-V %+M Ref(PSP) PSPREF           system "PSPREF"; -- Program Segment Prefix
+%+V %+M Ref(XNX) XNXREF           system "XNXREF"; -- DOS   init stack
+%+X Ref(XNX) XNXREF           system "XNXREF"; -- XENIX init stack
+%+O Infix(AnyAddr) ENVSEG     system "ENVSEG"; -- Program id and params
+    Const size maxlen         system "MAXLEN";
+    Const integer inptlng     system "INPLTH"; -- 132
+    Const integer ouptlng     system "OUTLTH"; -- 132
+    Integer maxint            system "MAXINT";
+    Infix(quant) tmp          system "TMPQNT";
+    Ref(ModuleInfo) PRGINF    system "PRGINF"; -- None: Not Available
+%+M Ref(BankInfo) BNKINF      system "BNKINF"; -- Produced by SIMLNK
+%+M Ref() BNKBUF              system "BNKBUF"; -- Area for BANK Relocation
+%+M Boolean FRMTAB            system "FRMTAB"; -- (0:255)
+%+M Range(0:MaxByte) FRMBAS   system "FRMBAS"; -- (0:255)
+%+M Range(0:MaxByte) BnkFil;                   -- Bnk-file handle
+
+    Const infix(string) nostring   = record:string(nchr=0);
+
+    Entry(Xhandlerp) Xhandler;      --- User's interrupt handler
+%+M Range(0:MaxByte) DosVersion;    --- DOS Major version number. E.g. 2
+%+M Infix(VERPAK) OSID;             --- DOS version ident
+%+O Infix(Any2Byte) OSID;           --- OS/2 version ident
+%+X Infix(VERPAK) OSID;             --- Xenix/Unix version ident
+    Range(0:MaxWord) LPPAGE;        --- Default LinesPerPage
+    Character LTEN;                 --- Lowered ten symbol in (de)edit
+    Character DMRK;                 --- Decimal mark symbol in (de)edit
+
+    --- EDITING AND TRACING ---
+    Ref(EdBuff) TrcBuf;             --- Tracing buffer
+--  Ref(EdBuff) EdtBuf;             --- Editing buffer
+%+D Range(0:10) TRCSW;              --- Trace mode switch
+    Range(0:10) SMBSW;              --- SIMOB switch (=Option('T'))
+    Range(0:10) ERRSW;              --- ERROR trace switch
+    Range(0:10) BNKSW;              --- Bank-Loading trace switch
+    Range(0:10) FILSW;              --- File trace switch
+    Range(0:10) Poptn;              --- Used by MONITOR
+    Infix(EdBuff) TrcBuffer;        --- Tracing buffer
+    Infix(EdBuff) EdtBuffer;        --- Editing buffer
+--  Character EdBuf(80);            --- Editing buffer
+    character b108  -- INTERIM only --- TEMP for CLD108 (ebase) - pje
+
+    --- STORAGE ALLOCATION PARAMETERS ---
+    Range(0:MaxWord) MINALLOC;      --- Min No.of allocations before GC
+    Range(0:MaxWord) MAXALLOC;      --- Max No.of storage allocations
+    Integer          STEPSIZE;      --- Allocation step size in bytes
+    Integer          WRKTAIL;       --- Size of extra allocation 
+    Integer          MINFREE;       --- Min free storage after GC in bytes
+
+    --- STORAGE ALLOCATION HANDLING ---
+    Range(0:MaxWord) nalloc;        --- No.of allocations performed
+    Range(0:MaxWord) narea;         --- No.of work areas allocated
+    Infix(AnyAddr) WRKBEG(MaxArea); --- First addr included in work area
+    Integer        WRKLNG(MaxArea); --- Area sizes in bytes
+
+    --- PARAMETER INFO ---
+    Ref(ParamBlock) ParBlk;         --- none if not present
+    Range(0:MaxWord) ParLng;        --- Length of ParBlk in bytes
+
+    --- BASIC FILE HANDLING ---
+%+X Boolean ECHO;                   --- true:Echo on sysin --> sysout
+%+X Infix(termio) ttyPkt;           --- Initial value of TERMIO for sysin
+%+X Infix(termio) ttyUsr;           --- User's  value of TERMIO for sysin
+    Range(0:MaxWord) BUFLNG;        --- File Buffer Length
+    Infix(string) ximg;             --- Extra space to read CR/LF
+    Character ximc(2);              --- Extra space to read CR/LF
+    Infix(FileObj) FTAB(MaxFile);   --- File object table (key)
+
+    --- LINE-NUMBER HANDLING ---
+    Ref(ModuleInfo) CurMod;         --- Info from GTLNO to GTLNID
+
+    --- SAVE OBJECT HANDLING ---
+    Infix(AnyRef) SavePnt;    --- Current save object and current offset
+    Ref(PntMap) SaveMap;      --- Current save object's pointer map
+    Range(0:32000) SaveIdx;   --- Current save object's pointer index
+
+    --- BREAKPOINT HANDLING ---
+----    Range(0:MaxByte) BrkByte;
+----%-E Range(0:MaxWord) SimCode,OsCode,SavedSP;
+----%+E Integer          SimCode,OsCode,SavedSP;
+
+%-E Range(0:MaxWord) SavedSP;          --- Saved during trap
+%+E Integer          SavedSP;
+%-E Ref(Any2Byte) STKEND;              --- SS:SP when stack is empty
+%+E Ref(Any4Byte) STKEND;              --- ESP   when stack is empty
+    Boolean SStep;                     --- Single Stepping on/off
+    Boolean IStep;                     --- Attention key is pressed
+    Range(0:MaxBreak) nbreaks;         --- No. of break-points set
+    Infix(PROGPNT) brktab(MaxBreak);   --- Break-point table
+
+    --- TRAP HANDLING ---
+    Infix(AnyAddr) BrkAdr;             --- Current BREAKPOINT Address
+    Infix(TrapPkt) BrkState;           --- Current BREAKPOINT State
+    Boolean CeepBrk;                   --- Ceep Current BREAKPOINT
+
+    Sysroutine("TRAPEND") TRAPEND;     --- Continue after Simob
+    import label Cont;                  -- Address where to continue
+    end;
+
+    Sysroutine("RTRAP") RTRAP;         --- Reports traps within environment
+    import range(0:MaxByte) Code;       -- 0:Clear, 1:Set reporting
+    export Boolean res;
+    end;
+
+    --- UTILITY LIBRARY ---
+    range(0:MaxWord) UUSTATUS;
+    Boolean InSimob;
+    Entry(pSYSSWP) wSYSSWP;
+    Entry(pSYSPRI) wSYSPRI;
+    Entry(pSYSPRO) wSYSPRO;
+%title ***  Parameter  Block  for  MTR/FEC/BEC/EDT  ***
+Record ParamBlock;
+begin Range(0:MaxWord) MAGIC;    --000:2  - Magic Number = 5425
+      Range(0:MaxWord) HEDLNG;   --002:2  - Size of ParamBlock in bytes
+      Range(0:MaxWord) AUXLNG;   --004:2  - Size of Aux-info in bytes
+      Range(0:MaxByte) STATE;    --006:1  - 0:Init/Exit 1:FEC 2:BEC 3:EDT
+      Range(0:MaxByte) CCODE;    --007:1  - 0:pass ok, 1:error, >1:fatal error
+      Range(0:3)       SYSGEN;   --008:1  - System generation mode
+      Range(0:MaxByte) CPUID;    --009:1  -
+      Range(0:MaxByte) NUMID;    --010:1  -
+      Range(0:MaxByte) TARGET;   --011:1  - Target Operating System
+      Range(0:MaxByte) CHKSTK;   --012:1  - >0: Produce CHKSTK Calls
+      Range(0:MaxByte) RECOMP;   --013:1  - 0:normal comp, 1:compatible recomp
+      Range(0:MaxByte) DEBMOD;   --014:1  - Simob info generation level
+      Range(0:MaxByte) BECDEB;   --015:1  - Debuging level (0: skip all info)
+      Range(0:MaxByte) LINTAB;   --016:1  - >0: Generate LIN_CODE Segm
+      Range(0:MaxByte) RNGCHK;   --017:1  - >0: produce range check
+      Range(0:MaxByte) IDXCHK;   --018:1  - >0: produce array index check
+      Range(0:MaxByte) TSTOFL;   --019:1  - >0: produce INTO after aritm instr
+      Range(0:MaxByte) BNKLNK;   --020:1  - >0: Prepare code for BANKING
+      Range(0:MaxByte) STANDARD; --021:1  - >0: Restrict to pure Simula Standard
+      Range(0:MaxByte) INTERACT; --022:1  - >0: Interactive execution
+      Range(0:MaxByte) CBIND;    --023:1  - C-Binding (None,MS,TURBO, etc.)
+
+      Range(0:MaxByte) OPTN(28); --024:28 - Option values
+   
+      Range(0:MaxWord) MINALLOC; --052:2  - Min No.of allocations before GC
+      Range(0:MaxWord) MAXALLOC; --054:2  - Max No.of storage allocations
+      Integer          STEPSIZE; --056:4  - Allocation step size in bytes
+      Integer          WRKTAIL;  --060:4  - Size of extra allocation 
+      Integer          MINFREE;  --064:4  - Min free storage after GC in bytes
+      Range(0:MaxWord) BUFLNG;   --068:2  - File Buffer Length
+      Range(0:Maxword) INPLTH;   --070:2  - Input Line Length (=132)
+      Range(0:Maxword) OUTLTH;   --072:2  - Output Line Length (=132)
+      Range(0:MaxWord) MAXERR;   --074:2  - Max no. of error messages
+      Range(0:MaxWord) LPPAGE;   --076:2  - Default LinesPerPage
+      Range(0:MaxWord) MASSLV;   --078:2  - BEC: Massage Level
+      Range(0:MaxWord) QBFLIM;   --080:2  - No.of Q-instr before Exhaust Half
+      Range(0:MaxWord) SEGLIM;   --082:2  -
+      Range(0:MaxWord) nLINE;    --084:2  - Number of source lines
+      Range(0:MaxWord) nERR;     --086:2  - Number of errors detected
+      Range(0:MaxWord) nWARN;    --088:2  - Number of warnings given
+      Range(0:MaxByte) BECVER;   --090:1  - BECversion
+      Range(0:MaxByte) TrcDisp;  --090:1  - 
+   
+      Infix(ASCIIZ:8)  SYSPFX;   --092:8  - Current Target Prefix e.g su7108
+      Infix(ASCIIZ:72) SIMLIB;   --100:72 - Current RTS/ENV Library Path
+      Infix(ASCIIZ:72) SOURCE;   --172:72 - Source input file specification
+      Infix(ASCIIZ:72) LISTFIL;  --244:72 - Listing output file specification
+      Infix(ASCIIZ:72) RELCODE;  --316:72 - Relocatable output file spec
+      Infix(ASCIIZ:72) SCRATCH;  --388:72 - Scratch file (interpass info)
+      Infix(ASCIIZ:72) SCODE;    --460:72 - Scratch file (S-Code file)
+      Infix(ASCIIZ:72) ERRFIL;   --532:72 - Error Messages (FEC and RTS)
+      Infix(ASCIIZ:72) SELECT;   --604:72 - FEC/SML  SELECTION:OPTION
+      Infix(ASCIIZ:72) EDITOR;   --676:72 - Editor name
+      Infix(ASCIIZ:72) STAPRE;   --748:72 - AttrFile for Standard Simula PREDEF
+      Infix(ASCIIZ:72) SIMPRE;   --820:72 - AttrFile for Extended Simula PREDEF
+      Infix(ASCIIZ:8)  PRFXID;   --892:8  - BEC: Ext. Symbol Prefix Ident
+      Infix(ASCIIZ:8)  CSEGNAM;  --900:8  - BEC: Code Segment Prefix Ident
+      Infix(ASCIIZ:8)  DSEGNAM;  --908:8  - BEC: Data Segment Prefix Ident
+  
+      ---  TRACE VERSION SPECIFIC PART OF PARAMETER BLOCK
+   
+      Range(0:MaxWord) SK1LIN;   --916:2  - Pass 1 Trace: starting line
+      Range(0:MaxWord) SK1LIM;   --918:2  - Pass 1 Trace: stoping line
+      Integer          SK1TRC;   --920:4  - Pass 1 Trace: switches
+      Range(0:MaxWord) SK2LIN;   --924:2  - Pass 2 Trace: starting line
+      Range(0:MaxWord) SK2LIM;   --926:2  - Pass 2 Trace: stoping line
+      Integer          SK2TRC;   --928:4  - Pass 2 Trace: switches
+      Range(0:MaxWord) SK3LIN;   --932:2  - Pass 3 Trace: starting line
+      Range(0:MaxWord) SK3LIM;   --934:2  - Pass 3 Trace: stoping line
+      Integer          SK3TRC;   --936:4  - Pass 3 Trace: switches
+      Range(0:MaxWord) SK4LIN;   --940:2  - Pass 4 Trace: starting line
+      Range(0:MaxWord) SK4LIM;   --942:2  - Pass 4 Trace: stoping line
+      Integer          SK4TRC;   --944:4  - Pass 4 Trace: switches
+   
+      Infix(ASCIIZ:36) FREE11;   --948:36 - -- former SIMSET
+      Infix(ASCIIZ:36) FREE12;   --984:36 - -- former SIMLTN
+      Range(0:MaxWord) FREE02;  --1020:2  - Reserved for future use
+      Range(0:MaxWord) FREE03;  --1022:2  - Reserved for future use
+
+end;
+%title ***   M O N I T O R    R E Q U E S T S   ***
+
+--- XENIX:CREAT  ---   Create File and Open File
+
+%+X Sysroutine("X?creat") XNX_CREAT;
+%+X import
+%+X %-E    range(0:MaxWord) mode;     -- File attributes
+%+XE       integer          mode;     -- File attributes
+%+X        ref(ASCIIZ) path;           -- Pointer to ASCIIZ Pathname
+%+X export
+%+X %-E    range(0:MaxWord) fildes;   -- File Descriptor
+%+XE       integer          fildes;   -- File Descriptor
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   mode            ; is done                                --
+--   push   path'segment    ; is done                                --
+--   push   path'offset     ; is done                                --
+--   CALL   XNX,0,6,_CREAT                                           --
+--     --   iCALL FAR PTR _CREAT                                     --
+--     --   iADD  SP,6                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Stack File Descriptor                  --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   mode            ; is done                                --
+--   push   path            ; is done                                --
+--   CALL   XNX,0,8,_CREAT                                           --
+--     --   iCALL NEAR PTR _CREAT                                    --
+--     --   iADD  ESP,8                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; Stack File Descriptor                 --
+-----------------------------------------------------------------------
+%page
+
+
+--- MS-DOS:Function 3CH=60: Create File and Open File Handle -- Pg 1-143
+
+%+M Sysroutine("M?CREF") DOS_CREF;
+%+M import range(0:MaxByte) fattr;    -- File attributes
+%+M        name(Character) path;      -- Pointer to ASCIIZ Pathname
+%+M export range(0:MaxWord) handle    -- File Handle
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX       ; DX <- path.ofst + path.attr            --
+--   POPR   DS              ; DS <- path.seg                         --
+--   POPR   CL              ; access code                            --
+--   LOADC  AH,3CH          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  AX              ; Stack File Handle                      --
+-----------------------------------------------------------------------
+%page
+--- XENIX:OPEN   ---   Open file for reading and/or writing
+
+%+X Sysroutine("X?open") XNX_OPEN;   --- Open File Handle
+%+X import
+%+X %-E    range(0:MaxWord) mode;     -- Access mode
+%+XE       integer          mode;     -- Access mode
+%+X %-E    range(0:MaxWord) oflag;    -- Access code
+%+XE       integer          oflag;    -- Access code
+%+X        ref(ASCIIZ) path;          -- Pointer to ASCIIZ Pathname
+%+X export
+%+X %-E    range(0:MaxWord) fildes;   -- File Descriptor
+%+XE       integer          fildes;   -- File Descriptor
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   mode            ; is done                                --
+--   push   oflag           ; is done                                --
+--   push   path'segment    ; is done                                --
+--   push   path'offset     ; is done                                --
+--   CALL   XNX,0,8,_OPEN                                            --
+--     --   iCALL FAR PTR _OPEN                                      --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Stack File Descriptor                  --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   mode            ; is done                                --
+--   push   oflag           ; is done                                --
+--   push   path            ; is done                                --
+--   CALL   XNX,0,12,_OPEN                                           --
+--     --   iCALL NEAR PTR _OPEN                                     --
+--     --   iADD  ESP,12                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; Stack File Descriptor                 --
+-----------------------------------------------------------------------
+
+
+--- MS-DOS:Function 3DH=61: Open File Handle --------------- Page 1-145
+
+%+M Sysroutine("M?OPEN") DOS_OPEN;   --- Open File Handle
+%+M import range(0:MaxByte) acode;    -- Access code
+%+M        name(Character) path;      -- Pointer to ASCIIZ Pathname
+%+M export range(0:MaxWord) handle    -- File Handle
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX       ; DX <- path.ofst + path.attr            --
+--   POPR   DS              ; DS <- path.seg                         --
+--   POPR   AL              ; access code                            --
+--   LOADC  AH,3DH          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  AX              ; Stack File Handle                      --
+-----------------------------------------------------------------------
+%page
+
+
+--- MS-OS2:DosOpen  --- Opens a File ------------------------- Page 184
+
+%+O Sysroutine("O?DOSOPEN") OS2_OPEN;
+%+O import ref(ASCIIZ) Path;           -- Pointer to ASCIIZ Pathname
+%+O        ref() Handle;               -- Pointer to new File's Handle
+%+O        ref() Action;               -- Pointer to Action Taken
+%+O        integer FileSize;           -- File Primary Allocation
+%+O        range(0:MaxWord) Attr;      -- File Attribute
+%+O        range(0:MaxWord) Oflag;     -- Open Function Type
+%+O        range(0:MaxWord) Omode;     -- Open Mode (Access mode etc.)
+%+O        integer reserved;           -- Reserved: MUST BE ZERO
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Path'segment                                             --
+--   push   Path'offset                                              --
+--   push   Handle'segment                                           --
+--   push   Handle'offset                                            --
+--   push   Action'segment                                           --
+--   push   Action'offset                                            --
+--   push   FileSize'HI-part                                         --
+--   push   FileSize'LO-part                                         --
+--   push   Attr                                                     --
+--   push   Oflag                                                    --
+--   push   Omode                                                    --
+--   push   Reserved'HI-part                                         --
+--   push   Reserved'LO-part                                         --
+--   CALL   OS2,0,26,DOSOPEN                                         --
+--     --   iCALL FAR PTR DOSOPEN                                    --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:CLOSE  ---   Closes a File Descriptor
+
+%+X Sysroutine("X?close") XNX_CLOSE; --- Close File Descriptor
+%+X import
+%+X %-E    range(0:MaxWord) fildes;   -- File Descriptor
+%+XE       integer          fildes;   -- File Descriptor
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,2,_CLOSE                                           --
+--     --   iCALL FAR PTR _CLOSE                                     --
+--     --   iADD  SP,2                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,4,_CLOSE                                           --
+--     --   iCALL NEAR PTR _CLOSE                                    --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+
+--- MS-DOS:Function 3EH=62: Close File Handle -------------- Page 1-149
+
+%+M Sysroutine("M?CLOSE") DOS_CLOSE; --- Close File Handle
+%+M import range(0:MaxWord) handle    -- File Handle
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   BX                                                       --
+--   LOADC  AH,3EH          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+-----------------------------------------------------------------------
+
+
+--- MS-OS2:DosClose  --- Close File Handle -------------------- Page 54
+
+%+O Sysroutine("O?DOSCLOSE") OS2_CLOSE;
+%+O import range(0:MaxWord) Handle;    -- File Handle
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Handle                                                   --
+--   CALL   OS2,0,2,DOSCLOSE                                         --
+--     --   iCALL FAR PTR DOSCLOSE                                   --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+
+--- XENIX:UNLINK  ---   Removes directory entry. I.e Delete File
+
+%+X Sysroutine("X?unlink") XNX_UNLINK;
+%+X import ref(ASCIIZ) fnam;           -- Pointer to ASCIIZ Filename
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   fnam'segment    ; is done                                --
+--   push   fnam'offset     ; is done                                --
+--   CALL   XNX,0,4,_UNLINK                                          --
+--     --   iCALL FAR PTR _UNLINK                                    --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   fnam            ; is done                                --
+--   CALL   XNX,0,4,_UNLINK                                          --
+--     --   iCALL NEAR PTR _UNLINK                                   --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+
+
+--- MS-DOS:Function 41H=65: Delete File ----------------------- Pg 1-155
+
+%+M Sysroutine("M?DELF") DOS_DELETE;
+%+M import name(Character) fnam;      -- Pointer to ASCIIZ Filename
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX       ; DX <- fnam.ofst + fnam.attr            --
+--   POPR   DS              ; DS <- fnam.seg                         --
+--   LOADC  AH,41H          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+-----------------------------------------------------------------------
+
+
+--- MS-OS2:DosDelete  --- Delete File ------------------------ Page  71
+
+%+O Sysroutine("O?DOSDELETE") OS2_DELETE;
+%+O import ref(ASCIIZ) Fnam;           -- Pointer to ASCIIZ Filename
+%+O        integer reserved;           -- Reserved: MUST BE ZERO
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Fnam'segment                                             --
+--   push   Fnam'offset                                              --
+--   push   Reserved'HI-part                                         --
+--   push   Reserved'LO-part                                         --
+--   CALL   OS2,0,8,DOSDELETE                                        --
+--     --   iCALL FAR PTR DOSDELETE                                  --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:RDCHK  ---   Check to see if there is data to be read
+
+%+X Sysroutine("X?rdchk") XNX_RDCHK;
+%+X import
+%+X %-E    range(0:MaxWord) fildes;
+%+XE       integer          fildes;
+%+X export
+%+X %-E    range(0:MaxWord) res;
+%+XE       integer          res;
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,2,_RDCHK                                           --
+--     --   iCALL FAR PTR _RDCHK                                     --
+--     --   iADD  SP,2                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSH   AX              ; 0:Not ready, 1:Ready                   --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,4,_RDCHK                                           --
+--     --   iCALL NEAR PTR _RDCHK                                    --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSH   EAX              ; 0:Not ready, 1:Ready                  --
+-----------------------------------------------------------------------
+%page
+--- XENIX:FCNTL  ---   Controls Open Files
+%+X Define F_DUPFD   = 0  -- Return a duplicate file descriptor
+%+X Define F_GETFD   = 1  -- Get 'CloseOnExec' flag
+%+X Define F_SETFD   = 2  -- Set 'CloseOnExec' flag
+%+X Define F_GETFL   = 3  -- Get OpenFlags
+                          -- SCO286: RDONLY/WRONLY/RDWR/NDELAY/APPEND/SYNCW
+                          -- SCO386: RDONLY/WRONLY/RDWR/NDELAY/APPEND/SYNCW
+                          -- 386ix:  RDONLY/WRONLY/RDWR/NDELAY/APPEND/SYNC
+%+X Define F_SETFL   = 4  -- Set OpenFlags
+                          -- SCO286: NDELAY/APPEND/SYNCW
+                          -- SCO386: NDELAY/APPEND/SYNCW
+                          -- 386ix:  NDELAY/APPEND/SYNC
+%+X Define F_GETLK   = 5  -- Get File Lock          -- arg is ref(flock)
+%+X Define F_SETLK   = 6  -- Set File Lock          -- arg is ref(flock)
+%+X Define F_SETLKW  = 7  -- Set File Lock and Wait -- arg is ref(flock)
+%+X Define F_CHKFL   = 8     -- 386ix: Reserved
+%+X Define F_ALLOCSP = 10    -- 386ix: Reserved
+%+X Define F_FREESP  = 11    -- 386ix: Reserved
+%+X Define F_CHSIZE  = 24576 -- 386ix: 0x6000 -- XENIX chsize() system call
+%+X Define F_RDCHK   = 24577 -- 386ix: 0x6001 -- XENIX rdchk() system call
+
+%+X Sysroutine("X?fcntl") XNX_FCNTL;
+%+X import integer          arg;
+%+X %-E    range(0:MaxWord) cmnd;
+%+XE       integer          cmnd;
+%+X %-E    range(0:MaxWord) fildes;
+%+XE       integer          fildes;
+%+X export
+%+X %-E    range(0:MaxWord) res;
+%+XE       integer          res;
+%+X end;
+
+%+X Sysroutine("X?fcntl") XNX_FCNT2;
+%+X import ref(flock)       arg;
+%+X %-E    range(0:MaxWord) cmnd;
+%+XE       integer          cmnd;
+%+X %-E    range(0:MaxWord) fildes;
+%+XE       integer          fildes;
+%+X export
+%+X %-E    range(0:MaxWord) res;
+%+XE       integer          res;
+%+X end;
+
+%+X Record flock; info "TYPE";
+%+X begin range(0:MaxWord) type;   -- RDLCK/WRLCK/UNLCK
+%+X       range(0:MaxWord) whence; -- Flag to choose starting offset in file
+%+X       integer          start;  -- Relative byte-offset of region
+%+X       integer          len;    -- Byte-size of region (0:Until EOF)
+%+X       range(0:MaxWord) pid;    -- Process ID (as returned by GETLK)
+%+X       range(0:MaxWord) sysid;  -- System  ID (as returned by GETLK)
+%+X end;
+%+X Define F_RDLCK=1 -- Read lock
+%+X Define F_WRLCK=2 -- Write lock
+%+X Define F_UNLCK=3 -- Remove lock(s)
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   arg'high        ; is done                                --
+--   push   arg'low         ; is done                                --
+--   push   cmnd            ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,8,_FCNTL                                           --
+--     --   iCALL FAR PTR _FCNTL                                     --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   arg             ; is done                                --
+--   push   cmnd            ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,12,_FCNTL                                          --
+--     --   iCALL NEAR PTR _FCNTL                                    --
+--     --   iADD  ESP,12                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+--- XENIX:IOCTL  ---   Device I/O Control
+%+X Define TCGETA  = 21505  -- 'T'01  Get termio packet
+%+X Define TCSETA  = 21506  -- 'T'02  Set termio packet -- Immediate
+%+X Define TCSETAW = 21507  -- 'T'03  Set termio packet -- Delay 1
+%+X Define TCSETAF = 21508  -- 'T'04  Set termio packet -- Delay 2
+
+%+X Sysroutine("X?ioctl") XNX_IOCTL;
+%+X import ref(termio) arg;
+%+X %-E    range(0:MaxWord) cmnd;
+%+XE       integer          cmnd;
+%+X %-E    range(0:MaxWord) fildes;
+%+XE       integer          fildes;
+%+X export
+%+X %-E    range(0:MaxWord) res;
+%+XE       integer          res;
+%+X end;
+
+%+X Record termio; info "TYPE";
+%+X begin range(0:MaxWord) iflag; -- Input modes
+%+X       range(0:MaxWord) oflag; -- Output modes
+%+X       range(0:MaxWord) cflag; -- Control modes
+%+X       range(0:MaxWord) lflag; -- Local modes
+%+X       character line;         -- Line dicipline
+%+X       character cc(8);        -- Control chars
+%+X       character pad;          -- Padding character
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   arg'segment     ; is done                                --
+--   push   arg'offset      ; is done                                --
+--   push   cmnd            ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,8,_IOCTL                                           --
+--     --   iCALL FAR PTR _IOCTL                                     --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   arg             ; is done                                --
+--   push   cmnd            ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,12,_IOCTL                                          --
+--     --   iCALL NEAR PTR _IOCTL                                    --
+--     --   iADD  ESP,12                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+
+--- MS-DOS:Function 44H=68: Device I/O Control ------------- Page 1-???
+
+%+M Sysroutine("M?IOCTL") DOS_IOCTL
+%+M import range(0:MaxWord) handle;   -- BX File Handle
+%+M        range(0:11) SubFnc;        -- AL Sub-function code
+%+M        range(0:MaxWord) lng;      -- CX Buffer length
+%+M        name() buffer;             -- DS:DX Pointer to Buffer
+%+M export infix(IOCPAK) res;         -- DX:AX DevInfo:Bytes read
+%+M end;
+
+%+M Record termio; info "TYPE";
+%+M begin range(0:MaxWord) iflag; -- Input modes
+%+M       range(0:MaxWord) oflag; -- Output modes
+%+M       range(0:MaxWord) cflag; -- Control modes
+%+M       range(0:MaxWord) lflag; -- Local modes
+%+M       character line;         -- Line dicipline
+%+M       character cc(8);        -- Control chars
+%+M       character pad;          -- Padding character
+%+M end;
+
+%+M Record IOCPAK; info "TYPE";
+%+M begin range(0:MaxWord) Count;     -- AX Bytes Transferred
+%+M       range(0:MaxWord) DevInfo;   -- DX Device Info (SubFnc=0)
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX       ; DX <- buffer.ofst + buffer.attr        --
+--   POPR   DS              ; DS <- buffer.seg                       --
+--   POPR   CX              ; CX <- lng                              --
+--   POPR   AL              ; AL <- SubFnc                           --
+--   POPR   BX              ; BX <- handle                           --
+--   LOADC  AH,44H          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  DX              ; Device Info (iff SubFnc=0)             --
+--   PUSHR  AX              ; Bytes Transferred                      --
+-----------------------------------------------------------------------
+%page
+
+--- MS-OS2:DosDevIOCtl  --- Device I/O Control --------------- Page 241
+--- See OS/2  Device Driver Guide  pp. 109-289 ---------------
+
+%+O Sysroutine("O?DOSDEVIOCTL") OS2_IOCTL;
+%+O import ref() Data;                 -- Pointer to Output Buffer
+%+O        ref() Parm;                 -- Pointer to Input Buffer
+%+O        range(0:MaxWord) SubFnc;    -- Sub-function code
+%+O        range(0:MaxWord) Catg;      -- Device Category
+%+O        range(0:MaxWord) Handle;    -- File Handle
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Data'segment                                             --
+--   push   Data'offset                                              --
+--   push   Parm'segment                                             --
+--   push   Parm'offset                                              --
+--   push   SubFnc                                                   --
+--   push   Catg                                                     --
+--   push   Handle                                                   --
+--   CALL   OS2,0,14,DOSDEVIOCTL                                     --
+--     --   iCALL FAR PTR DOSDEVIOCTL                                --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:READ   ---   Read from a File
+
+%+X Sysroutine("X?read") XNX_READ;   --- Reads from a File
+%+X import
+%+X %-E    range(0:MaxWord) nbyte;    -- Buffer length
+%+XE       integer          nbyte;    -- Buffer length
+%+X        ref() buffer;              -- Pointer to Buffer
+%+X %-E    range(0:MaxWord) fildes;   -- File Descriptor
+%+XE       integer          fildes;   -- File Descriptor
+%+X export
+%+X %-E    range(0:MaxWord) count;    -- 0:EOF, else Bytes read
+%+XE       integer          count;    -- 0:EOF, else Bytes read
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   nbyte           ; is done                                --
+--   push   buffer'segment  ; is done                                --
+--   push   buffer'offset   ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,8,_READ                                            --
+--     --   iCALL FAR PTR _READ                                      --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Stack Bytes read                       --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   nbyte           ; is done                                --
+--   push   buffer          ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,12,_READ                                           --
+--     --   iCALL NEAR PTR _READ                                     --
+--     --   iADD  ESP,12                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; Stack Bytes read                      --
+-----------------------------------------------------------------------
+
+
+--- MS-DOS:Function 3FH=63: Read from File Handle ---------- Page 1-151
+
+%+M Sysroutine("M?READ") DOS_READ;   --- Read from File Handle
+%+M import range(0:MaxWord) handle;   -- File Handle
+%+M        range(0:MaxWord) lng;      -- Buffer length
+%+M        name(Character) buffer;    -- Pointer to Buffer
+%+M export range(0:MaxWord) count;    -- Bytes read
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX       ; DX <- buffer.ofst + buffer.attr        --
+--   POPR   DS              ; DS <- buffer.seg                       --
+--   POPR   CX              ; CX <- lng                              --
+--   POPR   BX              ; BX <- handle                           --
+--   LOADC  AH,3FH          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  AX              ; Stack Bytes read                       --
+-----------------------------------------------------------------------
+%page
+
+--- MS-OS2:DosRead  --- Read From File ----------------------- Page 241
+
+%+O Sysroutine("O?DOSREAD") OS2_READ;
+%+O import range(0:MaxWord) Handle;    -- File Handle
+%+O        ref(ASCIIZ) Buffer;         -- Pointer to User Buffer
+%+O        range(0:MaxWord) nByte;     -- Buffer Length
+%+O        ref() Count;                -- 0:EOF, else Bytes Read
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Handle                                                   --
+--   push   Buffer'segment                                           --
+--   push   Buffer'offset                                            --
+--   push   nByte                                                    --
+--   push   Count'segment                                            --
+--   push   Count'offset                                             --
+--   CALL   OS2,0,12,DOSREAD                                         --
+--     --   iCALL FAR PTR DOSREAD                                    --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:WRITE  ---   Writes to a File
+
+%+X Sysroutine("X?write") XNX_WRITE; --- Writes to a File
+%+X import
+%+X %-E    range(0:MaxWord) nbyte;    -- Buffer length
+%+XE       integer          nbyte;    -- Buffer length
+%+X        ref() buffer;              -- Pointer to Buffer
+%+X %-E    range(0:MaxWord) fildes;   -- File Descriptor
+%+XE       integer          fildes;   -- File Descriptor
+%+X export
+%+X %-E    range(0:MaxWord) count;    -- Bytes written
+%+XE       integer          count;    -- Bytes written
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   nbyte           ; is done                                --
+--   push   buffer'segment  ; is done                                --
+--   push   buffer'offset   ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,8,_WRITE                                           --
+--     --   iCALL FAR PTR _WRITE                                     --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Stack Bytes Written                    --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   nbyte           ; is done                                --
+--   push   buffer          ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,12,_WRITE                                          --
+--     --   iCALL NEAR PTR _WRITE                                    --
+--     --   iADD  ESP,12                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; Stack Bytes Written                   --
+-----------------------------------------------------------------------
+
+--- MS-DOS:Function 40H=64: Write into File Handle --------- Page 1-153
+
+%+M Sysroutine("M?WRITE") DOS_WRITE; --- Write into File Handle
+%+M import range(0:MaxWord) handle;   -- File Handle
+%+M        range(0:MaxWord) lng;      -- Buffer length
+%+M        name() buffer;             -- Pointer to Buffer
+%+M export range(0:MaxWord) count;    -- Bytes written
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX       ; DX <- buffer.ofst + buffer.attr        --
+--   POPR   DS              ; DS <- buffer.seg                       --
+--   POPR   CX              ; CX <- lng                              --
+--   POPR   BX              ; BX <- handle                           --
+--   LOADC  AH,40H          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  AX              ; Stack Bytes written                    --
+-----------------------------------------------------------------------
+%page
+
+--- MS-OS2:DosWrite  --- Write to File Synchronously --------- Page 332
+
+%+O Sysroutine("O?DOSWRITE") OS2_WRITE;
+%+O import range(0:MaxWord) Handle;    -- File Handle
+%+O        ref(ASCIIZ) Buffer;         -- Pointer to User Buffer
+%+O        range(0:MaxWord) nByte;     -- Buffer Length
+%+O        ref() Count;                -- Bytes Written
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Handle                                                   --
+--   push   Buffer'segment                                           --
+--   push   Buffer'offset                                            --
+--   push   nByte                                                    --
+--   push   Count'segment                                            --
+--   push   Count'offset                                             --
+--   CALL   OS2,0,12,DOSREAD                                         --
+--     --   iCALL FAR PTR DOSREAD                                    --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:LSEEK  ---   Moves File Pointer
+
+%+X Sysroutine("X?lseek") XNX_LSEEK;
+%+X import
+%+X %-E    range(0:MaxWord) method;  -- 0:L=O, 1:L=P+O, 2:L=Size+O
+%+XE       integer          method;  -- 0:L=O, 1:L=P+O, 2:L=Size+O
+%+X        integer Ofst;             -- Offset (O) Note: 4-byte integer
+%+X %-E    range(0:MaxWord) fildes;  -- File Descriptor
+%+XE       integer          fildes;  -- File Descriptor
+%+X export integer location;  -- New Location (L) Note: 4-byte integer
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   method          ; is done                                --
+--   push   Ofst'HI-part    ; is done    ??? eller omvendt           --
+--   push   Ofst'LO-part    ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,8,_LSEEK                                           --
+--     --   iCALL FAR PTR _LSEEK                                     --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  DX              ; Stack New Location'HI-part             --
+--   PUSHR  AX              ; Stack New Location'LO-part             --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   method          ; is done                                --
+--   push   Ofst            ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,12,_LSEEK                                          --
+--     --   iCALL NEAR PTR _LSEEK                                    --
+--     --   iADD  ESP,12                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; Stack New Location                    --
+-----------------------------------------------------------------------
+
+--- MS-DOS:Function 42H=66: Move File Pointer -------------- Page 1-157
+
+%+M Sysroutine("M?FPTR") DOS_FPTR;  --- Move File Pointer (P)
+%+M import range(0:MaxWord) handle;  -- File Handle
+%+M        range(0:2) method;        -- 0:L=O, 1:L=P+O, 2:L=Size+O
+%+M        integer offset;           -- Offset (O) Note: 4-byte integer
+%+M export integer location;  -- New Location (L) Note: 4-byte integer
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   DX                                                       --
+--   POPR   CX              ; CX:DX <- offset                        --
+--   POPR   AL              ; AL <- method                           --
+--   POPR   BX              ; BX <- handle                           --
+--   LOADC  AH,42H          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  DX                                                       --
+--   PUSHR  AX              ; DX:AX location (new)                   --
+-----------------------------------------------------------------------
+%page
+
+--- MS-OS2:DosChgFilePtr  --- Change File Read/Write Pointer ---- Pg 51
+
+%+O Sysroutine("O?DOSCHGFILEPTR") OS2_FPTR;
+%+O import range(0:MaxWord) Handle;  -- File Handle
+%+O        integer Ofst;             -- Offset (O) Note: 4-Byte integer
+%+O        range(0:MaxWord) Method;  -- 0:L=O, 1:L=P+O, 2:L=Size+O
+%+O        ref() Location;           -- New Pointer Location (L)
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Handle                                                   --
+--   push   Ofst'HI-part                                             --
+--   push   Ofst'LO-part                                             --
+--   push   Method                                                   --
+--   push   Location'segment                                         --
+--   push   Location'offset                                          --
+--   CALL   OS2,0,12,DOSCHGFILEPTR                                   --
+--     --   iCALL FAR PTR DOSCHGFILEPTR                              --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:CHSIZE ---   Changes the size of a file
+
+%+X Sysroutine("X?chsize") XNX_CHSIZE;
+%+X import integer lng;                -- New file size (in bytes)
+%+X %-E    range(0:MaxWord) fildes;    -- File Descriptor
+%+XE       integer          fildes;    -- File Descriptor
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   lng'HI-part     ; is done    ??? eller omvendt           --
+--   push   lng'LO-part     ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,6,_CHSIZE                                          --
+--     --   iCALL FAR PTR _CHSIZE                                    --
+--     --   iADD  SP,6                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   lng             ; is done                                --
+--   push   fildes          ; is done                                --
+--   CALL   XNX,0,8,_CHSIZE                                          --
+--     --   iCALL NEAR PTR _CHSIZE                                   --
+--     --   iADD  ESP,8                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+
+--- MS-OS2:DosNewSize --- Change File Size ------------------- Page 182
+
+%+O Sysroutine("O?DOSNEWSIZE") OS2_NEWSIZE;
+%+O import range(0:MaxWord) Handle;    -- File Handle
+%+O        integer lng;                -- New file size (in bytes)
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Handle                                                   --
+--   push   Lng'HI-part                                              --
+--   push   Lng'LO-part                                              --
+--   CALL   OS2,0,6,DOSNEWSIZE                                       --
+--     --   iCALL FAR PTR DOSNEWSIZE                                 --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:LOCKING  ---   (Un)lock a file region for read/write
+
+%+X Sysroutine("X?locking") XNX_LOCK;
+%+X import integer lng;
+%+X %-E    range(0:MaxWord) mode;
+%+XE       integer          mode;
+%+X %-E    range(0:MaxWord) handle;
+%+XE       integer          handle;
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   lng'HI-part     ; is done                                --
+--   push   lng'LO-part     ; is done                                --
+--   push   mode            ; is done                                --
+--   push   handle          ; is done                                --
+--   CALL   XNX,0,8,_LOCKING                                         --
+--     --   iCALL FAR PTR _LOCKING                                   --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   lng             ; is done                                --
+--   push   mode            ; is done                                --
+--   push   handle          ; is done                                --
+--   CALL   XNX,0,12,_LOCKING                                        --
+--     --   iCALL NEAR PTR _LOCKING                                  --
+--     --   iADD  ESP,12                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--- MS-DOS:Function 5CH=92: (Un)lock file region ----------- Page 1-???
+--- NOTE: DOS 3.0 or higher
+
+%+M Sysroutine("M?LOCK") DOS_LOCK
+%+M import range(0:MaxWord) handle;   -- BX File handle
+%+M        range(0:MaxByte) Fnc;      -- AL Function code
+%+M        integer Loc;               -- CX:DX Start location
+%+M        integer Lng;               -- SI:DI Length of region
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   DI                                                       --
+--   POPR   SI              ; SI:DI <- Lng                           --
+--   POPR   DX                                                       --
+--   POPR   CX              ; CX:DX <- Loc                           --
+--   POPR   AL              ; AL  Sub function code                  --
+--   POPR   BX              ; BX  File handle                        --
+--   LOADC  AH,5CH          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+-----------------------------------------------------------------------
+
+%page
+
+--- MS-OS2:DosFileLock  --- (Un)lock file region ------------- Page 94
+
+%+O Sysroutine("O?DOSFILELOCK") OS2_LOCK;
+%+O import range(0:MaxWord) handle;  -- File handle
+%+O        ref(FLOCK) Ulck;          -- Unlock region
+%+O        ref(FLOCK) Lock;          -- Lock region
+%+O end;
+
+%+O Record FLOCK;
+%+O begin integer Loc; -- Byte Location of start of region
+%+O       integer Lng; -- Byte Length of region
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Handle                                                   --
+--   push   Ulck'segment                                             --
+--   push   Ulck'offset                                              --
+--   push   Lock'segment                                             --
+--   push   Lock'offset                                              --
+--   CALL   OS2,0,10,DOSFILELOCK                                     --
+--     --   iCALL FAR PTR DOSFILELOCK                                --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:CHDIR  ---   Changes the Working Directory
+
+%+X Sysroutine("X?chdir") XNX_CHDIR; --- Changes Current Directory
+%+X import ref(ASCIIZ) path;           -- Pointer to ASCIIZ Pathname
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   path'segment    ; is done                                --
+--   push   path'offset     ; is done                                --
+--   CALL   XNX,0,4,_CHDIR                                           --
+--     --   iCALL FAR PTR _CHDIR                                     --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   path            ; is done                                --
+--   CALL   XNX,0,4,_CHDIR                                           --
+--     --   iCALL NEAR PTR _CHDIR                                    --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+
+--- MS-DOS:Function 3BH=59: Change Current Directory -------- Page 1-141
+
+%+M Sysroutine("M?CDIR") DOS_CDIR;   --- Change Current Directory
+%+M import name(Character) path;      -- Pointer to ASCIIZ Pathname
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   DX                                                       --
+--   DYADR  ADD,DX,AX       ; DX <- path.ofst + path.attr            --
+--   POPR   DS              ; DS <- path.seg                         --
+--   LOADC  AH,3BH          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+-----------------------------------------------------------------------
+
+
+--- MS-OS2:DosChdir  --- Change Current Directory ------------ Page 50
+
+%+O Sysroutine("O?DOSCHDIR") OS2_CHDIR;
+%+O import ref(ASCIIZ) DirName;        -- Directory Path
+%+O        integer Reserved;           -- Reserved: MUST BE ZERO
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   DirName'segment                                          --
+--   push   DirName'offset                                           --
+--   push   Reserved'HI-part                                         --
+--   push   Reserved'LO-part                                         --
+--   CALL   OS2,0,8,DOSCHDIR                                         --
+--     --   iCALL FAR PTR DOSCHDIR                                   --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:GETCWD  ---   Get current working directory
+
+%+X Sysroutine("X?getcwd") XNX_GETCWD;
+%+X import
+%+X %-E    range(0:MaxWord) lng;
+%+XE       integer          lng;
+%+X        ref(ASCIIZ) buf;
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   lng             ; is done                                --
+--   push   buf'segment     ; is done                                --
+--   push   buf'offset      ; is done                                --
+--   CALL   XNX,0,6,_GETCWD                                          --
+--     --   iCALL FAR PTR _GETCWD                                    --
+--     --   iADD  SP,6                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   lng             ; is done                                --
+--   push   buf             ; is done                                --
+--   CALL   XNX,0,8,_GETCWD                                          --
+--     --   iCALL NEAR PTR _GETCWD                                   --
+--     --   iADD  ESP,8                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+
+--- MS-DOS:Function 19H=25: Get default disk drive --------- Page 1-85
+
+%+M Sysroutine("M?GDRV") DOS_GDRV
+%+M export range(0:MaxByte) drv;      -- 0:A,1:B, ...
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   LOADC  AH,19H          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  AL              ; 0:A,1:B, ...                           --
+-----------------------------------------------------------------------
+
+
+--- MS-DOS:Function 47H=71: Get current directory ---------- Page 1-181
+
+%+M Sysroutine("M?GDIR") DOS_GDIR
+%+M import range(0:MaxByte) drv;      -- 0:Default,1:A,2:B, ...
+%+M        name() buf;                -- 64 byte buffer
+%+M end;
+
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AX                                                       --
+--   POPR   SI                                                       --
+--   DYADR  ADD,SI,AX       ; SI <- buffer.ofst + buffer.attr        --
+--   POPR   DS              ; DS <- buffer.seg                       --
+--   POPR   DL              ; DL <- drv                              --
+--   LOADC  AH,47H          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+-----------------------------------------------------------------------
+%page
+
+--- MS-OS2:DosQCurDisk  --- Query Current Disk --------------- Page 224
+
+%+O Sysroutine("O?DOSQCURDISK") OS2_GDRV;
+%+O import ref() Drv;  -- ref(WORD)  -- 1:A,2:B, ...
+%+O        ref() Map;  -- ref(DWORD) -- bitmap
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Drv'segment                                              --
+--   push   Drv'offset                                               --
+--   push   Map'segment                                              --
+--   push   Map'offset                                               --
+--   CALL   OS2,0,8,DOSQCURDISK                                      --
+--     --   iCALL FAR PTR DOSQCURDISK                                --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+
+--- MS-OS2:DosQCurDir  --- Query Current Directory ----------- Page 222
+
+%+O Sysroutine("O?DOSQCURDIR") OS2_GDIR;
+%+O import range(0:MaxWord) Drv;       -- 0:Default,1:A,2:B, ...
+%+O        ref() Buf;  -- ref(ASCIIZ)  -- Buffer
+%+O        ref() Lng;  -- ref(WORD)    -- Buffer length
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Drv                                                      --
+--   push   Buf'segment                                              --
+--   push   Buf'offset                                               --
+--   push   Lng'segment                                              --
+--   push   Lng'offset                                               --
+--   CALL   OS2,0,10,DOSQCURDIR                                      --
+--     --   iCALL FAR PTR DOSQCURDIR                                 --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:SBRK   ---   Changes Data Segment Space Allocation
+
+%+X %-C Sysroutine("X?sbrk") XNX_SBRK;   --- Changes Data Space Allocation
+%+XC Sysroutine("X?malloc") XNX_SBRK;   --- Changes Data Space Allocation
+%+X import
+%+X %-E    short integer incr;        -- increment (decrement) in bytes
+%+XE       integer       incr;        -- increment (decrement) in bytes
+%+X export ref() area;                -- address of new area
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   incr            ; is done                                --
+--   CALL   XNX,0,2,_SBRK                                            --
+--     --   iCALL FAR PTR _SBRK                                      --
+--     --   iADD  SP,2                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  DX                                                       --
+--   PUSHR  AX              ; DX:AX ref() new_area                   --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   incr            ; is done                                --
+--   CALL   XNX,0,4,_SBRK                                            --
+--     --   iCALL NEAR PTR _SBRK                                     --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; ref() new_area                        --
+-----------------------------------------------------------------------
+
+
+--- XENIX:BRK   ---   Changes Data Segment Space Allocation
+
+%+X Sysroutine("X?brk") XNX_BRK;
+%+X import ref() stop;            -- new break address (i.e. Last addr)
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   stop'segment    ; is done                                --
+--   push   stop'offset     ; is done                                --
+--   CALL   XNX,0,4,_BRK                                             --
+--     --   iCALL FAR PTR _BRK                                       --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   stop            ; is done                                --
+--   CALL   XNX,0,4,_BRK                                             --
+--     --   iCALL NEAR PTR _BRK                                      --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+
+--- MS-DOS:Function 48H=72: Allocate Memory ---------------- Page 1-183
+
+%+M Sysroutine("M?ALOC") DOS_ALOC;   --- Allocate Memory
+%+M import range(0:MaxWord) requ;     -- Paragraphs of memory requested
+%+M export infix(WRKPAK) res;         -- Start of allocated area etc.
+%+M end;
+
+%+M Record WRKPAK; info "TYPE";
+%+M begin ref() area;           -- AX:00: Start of allocated area
+%+M       range(0:MaxWord) maxs -- BX: Max mem-blck available if error
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   BX              ; BX <- paragraphs of memory requested   --
+--   LOADC  AH,48H          ; function code                          --
+--   DOS2                                                            --
+--     --   iINT  21H                                                --
+--     --   iJNC  $+6                                                --
+--     --   iMOV  SS:G@OSSTAT,AL                                     --
+--   PUSHR  BX              ; Max memory-block available if error    --
+--   PUSHR  AX              ; Stack Segment Address                  --
+--   LOADC  AX,0                                                     --
+--   PUSHR  AX              ; Stack Offset Zero                      --
+-----------------------------------------------------------------------
+
+
+--- MS-OS2:DosAllocSeg  --- Allocate Segment ------------------ Page 41
+
+%+O Sysroutine("O?DOSALLOCSEG") OS2_ALOC;
+%+O import range(0:MaxWord) Request;   -- No.of.bytes Requested
+%+O        ref() Selector;             -- Selector Allocated (returned)
+%+O        range(0:MaxWord) Flags;     -- Allocation Flags
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Request                                                  --
+--   push   Selector'segment                                         --
+--   push   Selector'offset                                          --
+--   push   Flags                                                    --
+--   CALL   OS2,0,8,DOSALLOCSEG                                      --
+--     --   iCALL FAR PTR DOSALLOCSEG                                --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+ Sysroutine("EXIT") SIM_EXIT;   --- Terminates a Simula Program
+ import
+%-E     short integer stat;        -- status
+%+E     integer       stat;        -- status
+ -- If G@RESUME = NoWhere: Terminate the process
+ -- Otherwise: Continue at G@RESUME
+ end;
+
+
+
+--- XENIX:EXIT   ---   Terminates a Process
+
+%+X Sysroutine("X?exit") XNX_EXIT;   --- Terminates a Process
+%+X import
+%+X %-E    short integer stat;        -- status
+%+XE       integer       stat;        -- status
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   stat            ; is done                                --
+--   CALL   XNX,0,2,_EXIT                                            --
+--     --   iCALL FAR PTR _EXIT                                      --
+--     --   iADD  SP,2                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   stat            ; is done                                --
+--   CALL   XNX,0,4,_EXIT                                            --
+--     --   iCALL NEAR PTR _EXIT                                     --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--- MS-DOS:Function 4CH=76: End Process -------------------- Page 1-196
+
+%+M Sysroutine("M?TERM") DOS_TERM;   --- Terminate. I.e. end process
+%+M import range(0:255) RetCode;      -- Return Code
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   POPR   AL              ; return code                            --
+--   LOADC  AH,4CH          ; function code                          --
+--   DOS1                                                            --
+--     --   iINT  21H                                                --
+-----------------------------------------------------------------------
+
+
+--- MS-OS2:DosExit  --- Exit Program -------------------------- Page 89
+
+%+O Sysroutine("O?DOSEXIT") OS2_EXIT;
+%+O import range(0:MaxWord) ActCode;   -- Action Code
+%+O        range(0:MaxWord) ResCode;   -- Result Code (for DosCWait)
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   ActCode                                                  --
+--   push   ResCode                                                  --
+--   CALL   OS2,0,4,DOSEXIT                                          --
+--     --   iCALL FAR PTR DOSEXIT                                    --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:CLOCK  ---   Reports CPU Time Used (in microseconds)
+
+%+X Sysroutine("X?clock") XNX_CLOCK; --- Reports CPU Time Used
+%+X export integer res;               -- Note: 4-Byte Integer
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   CALL   XNX,0,0,_CLOCK                                           --
+--     --   iCALL FAR PTR _CLOCK                                     --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  DX                                                       --
+--   PUSHR  AX              ; DX:AX CPU-Time Used (4 Byte Integer)   --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   CALL   XNX,0,0,_CLOCK                                           --
+--     --   iCALL NEAR PTR _CLOCK                                    --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; CPU-Time Used (4 Byte Integer)        --
+-----------------------------------------------------------------------
+
+%page
+--- XENIX:TIME   ---   Reports Time and Date
+
+%+X Sysroutine("X?time") XNX_TIME;
+%+X import ref() result;              -- Address or none
+%+X export integer res;               -- Note: 4-Byte Integer
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   result'segment  ; is done                                --
+--   push   result'offset   ; is done                                --
+--   CALL   XNX,0,4,_TIME                                            --
+--     --   iCALL FAR PTR _TIME                                      --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  DX                                                       --
+--   PUSHR  AX              ; DX:AX Time and Date (4 Byte Integer)   --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   result          ; is done                                --
+--   CALL   XNX,0,4,_TIME                                            --
+--     --   iCALL NEAR PTR _TIME                                     --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; Time and Date (4 Byte Integer)        --
+-----------------------------------------------------------------------
+
+%page
+--- XENIX:LOCALTIME   ---   Converts Time and Date (Ref: CTIME(S))
+
+%+X Sysroutine("X?localtime") XNX_LOCALTIME;   --- Converts Time&Date
+%+X import ref() ctm;           -- ref(4-Byte Integer)
+%+X export ref(TIMPAK) res;     -- Resulting Time&Date Packet
+%+X end;
+
+%+X Record TIMPAK;
+%+X begin
+%+X %-E   range(0:MaxWord) SS;   -- Seconds
+%+XE      integer          SS;   -- Seconds
+%+X %-E   range(0:MaxWord) MM;   -- Minutes
+%+XE      integer          MM;   -- Minutes
+%+X %-E   range(0:MaxWord) HH;   -- Hours
+%+XE      integer          HH;   -- Hours
+%+X %-E   range(0:MaxWord) DD;   -- Day of month  (1..31)
+%+XE      integer          DD;   -- Day of month  (1..31)
+%+X %-E   range(0:MaxWord) MN;   -- Month (0..11)
+%+XE      integer          MN;   -- Month (0..11)
+%+X %-E   range(0:MaxWord) YY;   -- Year - 1900
+%+XE      integer          YY;   -- Year - 1900
+%+X %-E   range(0:MaxWord) DW;   -- Day of week (0:sunday,1:monday,...)
+%+XE      integer          DW;   -- Day of week (0:sunday,1:monday,...)
+%+X %-E   range(0:MaxWord) DY;   -- Day of year  (0..365)
+%+XE      integer          DY;   -- Day of year  (0..365)
+%+X %-E   range(0:MaxWord) DST;  -- non-0 if DST in effect
+%+XE      integer          DST;  -- non-0 if DST in effect
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   result'segment  ; is done                                --
+--   push   result'offset   ; is done                                --
+--   CALL   XNX,0,4,_LOCALTIME                                       --
+--     --   iCALL FAR PTR _LOCALTIME                                 --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  DX                                                       --
+--   PUSHR  AX              ; DX:AX ref(TIMPAK) result               --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   result          ; is done                                --
+--   CALL   XNX,0,4,_LOCALTIME                                       --
+--     --   iCALL NEAR PTR _LOCALTIME                                --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; ref(TIMPAK) result                    --
+-----------------------------------------------------------------------
+%page
+
+
+--- MS-OS2:DosGetDateTime  --- Get Current Date and Time ----- Page 120
+
+%+O Sysroutine("O?DOSGETDATETIME") OS2_GTIME;
+%+O import ref(TIMPAK) Tpkt;           -- Pointer to TIMPAK structure
+%+O end;
+
+%+O Record TIMPAK;
+%+O begin range(0:MaxByte) HH;   -- Hours  (0..23)
+%+O       range(0:MaxByte) MM;   -- Minutes  (0..59)
+%+O       range(0:MaxByte) SS;   -- Seconds  (0..59)
+%+O       range(0:MaxByte) PP;   -- Hundredths  (0..99)
+%+O       range(0:MaxByte) DD;   -- Day of month  (1..31)
+%+O       range(0:MaxByte) MN;   -- Month (0..11)
+%+O       range(0:MaxWord) YY;   -- Year (80..79 => 1980..2079)
+%+O       range(0:MaxWord) TZ;   -- TimeZone No.of.minutes from GMT
+%+O       range(0:MaxByte) DW;   -- Day of week (0:sunday,1:monday,...)
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Tpkt'segment                                             --
+--   push   Tpkt'offset                                              --
+--   CALL   OS2,0,4,DOSGETDATETIME                                   --
+--     --   iCALL FAR PTR DOSGETDATETIME                             --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- MS-DOS:Function 2CH=44: Get Time ------------------------Page 1-116
+
+%+M Sysroutine("M?TIME") DOS_TIME;   --- Get Time
+%+M export infix(TIMPAK) res;         -- Result
+%+M end;
+
+%+M Record TIMPAK; info "TYPE";
+%+M begin range(0:244) PP;  -- DL: Hundredths
+%+M       range(0:244) SS;  -- DH: Seconds
+%+M       range(0:244) MM;  -- CL: Minutes
+%+M       range(0:244) HH;  -- CH: Hours
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   LOADC  AH,2CH          ; function code                          --
+--   DOS1                                                            --
+--     --   iINT  21H                                                --
+--   PUSHR  CX              ; hundredths, seconds                    --
+--   PUSHR  DX              ; minutes, hour                          --
+-----------------------------------------------------------------------
+
+
+
+
+
+--- MS-DOS:Function 2AH=42: Get Date ----------------------- Page 1-112
+
+%+M Sysroutine("M?DATE") DOS_DATE;   --- Get Date
+%+M export infix(DATPAK) res;         -- Result
+%+M end;
+
+%+M Record DATPAK; info "TYPE";
+%+M begin range(0:MaxWord) DW; -- AL: Day of week (0:sunday,1:monday,...
+%+M       range(0:255) DD;     -- DL: Day   (1..31)
+%+M       range(0:255) MM;     -- DH: Month (1..12)
+%+M       range(0:MaxWord) YY; -- CX: Year
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   LOADC  AH,2AH          ; function code                          --
+--   DOS1                                                            --
+--     --   iINT  21H                                                --
+--   PUSHR  CX              ; year                                   --
+--   PUSHR  DX              ; day, month                             --
+--   LOADC  AH,0                                                     --
+--   PUSHR  AX              ; day of week                            --
+-----------------------------------------------------------------------
+%page
+--- XENIX:UNAME  ---   Gets name of current XENIX system
+
+%+X Sysroutine("X?uname") XNX_UNAME;
+%+X import ref(VERPAK) arg;
+%+X end;
+
+%+X Record VERPAK;
+%+X begin character sysname(9);    -- E.g.  XENIX
+%+X       character nodename(9);   --
+%+X       character release(9);    -- E.g.  2.1.3
+%+X       character version(9);    -- E.g.  SysV
+%+X       character machine(9);    -- E.g.  i80286
+%+X       character reserved(15);  --
+%+X %-E   range(0:MaxWord) origin; --
+%+XE      integer          origin; --
+%+X %-E   range(0:MaxWord) OEM;    --
+%+XE      integer          OEM;    --
+%+X       integer serial;          --
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   arg'segment     ; is done                                --
+--   push   arg'offset      ; is done                                --
+--   CALL   XNX,0,4,_UNAME                                           --
+--     --   iCALL FAR PTR _UNAME                                     --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   arg             ; is done                                --
+--   CALL   XNX,0,4,_UNAME                                           --
+--     --   iCALL NEAR PTR _UNAME                                    --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+--- MS-DOS:Function 30H=48: Get MS-DOS Version etc. -------- Page 1-123
+
+%+M Sysroutine("M?VERS") DOS_VERS;   --- Get MS-DOS Version Number etc.
+%+M export infix(VERPAK) res;         -- Result
+%+M end;
+
+%+M Record VERPAK; info "TYPE";
+%+M begin range(0:255) ver;       -- AL: Version number
+%+M       range(0:255) rev;       -- AH: Revision number
+%+M       range(0:MaxWord) OEM;   -- BH: OEM serial number
+%+M       integer user;           -- 00:BL:CX: 24-bit user serial number
+%+M end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   LOADC  AH,30H          ; function code                          --
+--   DOS1                                                            --
+--     --   iINT  21H                                                --
+--   LOADC  DH,0                                                     --
+--   MOV    DL,BH           ; OEM serial number                      --
+--   LOADC  BH,0                                                     --
+--   PUSHR  BX              ; 24-bit user serial number, BL part     --
+--   PUSHR  CX              ; 24-bit user serial number, CX part     --
+--   PUSHR  DX              ; OEM serial number                      --
+--   PUSHR  AX              ; version number, revision number        --
+-----------------------------------------------------------------------
+
+
+--- MS-OS2:DosGetVersion  --- Get OS2 Version Number --------- Page 151
+
+%+O Sysroutine("O?DOSGETVERSION") OS2_VERS;
+%+O import ref() Version;              -- Pointer to Version Word
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Version'segment                                          --
+--   push   Version'offset                                           --
+--   CALL   OS2,0,4,DOSGETVERSION                                    --
+--     --   iCALL FAR PTR DOSGETVERSION                              --
+--     --   iMOV  SS:G@OSSTAT,AX                                     --
+-----------------------------------------------------------------------
+%page
+--- XENIX:GETENV ---   Get Value of (name=value) ------- See: GETENV(S)
+                                                 -- See also: GETOPT(S)
+%+X Sysroutine("X?getenv") XNX_GETENV; --- Get Value from Environment
+%+X import ref(ASCIIZ) ident;            -- Pointer to identification
+%+X export ref(ASCIIZ) res;              -- Pointer to 'value' string
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   ident'segment   ; is done                                --
+--   push   ident'offset    ; is done                                --
+--   CALL   XNX,0,4,_GETENV                                          --
+--     --   iCALL FAR PTR _GETENV                                    --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  DX                                                       --
+--   PUSHR  AX              ; DX:AX Pointer to 'value' or none       --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   ident           ; is done                                --
+--   CALL   XNX,0,4,_GETENV                                          --
+--     --   iCALL NEAR PTR _GETENV                                   --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX              ; Pointer to 'value' or none            --
+-----------------------------------------------------------------------
+
+
+
+--- XENIX:SYSTEM --- Executes a shell command ---------- See: SYSTEM(S)
+
+%+X Sysroutine("X?system") XNX_SYSTEM;
+%+X import ref(ASCIIZ) cmnd;             -- Pointer to command string
+%+X export
+%+X %-E    range(0:MaxWord) RetCode;     -- Return Code
+%+XE       integer          RetCode;     -- Return Code
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   cmnd'segment   ; is done                                 --
+--   push   cmnd'offset    ; is done                                 --
+--   CALL   XNX,0,4,_SYSTEM                                          --
+--     --   iCALL FAR PTR _SYSTEM                                    --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Status of executed command             --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   cmnd           ; is done                                 --
+--   CALL   XNX,0,4,_SYSTEM                                          --
+--     --   iCALL NEAR PTR _SYSTEM                                   --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX             ; Status of executed command             --
+-----------------------------------------------------------------------
+
+%page
+
+--- MS-DOS:Function 4BH=75: Load and Execute Program ------- Page 1-189
+
+%+M Sysroutine("EXEC") DOS_EXEC;     --- Load and Execute Program
+%+M import name(Character) path;      -- Pointer to Pathname
+%+M        name(Character) param;     -- Pointer to Parameter-Block
+%+M export range(0:MaxWord) RetCode;  -- Return Code
+%+M end;
+
+
+
+--- XENIX:EXECV  --- Executes a file --------------------- See: EXEC(S)
+
+%+X Sysroutine("X?execv") XNX_EXECV;
+%+X import ref(RefArr) argv;             -- Pointer to argument vector
+%+X        ref(ASCIIZ) path;             -- Pointer to ASCIIZ Path-name
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   argv'segment   ; is done                                 --
+--   push   argv'offset    ; is done                                 --
+--   push   path'segment   ; is done                                 --
+--   push   path'offset    ; is done                                 --
+--   CALL   XNX,0,8,_EXECV                                           --
+--     --   iCALL FAR PTR _EXECV                                     --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   argv           ; is done                                 --
+--   push   path           ; is done                                 --
+--   CALL   XNX,0,8,_EXECV                                           --
+--     --   iCALL NEAR PTR _EXECV                                    --
+--     --   iADD  ESP,8                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+--- XENIX:PTRACE   ---   Traces a Process
+
+%+X Sysroutine("X?ptrace") XNX_PTRACE;
+%+X import infix(AnyAddr) addr;       --
+%+X %-E    range(0:MaxWord) data;     --
+%+XE       integer          data;     --
+%+X %-E    range(0:MaxWord) pid;      --
+%+XE       integer          pid;      --
+%+X %-E    range(0:MaxWord) request;  --
+%+XE       integer          request;  --
+%+X export
+%+X %-E    range(0:MaxWord) res;      --
+%+XE       integer          res;      --
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   addr'segment  ; is done                                  --
+--   push   addr'offset   ; is done                                  --
+--   push   data          ; is done                                  --
+--   push   pid           ; is done                                  --
+--   push   request       ; is done                                  --
+--   CALL   XNX,0,10,_PTRACE                                         --
+--     --   iCALL FAR PTR _PTRACE                                    --
+--     --   iADD  SP,10                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Stack Result                           --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   addr          ; is done                                  --
+--   push   data          ; is done                                  --
+--   push   pid           ; is done                                  --
+--   push   request       ; is done                                  --
+--   CALL   XNX,0,16,_PTRACE                                         --
+--     --   iCALL NEAR PTR _PTRACE                                   --
+--     --   iADD  ESP,16                                             --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX             ; Stack Result                           --
+-----------------------------------------------------------------------
+
+
+
+--- MS-OS2:DosPTrace  --- Interface for Program Debugging ---- Page 214
+
+%+O Sysroutine("O?DOSPTRACE") OS2_PTRACE;
+%+O import ref(TRCPAK) Trcpkt;         -- Pointer to PTrace Buffer
+%+O end;
+
+%+O Record TRCPAK;
+%+O begin range(0:MaxWord) pid;  -- Debuggee Process ID
+%+O       range(0:MaxWord) tid;  -- Debuggee Thread ID
+%+O       range(0:MaxWord) Cmd;  -- Import: Request Code
+%+O                              -- Export: Result Code
+%+O       range(0:MaxWord) Val;  -- Import: Data to DosPTrace
+%+O                              -- Export: Error Code
+%+O       range(0:MaxWord) OffV; -- Offset from Seg
+%+O       range(0:MaxWord) SegV; -- Segment Value
+%+O       range(0:MaxWord) MTE;  -- Module handle containing segment
+%+O       range(0:MaxWord) rAX;  -- Register AX
+%+O       range(0:MaxWord) rBX;  -- Register BX
+%+O       range(0:MaxWord) rCX;  -- Register CX
+%+O       range(0:MaxWord) rDX;  -- Register DX
+%+O       range(0:MaxWord) rSI;  -- Register SI
+%+O       range(0:MaxWord) rDI;  -- Register DI
+%+O       range(0:MaxWord) rBP;  -- Register BP
+%+O       range(0:MaxWord) rDS;  -- Register DS
+%+O       range(0:MaxWord) rES;  -- Register ES
+%+O       range(0:MaxWord) rIP;  -- Register IP
+%+O       range(0:MaxWord) rCS;  -- Register CS
+%+O       range(0:MaxWord) rF;   -- Register F
+%+O       range(0:MaxWord) rSP;  -- Register SP
+%+O       range(0:MaxWord) rSS;  -- Register SS
+%+O end;
+
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   Trcpkt'segment                                           --
+--   push   Trcpkt'offset                                            --
+--   CALL   OS2,0,4,DOSPTRACE                                        --
+--     --   iCALL FAR PTR DOSPTRACE                                  --
+--     --   iMOV  SS:OS2STAT,AX                                      --
+-----------------------------------------------------------------------
+%page
+--- XENIX:FORK   ---   Creates a new Process (Child)
+
+%+X Sysroutine("X?fork") XNX_FORK;
+%+X export
+%+X %-E    range(0:MaxWord) id;       --
+%+XE       integer          id;       --
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   CALL   XNX,0,0,_FORK                                            --
+--     --   iCALL FAR PTR _FORK                                      --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Stack Result                           --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   CALL   XNX,0,0,_FORK                                            --
+--     --   iCALL NEAR PTR _FORK                                     --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX             ; Stack Result                           --
+-----------------------------------------------------------------------
+
+
+
+--- XENIX:WAIT   ---   Waits for a Child Process to Stop or Terminate
+
+%+X Sysroutine("X?wait") XNX_WAIT;
+%+X import
+%+X %-E    ref(Any2Byte) WaitStat;    --
+%+XE       ref(Any4Byte) WaitStat;    --
+%+X export
+%+X %-E    range(0:MaxWord) pid;      --
+%+XE       integer          pid;      --
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   WaitStat      ; is done                                  --
+--   CALL   XNX,0,4,_WAIT                                            --
+--     --   iCALL FAR PTR _WAIT                                      --
+--     --   iADD  SP,4                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  AX              ; Stack Result                           --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   WaitStat      ; is done                                  --
+--   CALL   XNX,0,4,_WAIT                                            --
+--     --   iCALL NEAR PTR _WAIT                                     --
+--     --   iADD  ESP,4                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+--   PUSHR  EAX             ; Stack Result                           --
+-----------------------------------------------------------------------
+
+
+
+--- XENIX:PAUSE   ---   Suspends a process until a signal occurs
+
+%+X Sysroutine("X?pause") XNX_PAUSE;
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   CALL   XNX,0,0,_PAUSE                                           --
+--     --   iCALL FAR PTR _PAUSE                                     --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   CALL   XNX,0,0,_PAUSE                                           --
+--     --   iCALL NEAR PTR _PAUSE                                    --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+%page
+--- XENIX:EXECVP   ---   Executes a File
+
+%+X Sysroutine("X?execvp") XNX_EXECVP;
+%+X import ref(RefArr) argv;   -- Pointer to array of pointers to args
+%+X        ref(ASCIIZ) file;   -- Pointer to Filename
+%+X end;
+
+--  XENIX:286 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   argv'segment  ; is done                                  --
+--   push   argv'offset   ; is done                                  --
+--   push   file'segment  ; is done                                  --
+--   push   file'offset   ; is done                                  --
+--   CALL   XNX,0,8,_EXECVP                                          --
+--     --   iCALL FAR PTR _EXECVP                                    --
+--     --   iADD  SP,8                                               --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+--  XENIX:386 -- Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   argv          ; is done                                  --
+--   push   file          ; is done                                  --
+--   CALL   XNX,0,8,_EXECVP                                          --
+--     --   iCALL NEAR PTR _EXECVP                                   --
+--     --   iADD  ESP,8                                              --
+--     --   iINC  AX                                                 --
+--     --   iJNZ  $+5                                                --
+--     --   iCALL NEAR PTR E@SSTAT                                   --
+--     --   iDEC  AX                                                 --
+-----------------------------------------------------------------------
+
+
+
+--- MS-OS2:DosExecPgm  --- Execute Program -------------------- Page 84
+
+%+O Sysroutine("O?DOSEXECPGM") OS2_EXECPGM;
+%+O import ref() ObjNameBuf;           -- Pointer to Object Name Buffer
+%+O        range(0:MaxWord) BufLng;    -- Length of Object Name Buffer
+%+O        range(0:MaxWord) AsyncTrcFlg; -- Execute asynchronously/Trace
+%+O        ref(ASCIIZ) ArgPointer;     -- Pointer to Argument String
+%+O        ref(ASCIIZ) EnvPointer;     -- Pointer to Environment Strings
+%+O        ref() ReturnCodes;          -- Pointer to Return Codes
+%+O        ref(ASCIIZ) PgmPointer;     -- Pointer to Program Filename
+%+O end;
+
+--  Inline q-Coding:
+-----------------------------------------------------------------------
+--   push   ObjNameBuf'segment                                       --
+--   push   ObjNameBuf'offset                                        --
+--   push   BufLng                                                   --
+--   push   AsyncTrcFlg                                              --
+--   push   ArgPointer'segment                                       --
+--   push   ArgPointer'offset                                        --
+--   push   EnvPointer'segment                                       --
+--   push   EnvPointer'offset                                        --
+--   push   ReturnCodes'segment                                      --
+--   push   ReturnCodes'offset                                       --
+--   push   PgmPointer'segment                                       --
+--   push   PgmPointer'offset                                        --
+--   CALL   OS2,0,24,DOSEXECPGM                                      --
+--     --   iCALL FAR PTR DOSEXECPGM                                 --
+--     --   iMOV  SS:OS2STAT,AX                                      --
+-----------------------------------------------------------------------
+
+%title ***  B a s i c    U t i l i e s  ***
+Visible Sysroutine("S?BOBY") BOOL2BYTE;
+import Boolean b; export range(0:MaxByte) v;
+-- Inline q-Coding: No Code
+end;
+
+Visible Sysroutine("S?BYBO") BYTE2BOOL;
+import range(0:MaxByte) v; export Boolean b;
+-- Inline q-Coding: No Code
+end;
+
+Visible Sysroutine("S?SZ2W") Size2Word;
+import size s;
+export
+%-E    range(0:MaxWord) w;
+%+E    integer          w;
+-- Inline q-Coding: No Code
+end;
+
+Visible Sysroutine("S?W2SZ") Word2Size;
+import
+%-E    range(0:MaxWord) w;
+%+E    integer          w;
+export size s;
+-- Inline q-Coding: No Code
+end;
+
+Visible Sysroutine("S?RF2N") Ref2Name;
+import ref() rf; export name() n;
+--  Inline q-Coding: for MS-DOS,OS-2,XENIX/286
+-------------------------------------
+--   PUSHC   AX,0                  --
+-------------------------------------
+--  Inline q-Coding: for UNIX/386 and XENIX/386
+-------------------------------------
+--   PUSHC   EAX,0                 --
+-------------------------------------
+end;
+
+Visible Sysroutine("S?N2RF") Name2Ref;
+import name() n; export ref() rf;
+--  Inline q-Coding: for MS-DOS,OS-2,XENIX/286
+-------------------------------------
+--   POP     AX                    --
+--   POP     DX                    --
+--   ADD     AX,DX                 --
+--   PUSH    AX                    --
+-------------------------------------
+--  Inline q-Coding: for UNIX/386 and XENIX/386
+-------------------------------------
+--   POP     EAX                   --
+--   POP     EDX                   --
+--   ADD     EAX,EDX               --
+--   PUSH    EAX                   --
+-------------------------------------
+end;
+%page
+
+Visible Sysroutine("S?BNOT") bNOT;
+import range(0:100) i; export range(0:100) res  end;
+
+Visible Sysroutine("S?WNOT") wNOT;
+import range(0:16000) i; export range(0:16000) res  end;
+
+Visible Sysroutine("S?DNOT") dNOT;
+import integer i; export integer res  end;
+
+--  Inline q-Coding: for MS-DOS,OS-2,XENIX
+-------------------------------------------------
+--  POP  AL       POP  AX       POP  AX        --
+--  NOT  AL       NOT  AX       POP  DX        --
+--  PUSH AL       PUSH AX       NOT  AX        --
+--                              NOT  DX        --
+--                              PUSH DX        --
+--                              PUSH AX        --
+-------------------------------------------------
+
+--  Inline q-Coding: for UNIX
+-------------------------------------------------
+--  POP  AL       POP  AX       POP  EAX       --
+--  NOT  AL       NOT  AX       NOT  EAX       --
+--  PUSH AL       PUSH AX       PUSH EAX       --
+-------------------------------------------------
+%page
+
+Visible Sysroutine("S?BAND") bAND;
+import range(0:100) i,j; export range(0:100) res  end;
+
+Visible Sysroutine("S?WAND") wAND;
+import range(0:16000) i,j; export range(0:16000) res  end;
+
+Visible Sysroutine("S?DAND") dAND;
+import integer i,j; export integer res  end;
+
+Visible Sysroutine("S?BOR") bOR;
+import range(0:100) i,j; export range(0:100) res  end;
+
+Visible Sysroutine("S?WOR") wOR;
+import range(0:16000) i,j; export range(0:16000) res  end;
+
+Visible Sysroutine("S?DOR") dOR;
+import integer i,j; export integer res  end;
+
+Visible Sysroutine("S?BXOR") bXOR;
+import range(0:100) i,j; export range(0:100) res  end;
+
+Visible Sysroutine("S?WXOR") wXOR;
+import range(0:16000) i,j; export range(0:16000) res  end;
+
+Visible Sysroutine("S?DXOR") dXOR;
+import integer i,j; export integer res  end;
+
+--  Inline q-Coding: for MS-DOS,OS-2,XENIX
+-----------------------------------------------------------------------
+--    POP      AL           POP      AX           POP      AX       --
+--    POP      CL           POP      CX           POP      DX       --
+--  AND/OR/XOR AL,CL      AND/OR/XOR AX,CX        POP      BX       --
+--    PUSH     AL           PUSH     AX           POP      CX       --
+--                                              AND/OR/XOR AX,BX    --
+--                                              AND/OR/XOR DX,CX    --
+--                                                PUSH     DX       --
+--                                                PUSH     AX       --
+-----------------------------------------------------------------------
+
+--  Inline q-Coding: for UNIX
+-----------------------------------------------------------------------
+--    POP      AL           POP      AX           POP      EAX       --
+--    POP      CL           POP      CX           POP      ECX       --
+--  AND/OR/XOR AL,CL      AND/OR/XOR AX,CX      AND/OR/XOR EAX,ECX   --
+--    PUSH     AL           PUSH     AX           PUSH     EAX       --
+-----------------------------------------------------------------------
+%page
+
+Visible Sysroutine("S?BSHL") bSHL;
+import range(0:100) i,j; export range(0:100) res  end;
+
+Visible Sysroutine("S?WSHL") wSHL;
+import range(0:16000) i,j; export range(0:16000) res  end;
+
+Visible Sysroutine("S?BSHR") bSHR;
+import range(0:100) i,j; export range(0:100) res  end;
+
+Visible Sysroutine("S?WSHR") wSHR;
+import range(0:16000) i,j; export range(0:16000) res  end;
+
+--  Inline q-Coding:
+------------------------------------------------------------------------
+--   POP     CL                     POP     CX                        --
+--   POP     AL                     POP     AX                        --
+--   SHL/SHR AL,CL                  SHL/SHR AX,CL                     --
+--   PUSH    AL                     PUSH    AX                        --
+------------------------------------------------------------------------
+%title *** Byte String Compare Equal ***
+Visible Sysroutine("S?SCMPEQ") APX_SCMPEQ;
+import
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) str1;       -- Pointer to String 1
+       Name(Character) str2;       -- Pointer to String 2
+export Boolean res;                -- Result
+-- begin repeat while lng > 0
+--       do lng:=lng-1;
+--          if var(str1)(lng) <> var(str2)(lng)
+--          then res:=false; goto E endif;
+--       endrepeat;
+--       res:=true;
+-- E:
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   SI                                                          --
+-- DYADR  ADD,SI,AX       ; SI <- str2.ofst + str2.attr               --
+-- POPR   DS              ; DS <- str2.seg                            --
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- str1.ofst + str1.attr               --
+-- POPR   ES              ; ES <- str1.seg                            --
+-- POPR   CX              ; CX <- length                              --
+-- RSTRB  RCMPS,CLD,REPEQ ; DS:[SI] cmp ES:[DI]; INC(SI,DI); CX times --
+--   --   iCLD                                                        --
+--   --   iREPE   CMPSB                                               --
+--   --   iMOV    AL,0                                                --
+--   --   iJNE    $+3                                                 --
+--   --   iDEC    AX                                                  --
+-- PUSHR  AL              ; Result                                    --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   ESI                                                         --
+-- DYADR  ADD,ESI,EAX     ; ESI <- str2.ofst + str2.attr              --
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- str1.ofst + str1.attr              --
+-- POPR   ECX             ; ECX <- length                             --
+-- RSTRB  RCMPS,CLD,REPEQ ; DS:[ESI] cmp ES:[EDI];                    --
+--                        ; INC(ESI,EDI); ECX times                   --
+--   --   iCLD                                                        --
+--   --   iREPE   CMPSB                                               --
+--   --   iMOV    AL,0                                                --
+--   --   iJNE    $+3                                                 --
+--   --   iDEC    AX                                                  --
+-- PUSHR  AL              ; Result                                    --
+------------------------------------------------------------------------
+%title *** Byte String Move and Increment address ***
+
+Visible Sysroutine("S?SMOVEI") APX_SMOVEI;
+import
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) dst;        -- Pointer to Destination
+       Name(Character) src;        -- Pointer to Source
+-- begin integer i; i:=0;
+--       repeat while i < lng
+--       do var(dst)(i):=var(src)(i); i:=i+1 endrepeat;
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   SI                                                          --
+-- DYADR  ADD,SI,AX       ; SI <- src.ofst + src.attr                 --
+-- POPR   DS              ; DS <- src.seg                             --
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- src.ofst + src.attr                 --
+-- POPR   ES              ; ES <- src.seg                             --
+-- POPR   CX              ; CX <- length                              --
+-- RSTRB  RMOV,CLD,REP    ; DS:[SI] -> ES:[DI]; INC(SI,DI); CX times  --
+--   --   iCLD                                                        --
+--   --   iREP    MOVSB                                               --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   ESI                                                         --
+-- DYADR  ADD,ESI,EAX     ; ESI <- src.ofst + src.attr                --
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- src.ofst + src.attr                --
+-- POPR   ECX             ; ECX <- length                             --
+-- RSTRB  RMOV,CLD,REP    ; DS:[ESI] -> ES:[EDI];                     --
+--                        ; INC(ESI,EDI); ECX times                   --
+--   --   iCLD                                                        --
+--   --   iREP    MOVSB                                               --
+------------------------------------------------------------------------
+%title *** Byte String Move and Decrement address ***
+
+Visible Sysroutine("S?SMOVED") APX_SMOVED;
+import
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) dst;        -- Pointer to Destination
+       Name(Character) src;        -- Pointer to Source
+-- begin integer i; i:=0;
+--       repeat while i < lng
+--       do i:=i+1; var(dst)(lng-i):=var(src)(lng-i) endrepeat;
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   SI                                                          --
+-- DYADR  ADD,SI,AX       ; SI <- src.ofst + src.attr                 --
+-- POPR   DS              ; DS <- src.seg                             --
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- src.ofst + src.attr                 --
+-- POPR   ES              ; ES <- src.seg                             --
+-- POPR   CX              ; CX <- length                              --
+-- RSTRB  RMOV,STD,REP    ; DS:[SI] -> ES:[DI]; DEC(SI,DI); CX times  --
+--   --   iSTD                                                        --
+--   --   iREP    MOVSB                                               --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   ESI                                                         --
+-- DYADR  ADD,ESI,EAX     ; ESI <- src.ofst + src.attr                --
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- src.ofst + src.attr                --
+-- POPR   ECX             ; ECX <- length                             --
+-- RSTRB  RMOV,STD,REP    ; DS:[ESI] -> ES:[EDI];                     --
+--                        ; DEC(ESI,EDI); ECX times                   --
+--   --   iSTD                                                        --
+--   --   iREP    MOVSB                                               --
+------------------------------------------------------------------------
+%title *** Byte String Skip and Increment address ***
+
+Visible Sysroutine("S?SSKIP") APX_SSKIP;
+import Character c;                -- The character
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) buff;       -- Pointer to Buffer
+%-E export range(0:MaxWord) rst;   -- No. of chars left after skip
+%+E export integer          rst;   -- No. of chars left after skip
+-- begin integer i; i:=0;
+--       repeat while lng > 0
+--       do if var(buff)(i) <> c then goto E endif;
+--          lng:=lng-1; i:=i+1 endrepeat;
+-- E:    rst:=lng;
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- buff.ofst + buff.attr               --
+-- POPR   ES              ; ES <- buff.seg                            --
+-- POPR   CX              ; CX <- length                              --
+-- POPR   AL              ; AL <- the character                       --
+-- RSTRB  RSCAS,CLD,REPEQ ; Compare AL -- ES:[DI]; INC(DI); CX times  --
+--   --   iCLD                                                        --
+--   --   iREPE   SCASB                                               --
+--   --   iJE     $+3                                                 --
+--   --   iINC    CX                                                  --
+-- PUSHR  CX              ; CX <- length of resulting string          --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- buff.ofst + buff.attr              --
+-- POPR   ECX             ; ECX <- length                             --
+-- POPR   AL              ; AL <- the character                       --
+-- RSTRB  RSCAS,CLD,REPEQ ; AL cmp ES:[EDI]; INC(EDI); ECX times      --
+--   --   iCLD                                                        --
+--   --   iREPE   SCASB                                               --
+--   --   iJE     $+3                                                 --
+--   --   iINC    ECX                                                 --
+-- PUSHR  ECX             ; ECX <- length of resulting string         --
+------------------------------------------------------------------------
+%title *** Byte String Strip and Decrement address ***
+
+Visible Sysroutine("S?STRIP") APX_STRIP;
+import Character c;                -- The character
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) buff;       -- Pointer to Buffer
+%-E export range(0:MaxWord) rst;   -- No. of chars left after strip
+%+E export integer          rst;   -- No. of chars left after strip
+-- begin integer i; i:=0;
+--       repeat while lng > 0
+--       do if var(buff)(i) <> c then goto E endif;
+--          lng:=lng-1; i:=i-1 endrepeat;
+-- E:    rst:=lng;
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- buff.ofst + buff.attr               --
+-- POPR   ES              ; ES <- buff.seg                            --
+-- POPR   CX              ; CX <- length                              --
+-- POPR   AL              ; AL <- the character                       --
+-- RSTRB  RSCAS,STD,REPEQ ; Compare AL -- ES:[DI]; DEC(DI); CX times  --
+--   --   iSTD                                                        --
+--   --   iREPE   SCASB                                               --
+--   --   iJE     $+3                                                 --
+--   --   iINC    CX                                                  --
+-- PUSHR  CX              ; CX <- length of resulting string          --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- buff.ofst + buff.attr              --
+-- POPR   ECX             ; ECX <- length                             --
+-- POPR   AL              ; AL <- the character                       --
+-- RSTRB  RSCAS,STD,REPEQ ; AL cmp ES:[EDI]; DEC(EDI); ECX times      --
+--   --   iSTD                                                        --
+--   --   iREPE   SCASB                                               --
+--   --   iJE     $+3                                                 --
+--   --   iINC    CX                                                  --
+-- PUSHR  ECX             ; ECX <- length of resulting string         --
+------------------------------------------------------------------------
+%title *** Byte String Find and Increment address ***
+
+Visible Sysroutine("S?SFINDI") APX_SFINDI;
+import Character c;                -- The character
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) buff;       -- Pointer to Buffer
+%-E export range(0:MaxWord) rst;   -- No. of chars left after find
+%+E export integer          rst;   -- No. of chars left after find
+-- begin integer i; i:=0;
+--       repeat while lng > 0
+--       do if var(buff)(i) = c then goto E endif;
+--          lng:=lng-1; i:=i+1 endrepeat;
+-- E:    rst:=lng;
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- buff.ofst + buff.attr               --
+-- POPR   ES              ; ES <- buff.seg                            --
+-- POPR   CX              ; CX <- length                              --
+-- POPR   AL              ; AL <- the character to find               --
+-- RSTRB  RSCAS,CLD,REPNE ; Compare AL -- ES:[DI]; INC(DI); CX times  --
+--   --   iCLD                                                        --
+--   --   iREPNE  SCASB                                               --
+--   --   iJNE    $+3                                                 --
+--   --   iINC    CX                                                  --
+-- PUSHR  CX              ; CX <- length of resulting string          --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- buff.ofst + buff.attr              --
+-- POPR   ECX             ; ECX <- length                             --
+-- POPR   AL              ; AL <- the character to find               --
+-- RSTRB  RSCAS,CLD,REPNE ; AL cmp ES:[EDI]; INC(EDI); ECX times      --
+--   --   iCLD                                                        --
+--   --   iREPNE  SCASB                                               --
+--   --   iJNE    $+3                                                 --
+--   --   iINC    ECX                                                 --
+-- PUSHR  ECX             ; ECX <- length of resulting string         --
+------------------------------------------------------------------------
+%title *** Byte String Find and Decrement address ***
+
+Visible Sysroutine("S?SFINDD") APX_SFINDD;
+import Character c;                -- The character
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) buff;       -- Pointer to Buffer
+%-E export range(0:MaxWord) rst;   -- No. of chars left after find
+%+E export integer          rst;   -- No. of chars left after find
+-- begin integer i; i:=0;
+--       repeat while lng > 0
+--       do if var(buff)(i) = c then goto E endif;
+--          lng:=lng-1; i:=i-1 endrepeat;
+-- E:    rst:=lng;
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- buff.ofst + buff.attr               --
+-- POPR   ES              ; ES <- buff.seg                            --
+-- POPR   CX              ; CX <- length                              --
+-- POPR   AL              ; AL <- the character to find               --
+-- RSTRB  RSCAS,STD,REPNE ; Compare AL -- ES:[DI]; DEC(DI); CX times  --
+--   --   iSTD                                                        --
+--   --   iREPNE  SCASB                                               --
+--   --   iJNE    $+3                                                 --
+--   --   iINC    CX                                                  --
+-- PUSHR  CX              ; CX <- length of resulting string          --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- buff.ofst + buff.attr              --
+-- POPR   ECX             ; ECX <- length                             --
+-- POPR   AL              ; AL <- the character to find               --
+-- RSTRB  RSCAS,STD,REPNE ; AL cmp ES:[EDI]; DEC(EDI); ECX times      --
+--   --   iSTD                                                        --
+--   --   iREPNE  SCASB                                               --
+--   --   iJNE    $+3                                                 --
+--   --   iINC    ECX                                                 --
+-- PUSHR  ECX             ; ECX <- length of resulting string         --
+------------------------------------------------------------------------
+%title *** Byte String Fill and Increment address ***
+
+Visible Sysroutine("S?SFILL") APX_SFILL;
+import Character c;                -- The character
+%-E    range(0:MaxWord) lng;       -- Length
+%+E    integer          lng;       -- Length
+       Name(Character) buff;       -- Pointer to Buffer
+-- begin repeat while lng > 0
+--       do lng:=lng-1; var(buff)(lng):=c endrepeat;
+end;
+
+-- Inline q-Coding: for MS-DOS,OS-2,XENIX
+------------------------------------------------------------------------
+-- POPR   AX                                                          --
+-- POPR   DI                                                          --
+-- DYADR  ADD,DI,AX       ; DI <- buff.ofst + buff.attr               --
+-- POPR   ES              ; ES <- buff.seg                            --
+-- POPR   CX              ; CX <- length                              --
+-- POPR   AL              ; AL <- the character to fill in            --
+-- RSTRB  RSTOS,CLD,REP   ; AL -> ES:[DI]; INC(DI); CX times          --
+--   --   iCLD                                                        --
+--   --   iREP    STOSB                                               --
+------------------------------------------------------------------------
+
+-- Inline q-Coding: for UNIX
+------------------------------------------------------------------------
+-- POPR   EAX                                                         --
+-- POPR   EDI                                                         --
+-- DYADR  ADD,EDI,EAX     ; EDI <- buff.ofst + buff.attr              --
+-- POPR   ECX             ; ECX <- length                             --
+-- POPR   AL              ; AL <- the character to fill in            --
+-- RSTRB  RSTOS,CLD,REP   ; AL -> ES:[EDI]; INC(EDI); ECX times       --
+--   --   iCLD                                                        --
+--   --   iREP    STOSB                                               --
+------------------------------------------------------------------------
+
+
+end;

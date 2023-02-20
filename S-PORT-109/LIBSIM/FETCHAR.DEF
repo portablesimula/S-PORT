@@ -1,0 +1,20 @@
+Module fetchar_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("fetchar")fetchar;
+       import infix(txtqnt) txt; short integer p;
+       export character res;
+       ---  returns p'th char of txt, or NUL
+       begin if p > 0
+             then if p <= (txt.lp-txt.sp) -- avoid overflow
+                  then res:=txt.ent.cha(txt.sp+p-1); goto X1 endif;
+             endif;
+             res:='!0!';
+       X1:end;
+end;

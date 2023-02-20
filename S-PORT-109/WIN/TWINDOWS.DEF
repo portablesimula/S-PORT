@@ -1,0 +1,1027 @@
+%SPORT ON
+SIMSET class TWINDOWS(spec); text spec;
+
+% **************************************************************
+% Draft (documentation currently not available)
+% (c) Simula a.s, Norway
+% 23.08.1991
+% 
+%           S I M U L A   I N T E R F A C E   T O
+%             C O L O U R   S C R E E N S
+% 
+%  Selection switches:           
+%  1. Operating system selectors (one and only one must be set)
+%     M - DOS version
+%     O - OS-2 version
+%     X - XENIX/UNIX version
+%     - check consistent selection of operating system
+%+MO %EOF
+%+MX %EOF
+%+XO %EOF
+%-MOX %EOF
+% 
+%  2. Standard Simula or S-port extended:
+%     S - "Standard" (as far as it goes ...)
+%
+% **************************************************************
+
+Hidden Protected
+      !*** local attributes ***;
+      screenState,screenMode,screenH,screenW,newScreen,
+      sClosed,sModeSet,sOpen,
+      frame,frameset,SCRWIN,MAIN,poslim,msglin,editfile,locali,
+      !*** general system routines ***;
+      OSSTAT,wNOT,wAND,wOR,wXOR,wSHL,wSHR,
+      !*** keyboard input system routines ***;
+      KEYIN,EDTTXT,
+      !*** screen control system routines (do not use lightly!) ***;
+%+X   REFRSH,
+      HEIGHT,DWIDTH,CURLIN,CURPOS,UPDPOS,SCROPN,SCRCLS,
+      REGION,SWPWIN,PUTCHR,GETCEL,NEWLIN,SETWRP,
+      OUTCHR,PUTTXT,GETTXT,SCROL1
+      ;
+
+virtual: procedure exitsystem is procedure exitsystem; ;
+
+begin procedure exitsystem; !*** virtual match ***;
+      begin closeScreen(0); EXIT(0); end;
+
+%+S   character procedure loadchar(t,i); text t; short integer i;
+%+S   !*** will provoke run time error for illegal arguments ***;
+%+S   begin t.setpos(i+1); loadchar:=t.getchar; end;
+
+%+S   procedure storechar(t,i,ch); text t; short integer i; character ch;
+%+S   !*** will provoke run time error for illegal arguments ***;
+%+S   begin t.setpos(i+1); t.putchar(ch); end;
+
+      Ref(Head) frameset;        !** The set of all FRAMEs        **;
+      Ref(frame) MAIN;           !** Special FRAME without VBF    **;
+      Ref(Attributes) EditAttr;  !** Current Editing Attributes   **;
+      Ref(Attributes) MsgAttr;   !** Current Message Attributes   **;
+      Ref(Window) SCRWIN;        !** Full Screen Window           **;
+      ref(outfile) editfile;     !** Dummy outfile for editing    **;
+      Ref(KeyPkt) LastKey;       !** Last Keyin package: VISIBLE  **;
+      Short integer poslim;      !** Right Pos of Current Window  **;
+      Short integer msglin;      !** Current message Line number  **;
+      short integer screenH;     !** Full Screen Height           **;
+      short integer screenW;     !** Full Screen Width            **;
+      short integer screenMode;  !** - holds mode if state=1      **;
+      short integer locali;
+      character screenState;     !** - with values:               **;
+      character sClosed=  '!0!', !**   closed (initial state)     **;
+                sModeSet= '!1!', !**   closed, but mode set       **;
+                sOpen=    '!2!'; !**   open for windowing         **;
+
+      Class KeyPkt;              !** Keyboard Input Package       **;
+      !********  NOTE: do NOT change in any way !!!  ***************;
+      begin character map;       !** Mapped input character       **;
+            character chr;       !** Unmapped input character     **;
+            short integer fkey;  !** Function key number or zero  **;
+            character c0,c1,c2;  !** OS-Dependent                 **;
+      end;
+%title ******  Mapped Input Character key table  ******
+ 
+      Character FuncKey        =  '!1!';  !** Ctrl-A **;
+%     --                       =  '!2!';  !** Ctrl-B **;
+      Character InsKey         =  '!3!';  !** Ctrl-C **;
+      Character RightKey       =  '!4!';  !** Ctrl-D **;
+      Character LeftKey        =  '!5!';  !** Ctrl-E **;
+%     --                       =  '!6!';  !** Ctrl-F **;
+%     Character Bell           =  '!7!';  !** Ctrl-G **;
+      Character RubOut         =  '!8!';  !** Ctrl-H **;
+      Character TabKey         =  '!9!';  !** Ctrl-I **;
+      Character LfKey          = '!10!';  !** Ctrl-J **;
+%     --                       = '!11!';  !** Ctrl-K **;
+%     Character FormFeed       = '!12!';  !** Ctrl-L **;
+      Character CrKey          = '!13!';  !** Ctrl-M **;
+      Character DownKey        = '!14!';  !** Ctrl-N **;
+      Character HomeKey        = '!15!';  !** Ctrl-O **;
+%     --                       = '!16!';  !** Ctrl-P **;
+%     Character XonKey         = '!17!';  !** Ctrl-Q **;
+%     --                       = '!18!';  !** Ctrl-R **;
+%     Character XoffKey        = '!19!';  !** Ctrl-S **;
+%     --                       = '!20!';  !** Ctrl-T **;
+%     --                       = '!21!';  !** Ctrl-U **;
+%     --                       = '!22!';  !** Ctrl-V **;
+%     --                       = '!23!';  !** Ctrl-W **;
+%     --                       = '!24!';  !** Ctrl-X **;
+%     --                       = '!25!';  !** Ctrl-Y **;
+      Character EndKey         = '!26!';  !** Crtl-Z **;
+      Character EscKey         = '!27!';  !** Crtl-[ **;
+      Character UpKey          = '!28!';  !** Crtl-\ **;
+      Character BackTab        = '!29!';  !** Crtl-] **;
+      Character PgUpKey        = '!30!';  !** Crtl-^ **;
+      Character PgDnKey        = '!31!';  !** Crtl-_ **;
+      Character DelKey         ='!127!';
+ 
+% ***********    Function key table:   ****************
+ 
+      short integer
+         F1 =  01  ,  ShiftF1 =  17  ,  CtrlF1 =  33  ,  AltF1 =  49  ,
+         F2 =  02  ,  ShiftF2 =  18  ,  CtrlF2 =  34  ,  AltF2 =  50  ,
+         F3 =  03  ,  ShiftF3 =  19  ,  CtrlF3 =  35  ,  AltF3 =  51  ,
+         F4 =  04  ,  ShiftF4 =  20  ,  CtrlF4 =  36  ,  AltF4 =  52  ,
+         F5 =  05  ,  ShiftF5 =  21  ,  CtrlF5 =  37  ,  AltF5 =  53  ,
+         F6 =  06  ,  ShiftF6 =  22  ,  CtrlF6 =  38  ,  AltF6 =  54  ,
+         F7 =  07  ,  ShiftF7 =  23  ,  CtrlF7 =  39  ,  AltF7 =  55  ,
+         F8 =  08  ,  ShiftF8 =  24  ,  CtrlF8 =  40  ,  AltF8 =  56  ,
+         F9 =  09  ,  ShiftF9 =  25  ,  CtrlF9 =  41  ,  AltF9 =  57  ,
+         F10=  10  ,  ShiftF10=  26  ,  CtrlF10=  42  ,  AltF10=  58  ,
+         F11=  11  ,  ShiftF11=  27  ,  CtrlF11=  43  ,  AltF11=  59  ,
+         F12=  12  ,  ShiftF12=  28  ,  CtrlF12=  44  ,  AltF12=  60  ,
+
+         FkHome=  65  , FkUp  =  66  ,  FkPgUp =  67  , FkMinus=  68  ,
+         FkLeft=  69  , FkNum5=  70  ,  FkRight=  71  , FkPlus =  72  ,
+         FkEnd =  73  , FkDown=  74  ,  FkPgDn =  75  ,
+         FkIns =  76  , FkDel =  77  ,
+
+         FkBackTab=  80  ,
+
+         FkCtrlHome=  81  ,            FkCtrlPgUp=  83  ,
+         FkCtrlEnd=  84  ,             FkCtrlPgDn=  86  ,
+         FkCtrlleft=  87  ,            FkCtrlRight=  89  ,
+
+         FkUnknown=  255  ;
+%title  ***  S c r e e n   M o d e   S e t t i n g  ***
+
+% ***********************************************************
+% Below comment currently not valid - use 22 for EGA Text !!!
+% That is the only code tested!
+% ***********************************************************
+%         Acceptable parameters according to ANSI.SYS:
+%
+%          0  CGA Text   40x25  16 colours
+%          1  CGA Text   40x25  16 colours
+%          2  CGA Text   80x25  16 colours
+%          3  CGA Text   80x25  16 colours
+%          4  CGA Graph  40x25   4 colours
+%          5  CGA Graph  40x25   4 colours
+%          6  CGA Graph  80x25   2 colours
+%          7  EGA Text   80x25     Mono
+%         13  EGA Graph  40x25  16 colours
+%         14  EGA Graph  80x25  16 colours
+%         15  EGA Graph  80x25     Mono
+%         16  EGA Graph  80x25  16 colours
+%         17  VGA Graph  80x30   2 colours
+%         18  VGA Graph  80x30  16 colours
+%         19  VGA Graph  40x25 256 colours
+%         84  VGA Text  132x43  16 colours
+%         85  VGA Text  132x25  16 colours
+%         86  VGA Text  132x43   2 colours
+%         87  VGA Text  132x25   2 colours
+%         88  VGA Graph 100x75  16 colours
+%         89  VGA Graph 100x75   2 colours
+%         94  VGA Graph  80x25 256 colours
+
+      Short Integer Procedure SetScreenMode(code); short integer code;
+      begin if screenState=sOpen then setScreenMode:=SCMODE(code)
+            else begin
+               setScreenMode:=-1;
+               screenState:=sModeSet; screenMode:=code;
+            end;
+      end;
+
+      External Library Procedure SetFont="E@SCFONT" is
+      Procedure SetFont(code); short integer code; ;
+
+%+X   procedure ResetScreenAttributes; !***  very AD HOC!  ***;
+%+X   !***  try to reset screen to original setting by  ***;
+%+X   !***  scanning profile and execute "setcolor" if  ***;
+%+X   !***  found, otherwise "tput init" (early UNIX)   ***;
+%+X   !***  this may possibly lead to error message ??  ***;
+
+%+X   begin text t; short integer i;
+%+X         External Library Procedure OSid="E@UUOSID" is
+%+X         text Procedure OSid(t); text t; ;
+%+X
+%+X         if loadchar(OSid(blanks(80)),0)='X' -- ie XENIX
+%+X         then inspect new infile("$HOME/.profile") do begin
+%+X            setaccess("%NOBUFFER");
+%+X            if open(blanks(80)) then begin
+%+X            R: inimage; t:-image.strip;
+%+X               if not endfile then begin
+%+X                  while t.more and then t.getchar=' ' do; i:=t.pos-1;
+%+X                  if i <= t.length-7 then begin
+%+X                     if t.sub(i,8)="setcolor"
+%+X                     then system(t.sub(i,t.length-i+1).strip);
+%+X                  end;
+%+X                  goto R;
+%+X               end;
+%+X               close;
+%+X            end;
+%+X         end
+%+X         else system("tput init");
+%+X   end;
+%title ***   M e s s a g e    H a n d l i n g   ***
+
+      Short Integer Procedure MessageLine(n); short integer n;
+      begin if n<1 then n:=1 else if n>screenH then n:=screenH;
+            MessageLine:=msglin; msglin:=n;
+      end;
+
+      Procedure Message(ms); text ms;
+      begin ref(Window) W;
+            W:-New Window(1,ms.length+2,MsgAttr);
+            W.Setpos(1,2); W.Outtext(ms);
+            W.ShowAt(msglin,(screenW-ms.length)//2);
+            W.Inchar; W.Hide;
+      end;
+
+%title ***    A t t r i b u t e    S e t t i n g    ***
+      character Black        = '!00!'; !**  Black                   **;
+      character Blue         = '!01!'; !**  Blue                    **;
+      character Green        = '!02!'; !**  Green                   **;
+      character Cyan         = '!03!'; !**  Cyan                    **;
+      character Red          = '!04!'; !**  Red                     **;
+      character Magenta      = '!05!'; !**  Magenta                 **;
+      character Brown        = '!06!'; !**  Brown                   **;
+      character White        = '!07!'; !**  White                   **;
+      character Gray         = '!08!'; !**  Gray          (Black)   **;
+      character LightBlue    = '!09!'; !**  Light Blue    (Blue)    **;
+      character LightGreen   = '!10!'; !**  Light Green   (Green)   **;
+      character LightCyan    = '!11!'; !**  Light Cyan    (Cyan)    **;
+      character LightRed     = '!12!'; !**  Light Red     (Red)     **;
+      character LightMagenta = '!13!'; !**  Light Magenta (Magenta) **;
+      character Yellow       = '!14!'; !**  Yellow        (Brown)   **;
+      character BrightWhite  = '!15!'; !**  Bright White  (White)   **;
+
+      Class Attributes(BLNK,FGR,BGR); character BLNK,FGR,BGR;
+      Hidden protected BLNK,FGR,BGR;
+      begin
+%+S         character procedure Encoding;
+%-S         character ! *** READ ONLY ***;
+            Encoding:=char(wOR(wOR(wSHL(rank(BLNK),7)
+                              ,wSHL(rank( BGR),4))
+                         ,rank(FGR)));
+
+            ref(Attributes) procedure Bold; Bold:-
+                  new Attributes(BLNK,BGR,char(wOR(rank(FGR),8)));
+
+            ref(Attributes) procedure LowIntensity; LowIntensity:-
+                  new Attributes(BLNK,BGR,char(wAND(rank(FGR),7)));
+
+            ref(Attributes) procedure Invers; Invers:-
+                  new Attributes(BLNK,BGR,FGR);
+
+            ref(Attributes) procedure Blink; Blink:-
+                  new Attributes('!1!',FGR,BGR);
+
+            ref(Attributes) procedure WithBackground(Bgr);
+            short integer Bgr; WithBackground:-
+                  new Attributes(BLNK,FGR,char(Bgr));
+
+            ref(Attributes) procedure WithForeground(Fgr);
+            short integer Fgr; WithForeground:-
+                  new Attributes(BLNK,char(Fgr),BGR);
+
+      end;
+
+      ref(Attributes) procedure Colours(Fgr,Bgr); character Fgr,Bgr;
+            Colours:-new Attributes('!0!',Fgr,Bgr);
+
+%+S   ref(Attributes) procedure Monochrome;
+%-S   ref(Attributes) ! *** READ ONLY ***;
+            Monochrome:-new Attributes('!0!',White,Black);
+
+%+S   ref(Attributes) procedure Concealed;
+%-S   ref(Attributes) ! *** READ ONLY ***;
+            Concealed:-new Attributes('!0!',Black,Black);
+
+%+S   ref(Attributes) procedure YellowOnRed;
+%-S   ref(Attributes) ! *** READ ONLY *** ;
+            YellowOnRed:-new Attributes('!0!',Yellow,Red);
+
+%+S   ref(Attributes) procedure YellowOnBlue;
+%-S   ref(Attributes) ! *** READ ONLY *** ;
+            YellowOnBlue:-new Attributes('!0!',Yellow,Blue);
+
+%title ***    M  a  i  n     S  c  r  e  e  n    ***
+      procedure newScreen(atr); ref(Attributes) Atr;
+      begin frameset:-New Head;
+            LastKey:-New KeyPkt;
+            SCRWIN:-New Window(screenH,screenW,Atr);
+            MAIN:-SCRWIN.FRM; MAIN.Into(frameset); ! non-empty frameset ;
+            msglin:=screenH;
+            if editfile==none then begin
+               editfile:-new outfile("***edit***");
+               editfile.image:-blanks(screenW);
+            end;
+      end;
+
+      Boolean Procedure OpenScreen(high,wide,Atr);
+      short integer high,wide; ref(Attributes) Atr;
+      begin OpenScreen:=SCROPN(high,wide);
+            if screenState=sModeSet then SCMODE(screenMode);
+            screenState:=sOpen;
+            screenH:=HEIGHT; screenW:=DWIDTH//2; newScreen(atr);
+            MAIN.defregion; SCRWIN.EraseWindow;
+      end;
+
+      boolean Procedure CloseScreen(retcode); short integer retcode;
+      begin SCRWIN.CurAttr:-monochrome; setFont(0);
+            if retcode<>0 then begin
+               if screenState=sOpen then SCRCLS; EXIT(retcode) end;
+            while frameset.last =/= MAIN
+               do frameset.last qua frame.Hide;
+            if screenState=sOpen then begin
+               UPDPOS(0,0); SCRWIN.EraseWindow; CloseScreen:=SCRCLS;
+%+X            ResetScreenAttributes;
+            end;
+            screenState:=sClosed;
+            !*** generate dummy screen to catch window generation ***;
+            newScreen(concealed);
+      end;
+
+      Ref(Window) Procedure TopWindow;
+            TopWindow:-frameset.last qua frame.WIN;
+
+      Ref(Window) Procedure Screen; Screen:-SCRWIN;
+
+      Procedure Refresh;
+      begin
+            MAIN.defregion;
+%+X         REFRSH(true);
+            frameset.last qua frame.Show;
+      end;
+
+      procedure wait; TopWindow.inchar;
+%title ***    C l a s s    W i n d o w    ***
+
+      Link Class Window(hgt,wdt,CurAttr);
+      Short integer hgt,wdt; ref(Attributes) CurAttr;
+      Hidden Protected minlin,minpos,hgt,wdt,editout;
+      begin Ref(frame) FRM; ! - effectively hidden outside this module,
+                                since frame is hidden;
+            character minlin,minpos;
+
+            Short Integer Procedure LeftPos;
+                  LeftPos:=rank(FRM.minpos)+1;
+
+            Short Integer Procedure UpperLine;
+                  UpperLine:=rank(FRM.minlin)+1;
+
+            Short Integer Procedure Width;     Width:=rank(FRM.wdt);
+
+            Short Integer Procedure Height;    Height:=rank(FRM.hgt);
+
+            Ref(Window) Procedure Above;
+                 if FRM.suc=/=none then Above:-FRM.Suc qua frame.WIN;
+
+            Ref(Window) Procedure Below;
+                 if FRM.Pred=/=MAIN then Below:-FRM.Pred qua frame.WIN;
+
+            Boolean Procedure Showed; Showed:=(FRM.prev=/=none);
+
+            Procedure ShowAt(L,P); Short Integer L,P;
+            begin FRM.ShowAt(L,P);
+                  minlin:=char(rank(FRM.minlin)+1);
+                  minpos:=char(rank(FRM.minpos)+1);
+            end;
+
+            Procedure Show; FRM.Show;
+
+            Procedure Hide; FRM.Hide;
+
+            Short Integer Procedure Pos;  Pos := rank(FRM.frmPos)+1;
+
+            Short Integer Procedure Line; Line:= rank(FRM.frmLin)+1;
+
+            Procedure EraseLine;
+                  FRM.outChars(' ',CurAttr.Encoding,screenW*2);
+
+            Procedure EraseWindow;
+            if screenState = sOpen then
+            begin FRM.scroll(0,CurAttr.Encoding); FRM.updatePos(0,0); end;
+
+            Boolean Procedure AutoWrap(on); Boolean on;
+            !*** return previous setting ***;
+            AutoWrap:=FRM.framesetWRP(on);
+%title ***   W i n d o w    O u t p u t    O p e r a t i o n s   ***
+
+            Procedure Outimage;
+                  FRM.newLine(CurAttr.Encoding);
+
+            Procedure Setpos(L,P); short integer L,P;
+            begin if L<1 then L:=1; if P<1 then P:=1;
+                  FRM.updatePos(L-1,P-1);
+            end;
+
+            Procedure Outchar(c); character c;
+                  FRM.outputChar(c,CurAttr.Encoding);
+
+            Procedure Outtext(t); text t;
+                  FRM.outputTxt(t,CurAttr.Encoding);
+
+            Procedure print(t); text t;
+            begin FRM.outputTxt(t.strip,CurAttr.Encoding);
+                  FRM.newLine(CurAttr.Encoding);
+            end;
+
+            Procedure HighLight(t); text t;
+                  FRM.outputTxt(t,EditAttr.Encoding);
+
+            procedure editout;
+            inspect editfile do begin
+                  FRM.outputTxt(image.sub(1,pos-1),CurAttr.Encoding);
+                  image.setpos(1);
+            end;
+
+            Procedure Outint(i,w); integer i,w;
+            begin editfile.outint(i,w); editout; end;
+
+            Procedure Outfix(r,n,w); long real r; short integer n,w;
+            begin editfile.outfix(r,n,w); editout; end;
+
+            Procedure Outreal(r,n,w); long real r; short integer n,w;
+            begin editfile.outreal(r,n,w); editout; end;
+
+            Procedure Outfrac(i,n,w); integer i,n,w;
+            begin editfile.outfrac(i,n,w); editout; end;
+%title ***   W i n d o w    I n p u t    O p e r a t i o n s   ***
+            Character Procedure Inchar;
+            begin KEYIN(true,LastKey); Inchar:=LastKey.map end;
+
+            Character Procedure Ifchar;
+            begin KEYIN(false,LastKey); Ifchar:=LastKey.map end;
+
+            Text Procedure Gettext(w); short integer w;
+            begin text Fld;
+                  if w <= 0 then w:=poslim;
+                  if Pos+w > poslim then w:=poslim-Pos;
+                  Gettext:-Fld:-Blanks(w);
+                  GETTXT(rank(minlin)+rank(FRM.frmLin)-1,
+                         rank(minpos)+rank(FRM.frmPos)-1,Fld);
+            end;
+
+            Text Procedure Intext(w); short integer w;
+            begin text Fld;
+                  if w <= 0 then w:=poslim;
+                  if Pos+w > poslim then w:=poslim-Pos;
+                  Intext:-Fld:-Blanks(w);
+                  EDTTXT(Fld,EditAttr.Encoding
+                            ,CurAttr.Encoding,LastKey);
+            end;
+
+            Integer Procedure Inint(w); short integer w;
+            begin text t; short integer cl,cp;
+                  External Library Procedure GetInt="E@UUGINT" is
+                  Integer Procedure GetInt(t); text t; ;
+                  cl:=CURLIN; cp:=CURPOS;
+             REP: t:- Intext(w); Inint:=GetInt(t.strip);
+                  if OSSTAT <> 0 then
+                  begin Message(" *** Illegal integer number *** ");
+                        UPDPOS(cl,cp); goto REP;
+                  end;
+            end;
+
+            Long Real Procedure Inreal(w); short integer w;
+            begin text t; short integer cl,cp;
+                  External Library Procedure GetReal="E@UUGREA" is
+                  Long Real Procedure GetReal(t); text t; ;
+                  cl:=CURLIN; cp:=CURPOS;
+             REP: t:- Intext(w); InReal:=GetReal(t.strip);
+                  if OSSTAT <> 0 then
+                  begin Message(" *** Illegal real number *** ");
+                        UPDPOS(cl,cp); goto REP;
+                  end;
+            end;
+      
+            Integer Procedure Infrac(w); short integer w;
+            begin text t; short integer cl,cp;
+                  External Library Procedure GetFrac="E@UUGFRC" is
+                  Integer Procedure GetFrac(t); text t; ;
+                  cl:=CURLIN; cp:=CURPOS;
+             REP: t:- Intext(w); InFrac:=GetFrac(t.strip);
+                  if OSSTAT <> 0 then
+                  begin Message(" *** Illegal integer number *** ");
+                        UPDPOS(cl,cp); goto REP;
+                  end;
+            end;
+%title ***   W i n d o w    B o r d e r s   ***
+
+            procedure Border(Atr); ref(Attributes) Atr;
+            begin ref(Window) L,R,T,B;
+                  short integer wide,high,uplin,lftpos;
+                  wide:=Width; high:=Height;
+                  uplin:=UpperLine; lftpos:=LeftPos;
+                  T:-New Window(1,wide,atr); B:-New Window(1,wide,atr);
+                  R:-New Window(high-2,2,atr);
+                  L:-New Window(high-2,2,atr);
+                  B.ShowAT(uplin+high-1,lftPos       );
+                  R.ShowAT(uplin+1     ,lftpos+wide-2);
+                  L.ShowAT(uplin+1     ,lftpos       );
+                  T.ShowAT(uplin       ,lftpos       );
+            end;
+
+            procedure Border1;
+            begin short integer i,wide,high;
+                  wide:=Width; high:=Height;
+                  Setpos(1,1); Outchar('!218!');
+                  i:=2;
+                  while i<wide do begin outchar('!196!'); i:=i+1 end;
+                  Outchar('!191!');
+                  i:=2;
+                  while i<high do begin 
+                        setpos(i,1);    outchar('!179!'); 
+                        setpos(i,wide); outchar('!179!'); 
+                        i:=i+1;
+                  end;
+                  Setpos(high,1); Outchar('!192!');
+                  i:=2;
+                  while i<wide do begin outchar('!196!'); i:=i+1 end;
+                  Outchar('!217!'); Setpos(1,1);
+            end;
+
+            !******   I n i t i a l    A c t i o n s   ******;
+            minlin:='!1!'; minpos:='!1!';
+            if hgt <= 0 then hgt:=SCRWIN.hgt;
+            if wdt <= 0 then wdt:=SCRWIN.wdt;
+            FRM:-New frame(char(hgt),char(wdt));
+            FRM.WIN:-this Window;
+            if CurAttr  == none then CurAttr:-Monochrome;
+            if EditAttr == none then EditAttr:-Curattr.Invers;
+            if MsgAttr  == none then MsgAttr:-CurAttr.Bold;
+            if FRM.VBF =/= notext then EraseWindow;
+      end window;
+%title ***   S c r e e n    F r a m e s   ***
+% NOTE: within FRAMEs, the cursor position is kept as characters
+%       (frmLin,frmPos) for storage economy reasons. This clutters
+%       up the (written) code a bit!
+
+      Link Class frame(hgt,wdt);
+            character hgt,wdt;
+      begin
+            character minlin,minpos;
+            character   frmLin;  !** This FRAME's Cursor Line      **;
+            character   frmPos;  !** This FRAME's Cursor Pos       **;
+            Boolean     frmWrp;  !** This FRAME's Auto Wrap        **;
+            ref(Window) WIN;     !** Window which owns this FRAME  **;
+            text        VBF;     !** (Saved) Video Buffer          **;
+
+            Procedure ShowAt(L,P); Short Integer L,P;
+            begin Hide;
+                  if L <= 0 then L:=0 else L:=L-1;
+                  if L+rank(hgt) > rank(MAIN.hgt)
+                  then L:=rank(MAIN.hgt)-rank(hgt);
+                  if P < 0 then P:=0 else P:=P-1;
+                  if P+rank(wdt) > rank(MAIN.wdt)
+                  then P:=rank(MAIN.wdt)-rank(wdt);
+                  minlin:=char(L); minpos:=char(P);
+                  Show;
+            end;
+
+            Procedure Show;
+            begin defregion; !** Because RefreshScreen **;
+                  if this frame =/= frameset.last then begin
+                     !*** Update frameset.last's frmLin and frmPos ***;
+                     if screenState = sOpen then begin
+                        if this frame.prev == none
+                        then SWPWIN(VBF,true) !** Hidden **;
+                        else movetoTop(true,true);
+                        SETWRP(frmWrp);
+                        UPDPOS(rank(frmLin),rank(frmPos));
+                     end;
+                     Into(frameset);
+                  end;
+            end;
+
+            Procedure defregion;
+            begin poslim:=rank(minpos)+rank(wdt)-1;
+                  if screenState = sOpen then
+                  REGION(rank(minpos),rank(minlin),
+                         poslim,rank(minlin)+rank(hgt)-1)
+            end;
+
+            Boolean Procedure covered;
+            begin ref(frame) G; short integer LL,LP;
+                  LL:=rank(minlin)+rank(hgt); LP:=rank(minpos)+rank(wdt);
+                  G:-this frame;
+                  for G:-G.Suc while G =/= none do
+                  begin if rank(G.minlin) >= LL then else
+                        if rank(G.minpos) >= LP then else
+                        if rank(G.minlin)+rank(G.hgt) <= rank(minlin) then else
+                        if rank(G.minpos)+rank(G.wdt) <= rank(minpos) then else
+                        begin covered := True; goto E end;
+                  end;
+                  covered:=this frame.prev == none;
+            E:end;
+
+            Boolean Procedure Hide;
+            if screenState = sOpen then
+            begin
+                  if this frame == frameset.last then begin
+                     frmLin:=char(CURLIN); frmPos:=char(CURPOS);
+                     SWPWIN(VBF,false);
+                  end else
+                  if this frame.prev =/= none then begin
+                     defregion;
+                     if covered then movetoTop(false,false)
+                     else SWPWIN(VBF,false);
+                  end;
+                  this frame.out;
+                  inspect frameset.last when frame do begin
+                     defregion;
+                     SETWRP(frmWrp);
+                     UPDPOS(rank(frmLin),rank(frmPos));
+                  end;
+            end;
+
+            Boolean Procedure framesetWRP(on); Boolean on;
+            begin framesetWRP:=frmWrp; frmWrp:=on;
+                  if this frame == frameset.last then begin
+                     if screenState = sOpen then SETWRP(frmWrp);
+                  end;
+            end;
+
+            Procedure updatePos(L,P); short integer L,P;
+            begin if L>=rank(hgt) then L:=rank(hgt)-1;
+                  if P>=rank(wdt) then P:=rank(wdt)-1;
+                  frmLin:=char(L); frmPos:=char(P);
+                  if this frame == frameset.last then begin
+                     if screenState = sOpen then UPDPOS(L,P);
+                  end;
+            end;
+
+            Procedure incrPos;
+            begin frmPos:=char(rank(frmPos)+1);
+                  if frmPos >= wdt then
+                  begin frmPos:=char(rank(wdt)-1);
+                        !** ???????????????? **;
+                  end;
+            end;
+
+            Short Integer Procedure readCell(LL,PP); Short integer LL,PP;
+            begin short integer L,P,cp; ref(frame) G;
+               if screenState = sOpen then begin
+                  if this frame==frameset.last then readCell:=GETCEL(LL,PP)
+                  else begin
+                     G:-this frame;
+                     if prev == none then !** Hidden **;
+                     begin L:=LL-rank(minlin); P:=PP-rank(minpos);
+                     NN:   cp:=(L*rank(G.wdt)+P)*2;
+                           readCell:= wOR(Rank(loadchar(G.VBF,cp)),
+                                wSHL(Rank(loadchar(G.VBF,cp+1)),8));
+                     end else
+                     begin !** LL:Abs Line, PP:Abs Pos  **;
+                           for G:-G.Suc while G =/= none do
+                           begin L:=LL-rank(G.minlin); P:=PP-rank(G.minpos);
+                                 if L<0 then else if L>=rank(G.hgt) then else
+                                 if P<0 then else if P>=rank(G.wdt) then
+                                 else goto NN;
+                           end;
+                           readCell:=GETCEL(LL,PP); !** Not Covered **;
+                     end;
+                  end;
+               end;
+            end;
+
+            Procedure writeCell(LL,PP,xx); Short integer LL,PP,xx;
+            begin short integer L,P,cp; ref(frame) G;
+               if screenState = sOpen then begin
+                  if this frame == frameset.last then OUTCEL(LL,PP,xx) else
+                  begin G:-this frame;
+                        if prev == none then !** Hidden **;
+                        begin L:=LL-rank(minlin); P:=PP-rank(minpos);
+                        NN:   cp:=(L*rank(G.wdt)+P)*2;
+                              storechar(char(wAND(xx,255)),G.VBF,cp);
+                              storechar(char(wAND(wSHR(xx,8),255)),G.VBF,cp+1);
+                        end else
+                        begin !** LL:Abs Line, PP:Abs Pos  **;
+                              for G:-G.Suc while G =/= none do
+                              begin L:=LL-rank(G.minlin); P:=PP-rank(G.minpos);
+                                    if L<0 then else if L>=rank(G.hgt) then else
+                                    if P<0 then else if P>=rank(G.wdt) then
+                                    else goto NN;
+                              end;
+                              OUTCEL(LL,PP,xx) !** Not Covered **;
+                        end;
+                  end;
+               end;
+            end;
+
+            Procedure outputChar(c,a); character c,a;
+            begin short integer OldLin,OldPos;
+               if screenState = sOpen then begin
+                  if this frame == frameset.last then OUTCHR(c,a) else
+                  if prev == none then hideChar(c,a) else
+                  begin OldLin:=CURLIN; OldPos:=CURPOS;
+                        defregion; UPDPOS(rank(frmLin),rank(frmPos));
+                        if covered then coverChar(c,a) else
+                        begin OUTCHR(c,a);
+                         frmLin:=char(CURLIN); frmPos:=char(CURPOS) end;
+                        frameset.last qua frame.defregion;
+                        UPDPOS(OldLin,OldPos);
+                  end;
+               end;
+            end;
+
+            Procedure hideChar(c,a); character c,a;
+            begin short integer cp;
+                  cp:=((rank(frmLin)*rank(wdt))+rank(frmPos))*2;
+                  storechar(c,VBF,cp); storechar(a,VBF,cp+1);
+                  incrPos;
+            end;
+
+            Procedure coverChar(c,a); character c,a;
+            begin short integer LL,PP,L,P,cp; ref(frame) G;
+                  LL:=rank(minlin)+rank(frmLin); !** Abs Line **;
+                  PP:=rank(minpos)+rank(frmPos); !** Abs Pos  **;
+                  G:-this frame;
+                  for G:-G.Suc while G =/= none do
+                  begin L:=LL-rank(G.minlin); P:=PP-rank(G.minpos);
+                        if L<0 then else if L>=rank(G.hgt) then else
+                        if P<0 then else if P>=rank(G.wdt) then else
+                        begin cp:=((L*rank(G.wdt))+P)*2;
+                              storechar(c,G.VBF,cp);
+                              storechar(a,G.VBF,cp+1); goto NN;
+                        end;
+                  end;
+                  OUTCEL(LL,PP,wOR(rank(c),wSHL(rank(a),8)));
+            NN:   incrPos;
+            end;
+
+            Procedure outChars(c,a,n); character c,a; short integer n;
+            begin short integer OldLin,OldPos;
+               if screenState = sOpen then begin
+                  if this frame == frameset.last then PUTCHR(c,a,n) else
+                  if prev == none then !** Hidden **;
+                  begin
+                        while n>0 do begin hideChar(c,a); n:=n-1 end;
+                  end else
+                  begin OldLin:=CURLIN; OldPos:=CURPOS;
+                        defregion; UPDPOS(rank(frmLin),rank(frmPos));
+                        if not covered then PUTCHR(c,a,n) else
+                        while n>0 do begin coverChar(c,a); n:=n-1 end;
+                        frameset.last qua frame.defregion;
+                        UPDPOS(OldLin,OldPos);
+                  end;
+               end;
+            end;
+
+            Procedure outputTxt(t,a); text t; character a;
+            begin short integer OldLin,OldPos;
+               if screenState = sOpen then begin
+                  if this frame == frameset.last then PUTTXT(t,a) else
+                  if prev == none then !** Hidden **;
+                  begin t.setpos(1);
+                        while t.more do hideChar(t.getchar,a);
+                  end else
+                  begin OldLin:=CURLIN; OldPos:=CURPOS;
+                        defregion; UPDPOS(rank(frmLin),rank(frmPos));
+                        if covered then
+                        begin t.setpos(1);
+                              while t.more do coverChar(t.getchar,a);
+                        end else
+                        begin PUTTXT(t,a); frmLin:=char(CURLIN);
+                              frmPos:=char(CURPOS) end;
+                        frameset.last qua frame.defregion;
+                        UPDPOS(OldLin,OldPos);
+                  end;
+               end;
+            end;
+
+            Procedure newLine(a); character a;
+            if screenState = sOpen then
+            begin if this frame == frameset.last then NEWLIN(a)
+             else if rank(frmLin)+1 < rank(hgt)
+                  then frmLin:=char(rank(frmLin)+1)
+             else if frmWrp then scroll(1,a);
+                  frmPos:='!0!';
+            end;
+
+            Procedure scroll(n,a); Short Integer n; Character a;
+            !*** NOTE: currently n is either 0 or 1
+                       n < 0 does not do anything, therefore the code
+                       has been deleted below ;
+            begin short integer xx,i,j,OldL,OldP,L1;
+                  character cx,ax; Boolean WRP;
+
+                  procedure nowScroll;
+                       while frmLin < hgt do begin
+                             frmPos:='!0!'; outChars(' ',a,rank(wdt));
+                             frmLin:=char(rank(frmLin)+1);
+                       end;
+
+                  if prev =/= none then !** Not Hidden **;
+                  begin OldL:=CURLIN; OldP:=CURPOS;
+                        defregion; WRP:=SETWRP(false);
+                  end;
+                  if not covered then SCROL1(n,a)
+             else if prev == none then begin !** Hidden **;
+                     if n=0 then begin
+                        if hgt <> '!0!' then begin
+                           frmLin:='!0!'; nowScroll;
+                        end
+                     end
+                     else !if n>0 then - see NOTE; begin
+                        if rank(hgt) > n then begin
+                           VBF.sub(1,VBF.Length-(rank(wdt)*2)) :=
+                           VBF.sub((rank(wdt)*2)+1,VBF.Length-(rank(wdt)*2));
+                           frmLin:=char(rank(hgt)-n); nowScroll;
+                        end
+% see NOTE           end
+% see NOTE           else !if n<0 then; begin
+% see NOTE              for frmLin:=L2 step -1 until L1 do
+% see NOTE              begin frmPos:=0; outChars(' ',a,rank(wdt)) end;
+                     end;
+                  end
+             else if n=0 then begin
+                     if hgt <> '!0!' then begin
+                        frmLin:='!0!'; nowScroll;
+                     end
+                  end
+                  else !if n>0 then - see NOTE; begin
+                     if rank(hgt) > n then begin
+                        L1:=rank(hgt)-n;
+                        for i:=1 step 1 until L1 do
+                           for j:=0 step 1 until rank(wdt)-1 do
+                           begin xx:=readCell(rank(minlin)+i,rank(minpos)+j);
+                                 writeCell(rank(minlin)+i-1,rank(minpos)+j,xx);
+                           end;
+                        frmLin:=char(L1); nowScroll;
+                     end;
+% see NOTE        end
+% see NOTE        else !if n<0 then; begin
+% see NOTE              for frmLin:=L2 step -1 until L1 do
+% see NOTE              begin frmPos:=0; outChars(' ',a,rank(wdt)) end;
+                  end;
+                  if prev =/= none then !** Not Hidden **;
+                  begin frameset.last qua frame.defregion;
+                        UPDPOS(OldL,OldP); SETWRP(WRP);
+                  end;
+            end;
+%title ******   M o v e t o T o p   ******
+            Procedure movetoTop(survive,down); Boolean survive,down;
+            begin ref(frame) G;
+                  short integer xx,gx,i,i1,i2,i3,j,LL,PP,L,P,cp,gp;
+                  if down then begin i1:=0; i2:= +1; i3:=rank(hgt)-1 end
+                  else         begin i3:=0; i2:= -1; i1:=rank(hgt)-1 end;
+                  for i:=i1 step i2 until i3 do begin
+                     cp:=rank(wdt)*i*2;
+                     LL:=rank(minlin)+i;          !*** Absolute Line ***;
+                     for j:=0 step 1 until rank(wdt)-1 do begin
+                        G:-this frame;
+                        PP:=rank(minpos)+j;    !*** Absolute Pos  ***;
+                        for G:-G.Suc while G =/= none do begin
+                           L:=LL-rank(G.minlin); P:=PP-rank(G.minpos);
+                           if L<0 then else if L>=rank(G.hgt) then else
+                           if P<0 then else if P>=rank(G.wdt) then
+                           else begin
+                              gp:=((L*rank(G.wdt))+P)*2;
+                              xx:=wOR( rank(loadchar(G.VBF,gp)),     !Chr;
+                                wSHL(rank(loadchar(G.VBF,gp+1)),8)); !Atr;
+                              if survive then begin
+                                 gx:=xx;
+                                 xx:=GETCEL(LL,PP); OUTCEL(LL,PP,gx);
+                              end;
+                              storechar(loadchar(VBF,cp),G.VBF,gp);
+                              storechar(loadchar(VBF,cp+1),G.VBF,gp+1);
+                              goto NN;
+                           end;
+                        end;
+                        if not survive then begin
+                           xx:=GETCEL(LL,PP);
+                           OUTCEL(LL,PP,wOR(rank(loadchar(VBF,cp)),   !Chr;
+                                wSHL(rank(loadchar(VBF,cp+1)),8) ));  !Atr;
+                     NN:   storechar(Char(wAND(xx,255)),VBF,cp);
+                           storechar(Char(wAND(wSHR(xx,8),255)),VBF,cp+1);
+                        end;
+                        cp:=cp+2;
+                     end;
+                  end;
+            end movetotop;
+
+% ***********   I n i t i a l i z e   F R A M E  ***********
+
+            minlin:=minpos:='!0!';
+            hgt:=min(hgt,char(screenH));
+            wdt:=min(wdt,char(screenW));
+            if MAIN =/= none then VBF:-Blanks(rank(wdt)*rank(hgt)*2);
+            for locali:=VBF.Length-1 step -2 until 1
+             do storechar('!0!',VBF,locali);
+
+      end frame;
+%title ***   U t i l i t i e s   ***
+    external Library procedure EXIT="E@UUEXIT" is
+    procedure exit(code); short integer code; ;
+
+    external Library procedure system="E@UUCMND"
+    is procedure system(t); text t; ;
+
+    External Library Procedure Getarg="E@UUGARG" is
+    Text Procedure Getarg(n,val); value val; short integer n; text val; ;
+
+    External Library Procedure OSSTAT="E@UUSTAT" is
+    Short Integer Procedure OSSTAT; ;
+
+    External Pascal Procedure KEYIN="E@KEYIN" is
+    Procedure KEYIN(Wait,Pkt); name Pkt; value Wait;
+              Boolean Wait; Ref(KeyPkt) Pkt; ;
+
+%   *********   bit operations   *********
+
+    External Library Procedure wNOT="E@UUWNOT" is
+    Short Integer Procedure wNOT(i); short integer i; ;
+
+    External Library Procedure wAND="E@UUWAND" is
+    Short Integer Procedure wAND(i,j); short integer i,j; ;
+
+    External Library Procedure wOR="E@UUWOR" is
+    Short Integer Procedure wOR(i,j); short integer i,j; ;
+
+    External Library Procedure wXOR="E@UUWXOR" is
+    Short Integer Procedure wXOR(i,j); short integer i,j; ;
+
+    External Library Procedure wSHL="E@UUWSHL" is
+    Short Integer Procedure wSHL(i,j); short integer i,j; ;
+
+    External Library Procedure wSHR="E@UUWSHR" is
+    Short Integer Procedure wSHR(i,j); short integer i,j; ;
+
+%title ******   screen operations   ******
+
+% *********************************************************************
+% ***    W A R N I N G        discouragement        W A R N I N G   ***
+% *********************************************************************
+% ***    explicit use of these procedures demand expert knowledge   ***
+% ***    of the underlying environment. Your screen/and or your     ***
+% ***    system may degenerate to the point of unusability.         ***
+% *********************************************************************
+
+    External Library Procedure HEIGHT="E@HEIGHT" is
+    Short Integer Procedure HEIGHT; ;
+
+    External Library Procedure DWIDTH="E@DWIDTH" is
+    Short Integer Procedure DWIDTH; ;
+
+    External Library Procedure CURLIN="E@CURLIN" is
+    Short Integer Procedure CURLIN; ;
+
+    External Library Procedure CURPOS="E@CURPOS" is
+    Short Integer Procedure CURPOS; ;
+
+    External Library Procedure UPDPOS="E@UPDPOS" is
+    Procedure UPDPOS(Lin,Pos); short integer Lin,Pos; ;
+
+    External Library Procedure SCROPN="E@SCROPN" is
+    Boolean Procedure SCROPN(height,width);
+    short integer height,width; ;
+
+    External Library Procedure SCRCLS="E@SCRCLS" is
+    Boolean Procedure SCRCLS; ;
+
+    External Library Procedure REGION="E@REGION" is
+    Procedure REGION(MinP,MinL,MaxP,MaxL);
+    Short Integer MinP,MinL,MaxP,MaxL; ;
+
+    External Library Procedure SWPWIN="E@SWPWIN" is
+    Procedure SWPWIN(t,down); Text t; Boolean down; ;
+
+    External Library Procedure PUTCHR="E@PUTCHR" is
+    Procedure PUTCHR(c,a,n); character c,a; short integer n; ;
+
+    External Library Procedure GETCEL="E@GETCEL" is
+    Short Integer Procedure GETCEL(AbsLin,AbsPos);
+    Short Integer AbsLin,AbsPos; ;
+
+    External Library Procedure OUTCEL="E@OUTCEL" is
+    Procedure OUTCEL(AbsLin,AbsPos,Cel);
+    Short Integer AbsLin,AbsPos,Cel; ;
+
+    External Library Procedure NEWLIN="E@NEWLIN" is
+    Procedure NEWLIN(a); character a; ;
+
+    External Library Procedure SETWRP="E@SETWRP" is
+    Boolean Procedure SETWRP(on); Boolean on; ;
+
+    External Library Procedure OUTCHR="E@OUTCHR" is
+    Procedure OUTCHR(c,a); character c,a; ;
+
+    External Library Procedure PUTTXT="E@PUTTXT" is
+    Procedure PUTTXT(t,a); text t; character a; ;
+
+    External Library Procedure GETTXT="E@GETTXT" is
+    Procedure GETTXT(Lin,Pos,t); Short Integer Lin,Pos; text t; ;
+
+    External Library Procedure SCROL1="E@SCROLL" is
+    Procedure SCROL1(n,a); Short Integer n; Character a; ;
+
+%+X External Library Procedure REFRSH="E@REFRSH" is
+%+X Procedure REFRSH(Down); Boolean Down; ;
+    !*** dummy under DOS/OS2 ***;
+
+    External Library Procedure SCMODE="E@SCMODE" is
+    Short Integer Procedure SCMODE(code); short integer code; ;
+
+    External library Procedure EDTTXT="E@EDTTXT" is
+    Procedure EDTTXT(Fld,EdtAtr,OldAtr,Pkt);
+    Text Fld; character EdtAtr,OldAtr; Ref(KeyPkt) Pkt; ;
+
+    !*** generate dummy screen to catch window generation ***;
+    screenH:=24; screenW:=80; newScreen(concealed);
+
+    inner;
+
+    closeScreen(0); !terminate window system, do not exit;
+
+end;

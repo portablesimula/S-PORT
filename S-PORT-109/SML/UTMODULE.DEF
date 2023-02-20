@@ -1,0 +1,387 @@
+External class Common;
+External class OuptFile;
+
+%REUSE ON
+
+Procedure UtModule(comn,scode,afile,modid);
+ref(Common) comn; ref(OuptFile) scode; text afile,modid;
+%      ----------------------------------------------------------------
+%      ---                                                          ---
+%      ---  COPYRIGHT 1989 by                                       ---
+%      ---  Simula a.s.                                             ---
+%      ---  Oslo, Norway                                            ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---                 P O R T A B L E     S I M U L A          ---
+%      ---                                                          ---
+%      ---              S I M U L E T T A    C O M P I L E R        ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      ---             P r o c e d u r e    O u t m o d u l e       ---
+%      ---                                                          ---
+%      ---                                                          ---
+%      --- Selection switches:                                      ---
+%      ---                                                          ---
+%      ---    'D' Included when dump is wanted                      ---
+%      ---    'I' Included to make compiler use inserted mnemonics  ---
+%      ---    'N' Included to produce ND-500 version                ---
+%      ---    'U' Included to produce UNIVAC version                ---
+%      ---    'X' Included to produce XENIX version                 ---
+%      ---                                                          ---
+%      ----------------------------------------------------------------
+%SPORT ON
+
+% %+D %BOUNDCHECK ON
+% %+D %QUACHECK ON
+% %+D %NONECHECK ON
+
+% %-D %BOUNDCHECK OFF
+% %-D %QUACHECK  OFF
+% %-D %NONECHECK OFF
+
+%BOUNDCHECK OFF
+%QUACHECK  OFF
+%NONECHECK OFF
+
+inspect comn do inspect new OuptFile(afile,comn) do begin
+
+%-D %macro outinst:
+%-D        outbyte(rank( */1 ))
+%-D %endmacro
+
+%-D %macro outbyt:
+%-D        outbyte(rank( */1 ))
+%-D %endmacro
+
+%-D %macro outnumber:
+%-D        out2byte( */1 )
+%-D %endmacro
+
+      character nxhi,nxlo;
+      short integer ihi,ilo,lowlim;
+      short integer nxtag;
+      short integer i,lb,ub; ref(descr) d,dsuc;
+      ref(quant) atrb; ref(variant) viant;
+      ref(link) xlnk;
+
+      procedure setXtag(taghi,taglo); character taghi,taglo;
+      begin text id;
+          !*** get new external tag ***;
+          if nxlo='!255!' then begin
+             nxlo:=NUL; nxhi:=char(rank(nxhi)+1); end
+          else nxlo:=char(rank(nxlo)+1);
+          if option(rank('Y'))<>NUL then
+          inspect sysout do begin
+             if lb>=80 then begin outimage; lb:=21 end
+             else begin setpos(lb); lb:=lb+20; end;
+             id:- TagName(taghi,taglo);
+             outint(nxtag,4); outtext( id );
+          end;
+          inspect scode do begin
+             outinst(S_TAG);
+             outnumber(rank(taghi)*256+rank(taglo));
+             outnumber(nxtag); nxtag:=nxtag+1;
+%+D          if output_trace>0 then outcode;
+          end;
+%+D       if nxtag<>rank(nxhi)*256+rank(nxlo)
+%+D       then ERROR("Inconsistent X-tag numbering");
+      end;
+
+      procedure outXpeculiar(d); ref(peculiar) d;
+      begin text id;
+         inspect d do begin
+            if xtaglo=NUL and then xtaghi=NUL then begin
+               setXtag(taghi,taglo);   xtaghi :=nxhi; xtaglo :=nxlo;
+               setXtag(bodyhi,bodylo);
+            end;
+            id:-if kind=S_ROUTINE and then info=/=notext
+                then info else symb.symbol;
+%+D         if output_trace > 0
+%+D         then TRC("Outxtag","P" &
+%+D                  eddouble(taghi,taglo) & "X" &
+%+D                leftint(rank(xtaghi)*256+rank(xtaglo)-1) & ":" & id);
+            outbyte(rank(xtaghi)); outbyte(rank(xtaglo));
+            outbyte(id.length); outtext(id);
+            if xtaglo = '!255!' then begin
+               outbyte(rank(xtaghi)+1); outbyte(       0      ) end
+            else begin
+               outbyte(rank(xtaghi)  ); outbyte(rank(xtaglo)+1) end;
+            outbyte(id.length); outtext(id);
+         end;
+      end;
+
+      procedure outXtag(d); ref(descr) d;
+      begin text id;
+         inspect d do begin
+            if xtaglo=NUL and then xtaghi=NUL then begin
+               setXtag(taghi,taglo); xtaghi:=nxhi; xtaglo:=nxlo;
+            end;
+            id:-symb.symbol;
+%+D         if output_trace > 0
+%+D         then TRC("Outxtag","T" &
+%+D                  eddouble(taghi,taglo) & "X" &
+%+D                leftint(rank(xtaghi)*256+rank(xtaglo)-1) & ":" & id);
+            outbyte(rank(xtaghi)); outbyte(rank(xtaglo));
+            outbyte(id.length); outtext(id);
+         end;
+      end;
+
+      procedure outtype(t); character t;
+      begin
+      REP: inspect type_table(rank(t)) do inspect set do begin
+
+%BOUNDCHECK ON
+         switch(NUL:TYP_MXMX) type begin
+%BOUNDCHECK OFF
+           when TYP_INT do
+                if quallo=S_RANGE   then begin
+                   outbyt(M_RANGE); outnumber(info1);outnumber(info2);
+                end
+           else if quallo=S_SHORT   then outbyt(M_SHORT)
+           else if quallo=S_INTEGER then outbyt(M_INTEGER)
+                else IERR;
+           when TYP_STRUCT do begin
+                outbyt(M_STRUCT);
+                outstring(symtab(rank(qualhi)).val(rank(quallo)).symbol);
+                outnumber(info1) end;
+           when TYP_INFIX do
+                if quallo=S_CHAR    then outbyt(M_CHAR  )
+           else if quallo=S_BOOLEAN then outbyt(M_BOOL  )
+           else if quallo=S_SIZE    then outbyt(M_SIZE  )
+           else if quallo=S_LABEL   then outbyt(M_LABEL )
+           else if quallo=S_REAL    then outbyt(M_REAL  )
+           else if quallo=S_LONG    then outbyt(M_LONG  )
+                else IERR;
+           when TYP_REF do begin
+                outbyt(M_REF);
+       OUTS:    outstring(symtab(rank(qualhi)).val(rank(quallo)).symbol) end;
+           when TYP_ENT do begin
+                outbyt(M_ENTRY); goto OUTS end;
+           when TYP_FIELD do begin
+                outbyt(M_FIELD ); t:=quallo; goto REP end;
+           when TYP_NAME do begin
+                outbyt(M_NAME  ); t:=quallo; goto REP end;
+           when NONE do begin
+                outbyt(M_NULL  ); end;
+         end otherwise outbyt(M_NULL);
+        end otherwise outbyt(M_NULL);
+      end outtype;
+
+      procedure outquant(q); ref(quant) q;
+      inspect q do begin
+            outbyt(M_VAR); outtype(type);
+            outXtag(q); outnumber(count);
+%+D         if output_trace>0 then outcode;
+      end *** outquant ***;
+
+      procedure outpar(i,p); character i; ref(quant) p;
+      inspect p do begin
+          outbyt(i); outtype(type); outstring(symb.symbol);
+          outnumber(count);
+%+D       if output_trace>0 then outcode;
+      end *** outpar ***;
+
+      procedure outxpar(i,p); character i; ref(quant) p;
+      inspect p do begin
+          outbyt(i); outtype(type); outXtag(this descr);
+          outnumber(count);
+%+D       if output_trace>0 then outcode;
+      end *** outxpar ***;
+
+      procedure outspec(s); ref(parspec) s;
+      begin ref(quant) q;
+         inspect s do begin
+            if import =/= none then begin
+               q:-import.first;
+               while true do inspect q do begin
+                     outpar(M_IMPORT,this quant); q:-suc end
+               otherwise goto IMPX;  IMPX:
+            end;
+            if export =/= none then outpar(M_EXPORT,export)
+       else if exit =/= none then outpar(M_EXIT,exit);
+            outbyt(M_END);
+%+D         if output_trace>0 then outcode;
+         end inspect s
+      end *** outspec ***;
+
+      procedure outxspec(s); ref(parspec) s;
+      begin ref(quant) q;
+         inspect s do begin
+            if import =/= none then begin
+               q:-import.first;
+               while true do inspect q do begin
+                     outxpar(M_IMPORT,this quant); q:-suc end
+               otherwise goto IMPX;  IMPX:
+            end;
+            if export =/= none then outxpar(M_EXPORT,export)
+       else if exit =/= none then outxpar(M_EXIT,exit);
+            outbyt(M_END);
+%+D         if output_trace>0 then outcode;
+         end inspect s
+      end *** outxspec ***;
+
+
+      !*********    M   O   N   I   T   O   R    *********;
+
+      ! ****** output header of tag list ******* ;
+      if option(rank('Y'))<>NUL then inspect sysout do begin
+         outtext("Module: "           & module_ident &
+                 ",  Check-code: "    & module_code  );
+         outimage; lb:=100;
+      end;
+
+%     ! *** SWAPPER ERROR FILLER ***;
+%     if false then begin
+%        d:-vislist.first; while d=/=none do d:-d.suc;
+%        d:-vislist.first; while d=/=none do d:-d.suc;
+%        d:-vislist.first; while d=/=none do d:-d.suc;
+%        d:-vislist.first; while d=/=none do d:-d.suc;
+%        d:-vislist.first; while d=/=none do d:-d.suc;
+%        d:-vislist.first; while d=/=none do d:-d.suc;
+%     end;
+
+      ! *** this OuptFile.open;
+%+D   if module_trace > 0 then inspect sysout do 
+%+D   begin outtext("************   Begin  -  Output-module  " &
+%+D                 modid  &  "   ************"); outimage;
+%+D         output_trace:=module_trace;
+%+D   end;
+      outbyt(M_MODULE);
+      tempt:- "V2.0"; outstring(tempt);
+      outstring(modid); outstring(module_code);
+%+D   if output_trace>0 then outcode;
+
+      !****** Set external tags for pretagged ******;
+      while taglist=/=none do begin
+          setXtag(taglist.d.taghi,taglist.d.taglo);
+          taglist.d.xtaghi:=nxhi; taglist.d.xtaglo:=nxlo;
+          if d is peculiar
+          then setXtag(taglist.d qua peculiar.bodyhi,
+                       taglist.d qua peculiar.bodylo);
+          taglist:-taglist.next
+      end;
+
+      !****** Output Descriptors ******;
+      d:-vislist.first;
+      while d=/=none do begin dsuc:-d.suc;
+         inspect d
+            when quant do begin
+                 outquant(this quant);
+%+D              if output_trace>0 then outcode;
+                 if read_only and then initval=/=none and then
+                    not global_module
+                 then goto KEEP;
+             end
+            when label_descr do begin
+                 outbyt(M_LABSPEC); outXtag(this descr);
+%+D              if output_trace>0 then outcode;
+             end
+            when record do begin
+                 outbyt(M_RECORD); outXtag(this descr);
+                 outstring(if prefbox==none then notext else prefbox.symbol);
+%+D              if output_trace>0 then outcode;
+                 atrb:-atrset.first;
+                 while true do inspect atrb do begin
+                       outquant(this quant); atrb:-suc;
+                 end otherwise goto ATRBX;   ATRBX:
+                 viant:-variantset.first;
+                 while true do inspect viant do begin
+                       outbyt(M_ALT);
+%+D                    if output_trace>0 then outcode;
+                       atrb:-atrset.first;
+                       while true do inspect atrb do begin
+                             outquant(this quant); atrb:-suc;
+                       end otherwise goto VTRBX;   VTRBX:
+                       viant:-suc;
+                 end otherwise goto VIANTX;   VIANTX:
+                 outbyt(M_ENDRECORD);
+%+D              if output_trace>0 then outcode;
+             end
+            when routine do begin
+                 outbyt(M_BODY); outXtag(this descr);
+                 outstring(if profbox==none then notext else profbox.symbol);
+%+D              if output_trace>0 then outcode;
+             end
+            when peculiar do begin
+                 if kind=S_ROUTINE  then outbyt(M_ROUTINE)
+            else if kind=S_SYSRUT   then outbyt(M_SYSRUT)
+            else if kind=S_KNOWN    then outbyt(M_KNOWN)
+            else if kind=S_EXTERNAL then outbyt(M_EXTERNAL)
+                 else IERR;
+                 outXpeculiar(this peculiar);
+                 outstring(info);
+%+D              if output_trace>0 then outcode;
+% old QZ         if XPARTAG then outxspec(spec) else
+                 outspec(spec);
+             end
+            when profile do begin
+                 outbyt(if interface then M_GLOBAL else M_PROFILE);
+                 outXtag(this descr);
+%+D              if output_trace>0 then outcode;
+                 if interface
+% old QZ                      or else XPARTAG
+                 then outxspec(spec) else outspec(spec);
+             end
+         ;
+         d.out;  !*** remove all but CONSTSPEC's from list;
+      KEEP:
+         d:-dsuc;
+      end;
+      outbyt(M_END);
+%+D   if output_trace>0 then outcode;
+
+      !****** Output Mnemonic Definitions ******;
+      ilo:=i:=rank(N_SYMB); ihi:=0; ub:=!symboltable.; size;
+      while i <= ub do begin i:=i+1;
+         if ilo=255 then begin ilo:=0; ihi:=ihi+1 end
+         else ilo:=ilo+1;
+         inspect symtab(ihi).val(ilo) do
+            inspect curmeaning
+            when macro do if visible then begin
+                 outbyt(M_MACRO); outstring(symbol); outnumber(npar );
+%+D              if output_trace>0 then outcode;
+                 xlnk:-first;
+                 while true do begin
+                   inspect xlnk
+                      when macro_symbol do begin
+                           outbyt(M_MARK);
+                           outstring(symtab(rank(box.idhi))
+                                       .val(rank(box.idlo)).symbol);
+                           outbyt(s); outstring(v);
+%+D                        if output_trace>0 then outcode;
+                       end
+                      when macro_param do begin
+                           outbyt(M_MPAR); outnumber(n);
+%+D                        if output_trace>0 then outcode;
+                      end
+                    otherwise goto MACX;
+                    xlnk:-xlnk.suc;
+                 end;              MACX:
+                 outbyt(M_ENDMACRO);
+%+D              if output_trace>0 then outcode;
+             end
+            when mnemonic do if visible then begin
+                 outbyt(M_DEFINE); outstring(symbol);
+                 inspect first qua macro_symbol do begin
+                         outbyt(s); outstring(v) end;
+%+D              if output_trace>0 then outcode;
+             end;
+      end;
+
+      outbyt(M_END);
+%+D   if output_trace>0 then outcode;
+      this OuptFile.close;
+%+D   if module_trace > 0 then inspect sysout do
+%+D      begin outtext("************  End of  -  Output-module  " &
+%+D                    modid & "   ************"); outimage;
+%+D   end;
+
+      ! ****** output trailer of tag list ******* ;
+      if option(rank('Y'))<>NUL then inspect sysout do begin
+         outimage; outimage;
+         outtext("External tags:"); outint(nxtag,5);
+         outimage;
+      end;
+
+end *** UtModule ***;

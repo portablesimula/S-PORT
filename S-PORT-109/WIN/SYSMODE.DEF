@@ -1,0 +1,368 @@
+%SPORT ON
+external class parinit;
+
+parinit class sysclass;
+begin
+
+%title ******    P R O D U C E     A U T O L I N K . M A P    ******
+Procedure MakeAUTOLINK;
+begin text exeid,simlb,relid,mapid,rtsid,envid,
+           LnkNam,Loader,loadPar,LibNam;
+      short integer magic, lng; character c;
+      ref(inbytefile)scrfile; ref(outfile)autop;
+
+      Procedure Prt(t); text t; inspect autop do
+      begin outtext(t); outimage end;
+
+      Text Procedure ScrLine;
+      begin text t;
+         inspect ScrFile do begin
+            ScrLine:-t:-Blanks(InByte); intext(t);
+%           while t.more do t.putchar(char(InByte));
+         end;
+      end;
+
+      Procedure OutElts(pre,post); text pre,post;
+      begin text sep;
+            for sep:-ScrLine while sep =/= notext do Prt(pre & sep & post)
+      end;
+
+      Procedure OutSet(S,pre,post); ref(DataSet) S; text pre,post;
+      begin ref(TextType) x; x:-S.Set.First;
+            while x =/= none do
+            begin Prt(pre & x.Picture.Strip & post); x:-x.suc end;
+      end;
+
+      !******  Prepare for no link  ******;
+      state:='!0!'; closeCode:=0;
+
+      !******  Check opening of files ******;
+      scrfile:-new inbytefile(Scratch.Picture.strip);
+      if not scrfile.open then goto Ex;
+      magic:=scrfile.inbyte; if scrfile.endfile then goto Ex1;
+      if magic*256 + scrfile.inbyte <> 4652 !** magic number **;
+      then begin Exefile.Picture:=notext; goto Ex end;
+      autop:-new outfile("autolink.par");
+      if not autop.open(blanks(80)) then begin
+  Ex1:   scrfile.close; goto Ex end;
+
+      exeid:-Exefile.Picture.strip;
+      simlb:- Simlib.Picture.strip;
+      relid:-Relcode.Picture.strip;
+%-M   if Target.GetInt=oMSDOS or Target.GetInt=oMSDOS87
+%-M   or Target.GetInt=oMSOS2
+%-M   then simlb:-Edpath(simlb,'/','\') else simlb:-EdPath(simlb,'\','/');
+%+M        simlb:-Edpath(simlb,'/','\');
+
+      if Debmod.GetInt=0 then rtsid:-"rx" else rtsid:-"rt";
+%-M   rtsid:-simlb & EdSyspfx('s','s','z') & rtsid;
+%-M   envid:-simlb & EdSyspfx('s','t','z') & "ei";
+%+M   rtsid:-simlb & EdSyspfx              & rtsid;
+%+M   envid:-simlb & EdSyspfx              & "ei";
+
+      inspect autop do
+%-M   switch(0:8) Target.GetInt begin
+%-M   when oMSDOS, oMSDOS87 do
+           begin LnkNam:- DOSLNK.Picture.Strip;
+                 LibNam:- DOSLIB.Picture.Strip;
+                 Loader:- LnkNam & " @autolink.par >autolink.lst";
+                 if option(rank('L')) = '!0!' then
+                 begin outtext(simlb); Prt("dosseg+");
+                       OutElts("  ","+"); OutSet(IncSet,"  ","+");
+                       outtext(relid); Prt("");
+                       outtext(exeid); Prt("/CP:1");
+                       outtext(mapid); Prt("");
+                       OutSet(LibSet,"  ","+");
+                       Prt(rtsid & "+" & envid & ";");
+                 end else
+                 begin Prt("EXE " & exeid & "=" & simlb & "dosseg+"
+                            & relid);
+                       OutElts("+",notext); OutSet(IncSet,"+",notext);
+                       Prt("LIB " & rtsid & "+" & envid);
+                       OutSet(LibSet,"+",notext);
+                       Prt("END");
+                 end;
+           end;
+%-M   when oMSOS2 do
+%-M        begin LnkNam:- OS2LNK.Picture.Strip;
+%-M              LibNam:- OS2LIB.Picture.Strip;
+%-M              Loader:- LnkNam & " @autolink.par >autolink.lst";
+%-M              outtext(simlb); Prt("dosseg+");
+%-M              OutElts("  ","+"); OutSet(IncSet,"  ","+");
+%-M              outtext(relid); Prt("/do");
+%-M              outtext(exeid); Prt("/se:512");
+%-M              outtext(mapid); Prt("");
+%-M              OutSet(LibSet,"  ","+");
+%-M              Prt(rtsid & "+" & envid & "+");
+%-M              outtext(LibNam); Prt("doscalls;");
+%-M        end;
+%-M   when oXENIX286 do
+%-M        begin LnkNam:- XNX286LNK.Picture.Strip;
+%-M              LibNam:- XNX286LIB.Picture.Strip;
+%-M              Loader:- "sh autolink.par";
+%-M              Prt(LnkNam & " -Ml -F 864 -o " & exeid & " \");
+%-M              Prt("   " & LibNam & "Lseg.o " & LibNam & "Lcrt0.o \");
+%-M              Prt("   " & relid & " \");
+%-M              OutElts("    "," \");
+%-M              OutSet(IncSet,"    "," \");
+%-M              OutSet(LibSet,"    "," \");
+%-M              Prt(rtsid & ".a " & envid & ".a \");
+%-M              Prt("   " & LibNam & "Llibx.a " & LibNam & "Llibc.a ");
+%-M        end;
+%-M   when oXENIX386, oXENIX386W do
+%-M        begin LnkNam:- XNX386LNK.Picture.Strip;
+%-M              LibNam:- XNX386LIB.Picture.Strip;
+%-M              Loader:- "sh autolink.par";
+%-M              Prt(LnkNam & " -Me -i -o " & exeid & " \");
+%-M              Prt("   " & LibNam & "Sseg.o " & LibNam & "Scrt0.o \");
+%-M              Prt("   " & relid & " \");
+%-M              OutElts("    "," \");
+%-M              OutSet(IncSet,"    "," \");
+%-M              OutSet(LibSet,"    "," \");
+%-M              Prt(rtsid & ".a " & envid & ".a \");
+%-M              Prt("   " & LibNam & "Slibx.a " & LibNam & "Slibc.a ");
+%-M        end;
+%-M   when oUNIX386, oUNIX386W do
+%-M        begin LnkNam:- UNX386LNK.Picture.Strip;
+%-M              LibNam:- UNX386LIB.Picture.Strip;
+%-M              Loader:- "sh autolink.par";
+%-M              Prt("echo " & LibNam & "crt0.o >ld.par");
+%-M              Prt("echo " & relid & " >>ld.par");
+%-M              OutElts("echo "," >>ld.par");
+%-M              OutSet(IncSet,"echo "," >>ld.par");
+%-M              OutSet(LibSet,"echo "," >>ld.par");
+%-M              Prt("echo " & rtsid & ".a " & envid & ".a >>ld.par");
+%-M              Prt("echo " & LibNam & "libc.a >>ld.par");
+%-M              Prt(LnkNam & " -lc -o " & exeid & " ld.par");
+%-M              Prt("rm ld.par");
+%-M        end;
+%+D   when none do goto Ex;
+%-M   end;
+
+      autop.close; ScrFile.close;
+%     Message("TRACE: Loading - " & Loader);
+      State:='!3!';
+      if option(rank('L'))='!0!' then begin
+         System(Loader);
+%        CallProgram(loader,loadpar);
+      end
+      else begin
+%+D %-M     closeCode:= 24+TrcDisp.GetInt;
+%-D %-M     closeCode:= 24+rank(TrcDisp);
+%+M         closecode:= 24;
+      end;
+Ex:   DeleteScratch;
+end MakeAUTOLINK;
+%title ***  U T I L I T I E S  ***
+
+      Text Procedure EdSyspfx
+%-M                           (v0,v1,v2); character v0,v1,v2
+                                                            ;
+      begin text th;
+            th:- blanks(6);
+%+D %-M     if TrcDisp.GetInt=0  then th.putchar(v0) else
+%+D %-M     if TrcDisp.GetInt=20 then th.putchar(v1) else th.putchar(v2);
+%-D %-M     if TrcDisp = '!0!'   then th.putchar(v0) else
+%-D %-M     if TrcDisp = '!20!'  then th.putchar(v1) else th.putchar(v2);
+%+M         th.putchar('s');
+            th.sub(2,2):=systemid(Target.GetInt);
+            if bnklnk.getint <> 0 then th.putchar('b');
+%           switch (0:8) Target.GetInt
+%           begin when oMSDOS     do th.sub(2,2):= "d0";
+%                 when oMSDOS87   do th.sub(2,2):= "d7";
+%                 when oMSOS2     do th.sub(2,2):= "o7";
+%                 when oXENIX286  do th.sub(2,2):= "x7";
+%                 when oXENIX386  do th.sub(2,2):= "y7";
+%                 when oXENIX386W do th.sub(2,2):= "yw";
+%                 when oUNIX386   do th.sub(2,2):= "u7";
+%                 when oUNIX386W  do th.sub(2,2):= "uw";
+%                 when none       do th.sub(2,2):= "??";
+%           end;
+%           th.sub(4,3):=SportRel.Picture.sub(1,3);
+            th.sub(4,3):=currel;
+            EdSyspfx:- th;
+      end;
+
+      Text Procedure Edpath(t,fra,til); text t; character fra,til;
+      begin character c; t.setpos(1); Edpath:-t;
+            while t.more do
+            begin c:=t.getchar; if c=fra then t.sub(t.pos-1,1).putchar(til) end;
+      end;
+%title ************   S Y S M O D E F O R M   ****************
+Form Class SysModeForm;
+begin ref(Attributes) ca,ea;
+%-M   ref(IntextField) Passwd;
+%-M   ref(Form) SysForm1,SysForm2; text pt; boolean inSysmode;
+%+M   ref(Form) SysForm1         ; text pt;
+      Procedure Initiate;
+%-M   if lastkey.chr = 'P' then
+%-M   begin Border1; inSysmode:=true;
+%-M         new DescrField(3,3,"Password:");
+%-M         Passwd:-new IntextField(3,13,Blanks(8));
+%-M   end;
+%+M   ; !dummy match;
+
+%+t   Field Class IntextField(val); text val;
+%+t   begin
+%+t         Procedure Paint;
+%+t         begin setpos(Lin,Pos); outtext(val) end;
+
+%+t         character Procedure Process;
+%+t         begin text t; Explain(notext); Show;
+%+t               setpos(Lin,Pos); t:-intext(val.length);
+%+t               if t <> val then Process:=eChanged; val:=t;
+%+t         end;
+%+t   end;
+
+%-M   if inSysmode then begin
+%-M      Passwd.val:=notext; Paint; ca:-CurAttr; ea:-EditAttr;
+%-M      CurAttr:-EditAttr:-Colours(White,White);
+%-M      ShowAt(13,18); Process; Hide; CurAttr:-ca; EditAttr:-ea;
+%-M      pt:-Passwd.val.strip;
+%-M      if loadchar(pt,3)<>'u' or loadchar(pt,4)<>'f' or 
+%-M         loadchar(pt,2)<>'t' or loadchar(pt,0)<>'t' or 
+%-M         loadchar(pt,1)<>'z' or loadchar(pt,5)<>'n'
+%-M      then inSysmode:=false;
+%-M   end;
+      begin
+            SysForm1:-New SystemForm1(21,78,YellowOnRed);
+%-M         if inSysmode then
+%-M            SysForm2:-New SystemForm2(21,78,YellowOnRed);
+      L1:   Call(SysForm1); if LastKey.map <> PgUpKey and
+                               LastKey.map <> PgDnKey then goto X1;
+%-M         if inSysmode then begin
+%-M            Call(SysForm2); if LastKey.map =  PgUpKey or else
+%-M                               LastKey.map =  PgDnKey then goto L1;
+%-M            SysForm1.Hide;
+%-M         end else
+                     goto L1;
+      X1:
+%-M         if inSysmode then begin SysForm2.Hide; SysForm1.Hide; end;
+      end; !*** else Message("Wrong Password");
+end;
+%page
+form class syspref;
+begin
+      Procedure Line(L,d); short integer L; ref(DataType) d;
+      begin new DescrField(L,2,d.Ident); New DataField(L,12,d,False);
+      end;
+
+      Procedure Line4(L,a,b,c,d);
+      short integer L; ref(DataType) a,b,c,d;
+      begin new DescrField(L,2,a.Ident & ":");  New DataField(L,12,a,False);
+            new DescrField(L,22,b.Ident & ":"); New DataField(L,33,b,False);
+            if c == none then goto E;
+            new DescrField(L,42,c.Ident & ":"); New DataField(L,52,c,False);
+            if d == none then goto E;
+            new DescrField(L,60,d.Ident & ":"); New DataField(L,69,d,False);
+    E:end;
+
+      Paint; ShowAt(2,2); Process; hide;
+
+end;
+
+syspref Class SystemForm1;
+begin
+      Procedure Initiate;
+      begin
+            new DescrField(2,23,"*** PARAMETER BLOCK ***");
+
+            Line4(04,BnkLnk,Lintab,Maxalloc,Inplth);
+            Line4(05,cBind,Masslv,Minalloc,Lppage);
+            Line4(06,Chkstk,qbflim,Minfree,Maxerr);
+            Line4(07,Debmod,RngChk,Stepsize,Outlth);
+            Line4(08,IdxChk,Tstofl,buflng,standard);
+
+            Line(10,Select); Line(11,Options);
+
+            Line(13,SOURCE); Line(14,ListFil); Line(15,RelCode);
+            Line(16,Editor); Line(17,Exefile);
+      end;
+
+end;
+%page
+%-M syspref Class SystemForm2;
+%-M begin
+%-M       Procedure Initiate;
+%-M       begin text t;
+%-M             t:-blanks(1); t.putint(rank(state));
+%-M             new DescrField(2,23,"*** PARAMETER BLOCK ***");
+%-M             new DescrField(2,70,"Page 2.");
+%-M             new DescrField(4,23,"Current system state: " & t);
+%-M 
+%-M             Line4(06,recomp,nLine,nErr,nWarn);
+%-M %-D         line4(07,cpuid,numid,none  ,none);
+%-M %+D         line4(07,cpuid,numid,Becdeb,none);
+%-M %+D         Line4(08,seglim,CsegNam,DsegNam,Prfxid);
+%-M %-D         Line (08,seglim                       );
+%-M             Line4(09,Interact,WrkTail,syspfx,none);
+%-M 
+%-M             Line(11,SIMPRE);  Line(12,STAPRE);  Line(13,ErrFil);
+%-M             Line(14,SIMLIB);  Line(15,SCRATCH); Line(16,SCODE);
+%-M %+D         Line4(17,Sk1Lin,Sk1trc,Sk2Lin,Sk2trc);
+%-M       end;
+%-M 
+%-M end;
+
+%title ***    Compile  --  Layout/Optimize/Memory    ***
+
+Form Class LayoutForm;
+begin
+      Procedure Initiate;
+      begin Border1;
+            New DescrField(3,3,"Default 'Lines per page'");
+            New DataField(3,34,Lppage,True);
+            New DescrField(5,3,"Default image.length of Sysin");
+            New DataField(5,34,Inplth,True);
+            New DescrField(7,3,"Default image.length of Sysout");
+            New DataField(7,34,Outlth,True);
+            New DescrField(9,3,"Max number of Error Messages");
+            New DataField(9,34,MaxErr,True);
+      end;
+
+      Paint; ShowAt(10,16); Process;
+end;
+
+Form Class OptimizeForm;
+begin
+      Procedure Initiate;
+      begin Border1;
+            New DescrField(2,3,"Optimizing level (0..63)");
+            New DataField(2,34,Masslv,True);
+            New DescrField(3,3,"Produce LineNumberTable");
+            New DataField(3,34,LinTab,True);
+            New DescrField(4,3,"Integer arithmetic control");
+            New DataField(4,34,RngChk,True);
+            New DescrField(5,3,"Case/Array Index Checking");
+            New DataField(5,34,IdxChk,True);
+            New DescrField(6,3,"Integer Overflow Checking");
+            New DataField(6,34,TstOfl,True);
+            New DescrField(7,3,"Object Code buffer length");
+            New DataField(7,34,QbfLim,True);
+            New DescrField(8,3,"Compound Segment Limit");
+            New DataField(8,34,SegLim,True);
+      end;
+
+      Paint; ShowAt(10,16); Process;
+end;
+
+Form Class MemoryForm;
+begin
+      Procedure Initiate;
+      begin Border1;
+            New DescrField(3,3,"Initial no. of Memory Allocations");
+            New DataField(3,38,MinAlloc,True);
+            New DescrField(5,3,"Max nuber of Memory Allocations");
+            New DataField(5,38,MaxAlloc,True);
+            New DescrField(7,3,"Memory Allocation step size");
+            New DataField(7,38,StepSize,True);
+            New DescrField(9,3,"Min free area after Compaction");
+            New DataField(9,38,MinFree,True);
+            New DescrField(11,3,"Internal File Buffer length");
+            New DataField(11,38,BufLng,True);
+      end;
+
+      Paint; ShowAt(9,16); Process;
+end;
+
+end;

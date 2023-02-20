@@ -1,0 +1,211 @@
+% **********************************************************************
+% * Simulation model for a warehouse area for reception of goods. The  *
+% * goods arrive in VANs with a certain load and an unloading dock is  *
+% * selected (if all busy, the van waits in a queue). Each dock has an *
+% * unloading position and a place for cleaning the van afterwards.    *
+% * The primary output from the model is the accumulated time spent in *
+% * the pre-docking waiting queue for 2-6 docks                        *
+% **********************************************************************
+begin  !*** compile w/selector G: no use of class Drawing
+       !*** compile w/selector T: no sync with cputime, no interaction;
+short integer cnt,grm;
+
+%-G external class Drawing;
+%-G ref (Drawing) Drw;
+    
+Simulation class warehouse(nDocks);
+short integer nDocks;
+begin
+   real washTime = 20.0, pTime = 5.0;
+   long real uSpeed = 1000.0&&0;                    ! unloading speed;
+   long real accWait;
+   short integer Totnr, hi, arrInterval;
+
+%-G short integer white = 3, cyan = 1, Mage = 2, invisible = 0,
+%-G               b = 5, l = 5;
+%-G short integer qLine= 10, qPos=30,               ! start of queue;
+%-G               drPos= 15,                        ! driving to a dock;
+%-G               pPos =40,                         ! dock platform;
+%-G               uPos=120,                         ! unload position;
+%-G               wPos=200;                         ! car washery;
+%-G short integer dLine1 = 75;                      ! first dock;
+%-G short integer qLength, psl, dLine;
+%-G 
+%-T long real tm, tmm; text th; short integer tmh;  ! -- see timer ;
+%-G 
+%-G Procedure drawMap(nr); short integer nr; inspect Drw do begin
+%-G    SetColour(cyan);
+%-G    FillSquare(qLine-8,qPos-8,16+b,4);
+%-G    FillSquare(qLine-8,qPos-4,4,100);
+%-G    FillSquare(qLine+4+b,qPos-4,4,100);
+%-G    for psl:= 1 step 1 until nr do begin
+%-G       dLine:= dLine1 + (psl-1)*20;
+%-G       FillSquare(dLine-8,pPos-8,16+b,4);
+%-G       FillSquare(dLine-8,pPos-4,4,240);
+%-G       FillSquare(dLine+4+b,pPos-4,4,240);
+%-G    end for;
+%-G    Setpos(Textline(dLine1)-2,Textpos(pPos)); outtext("Platform:");
+%-G    Setpos(Textline(dLine1)-2,Textpos(uPos)); outtext("Unload:");
+%-G    Setpos(Textline(dLine1)-2,Textpos(wPos )); outtext("Wash:");
+%-G end drawMap;
+%-G 
+%-G Procedure drawVan(ln,ps,cl); short integer ln,ps,cl; inspect Drw do begin
+%-G    SetColour(cl); FillSquare(ln,ps,b,l);
+%-G end drawMap;
+%-G 
+%-G Procedure VantoQueue; inspect Drw do begin
+%-G    drawVan(qLine,qPos+qLength*l*2,white);
+%-G    qLength:= qLength+1;
+%-G end VantoQueue;
+%-G 
+%-G Procedure VantoPlatform(nr); short integer nr; inspect Drw do begin
+%-G    for psl:= qPos step -5 until drPos+5 do begin
+%-G       drawVan(qLine,psl,invisible);
+%-G       drawVan(qLine,psl-5,white);
+%-G    end for;
+%-G    for psl:= 1 step 1 until qLength-1 do begin
+%-G       drawVan(qLine,qPos+(psl)*l*2,invisible);
+%-G       drawVan(qLine,qPos+(psl-1)*l*2,white);
+%-G    end for;
+%-G    drawVan(qLine,qPos+qLength*l*2,invisible);
+%-G    if qLength>0 then qLength:= qLength-1;
+%-G    dLine:= dLine1 + (nr-1)*20 - 5;
+%-G    for psl:= qLine step 5 until dLine do begin
+%-G       drawVan(psl,drPos,invisible);
+%-G       drawVan(psl+5,drPos,white);
+%-G    end;
+%-G    dLine:= dLine1 + (nr-1)*20;
+%-G    for psl:= drPos step 5 until pPos-5 do begin
+%-G       drawVan(dLine,psl,invisible);
+%-G       drawVan(dLine,psl+5,Mage);
+%-G    end;
+%-G end VantoPlatform;
+%-G 
+%-G Procedure VantoUnload(nr); short integer nr; inspect Drw do begin
+%-G    dLine:= dLine1 + (nr-1)*20;
+%-G    for psl:= pPos step 5 until uPos-5 do begin
+%-G       drawVan(dLine,psl,invisible);
+%-G       drawVan(dLine,psl+5,white);
+%-G    end;
+%-G end VantoUnload;
+%-G 
+%-G Procedure VantoWash(nr); short integer nr; inspect Drw do begin
+%-G    dLine:= dLine1 + (nr-1)*20;
+%-G    for psl:= uPos step 5 until wPos-5 do begin
+%-G       drawVan(dLine,psl,invisible);
+%-G       drawVan(dLine,psl+5,Mage);
+%-G    end;
+%-G end VantoWash;
+%-G 
+%-G Procedure VanFinished(nr); short integer nr; inspect Drw do begin
+%-G    dLine:= dLine1 + (nr-1)*20;
+%-G    for psl:= wPos step 5 until wPos+25 do begin
+%-G       drawVan(dLine,psl,invisible);
+%-G       drawVan(dLine,psl+5,Mage);
+%-G    end;
+%-G    drawVan(dLine,wPos+30,invisible);
+%-G end VanFinished;
+
+   Process class Van(load); short integer load;
+   begin long real waitTime; ref (Dock) Dk;
+      if platforms.First == none then begin
+         !*** all docks busy, wait in queue ***;
+         waitTime:= time;
+%-G      VantoQueue;
+         Wait(Waiting); out;
+         accWait:= accWait+time-waitTime;        ! accumulate waiting time;
+      end;
+      Dk:- platforms.first;                      ! drive to free dock;
+      inspect Dk do begin
+%-G      VantoPlatform(Dnr);
+         out;                                    ! this dock busy now;
+         Hold(pTime);                            ! maneuver to platform;
+%-G      VantoUnload(Dnr);
+         waitTime:= 1000.0&&0*load/uSpeed;
+         Hold(waitTime);                         ! unload;
+%-G      VantoWash(Dnr);
+         Hold(washTime);                         ! clean van;
+%-G      VanFinished(Dnr);
+         into(platforms);                        ! this dock free again;
+      end;
+      if Waiting.first =/= none then             ! signal waiting vans;
+         activate Waiting.first after This Van;
+   end class Van;
+
+   Process class Generator;
+   begin short integer arrInterval;
+         real array arrivals(1:9), AvrgLoad(4:24);
+      arrivals(1):= 59; arrivals(2):= 19; arrivals(3):= 13;
+      arrivals(4):=  4; arrivals(5):=  1; arrivals(6):=  1;
+      arrivals(7):=  1; arrivals(8):=  1; arrivals(9):=  1;
+      AvrgLoad( 4):= 9; AvrgLoad( 6):= 20; AvrgLoad( 8):=22; AvrgLoad(10):= 14;
+      AvrgLoad(12):= 9; AvrgLoad(14):=  3; AvrgLoad(16):= 2; AvrgLoad(18):=  9;
+      AvrgLoad(20):= 4; AvrgLoad(22):=  6; AvrgLoad(24):= 2;
+      while true do begin
+         arrInterval:= Histd(arrivals, U1);          ! arrivals gir fordeling;
+         Hold(arrInterval*10-5);
+         Totnr:= Totnr + 1;
+         activate new Van(Histd(AvrgLoad,U2));    ! Medbragt mengde;
+      end;
+   end class Generator;
+
+%-T Process class Timer; !synchronize with some clock and enable interaction;
+%-T inspect Drw do begin
+%-T    tm:= time;
+%-T    while true do begin
+%-T       while time - tm > cputime*60.0&&0 do ;
+%-T       if ifchar <> '!0!' then goto rpt;
+%-T       tmh:= Entier(time/60.0&&0); tmm:= (time/60.0&&0 - tmh) * 0.6&&0;
+%-T       setpos(1,33);
+%-T       th.putfix(tmm,2);
+%-T       th.sub(1,2).putint(tmh);
+%-T       th.sub(3,1).putchar('.');
+%-T       outtext(th);
+%-T       hold(0.1);
+%-T    end;
+%-T end timer;
+
+   Procedure Report; begin
+%-G   Drw.Setpos(15+nDocks,1);
+      outtext("Docks: ");
+      outint(nDocks,3);
+      outtext(" Waiting: ");
+      outfix(accWait,2,8);
+      outtext(" nVans: ");
+      outint(Totnr,3);
+      outimage;
+   end Report;
+
+   ref (Head) platforms, Waiting;
+   Link class Dock(Dnr); short integer Dnr; ;
+ 
+%-G drw.initscreen(grm);
+%-G drawMap(nDocks);
+%-T th:- blanks(5);
+
+   platforms:- new Head; Waiting:- new Head;
+   for hi:= 1 step 1 until nDocks do new Dock(hi).into(platforms);
+
+%-T activate new Timer;
+   activate new Generator;
+
+   inner;
+%-T rpt:
+   Report;
+    Drw.Inchar;
+end class warehouse;
+
+integer U1, U2;
+% Good Seeds:
+%        455470314       950423827      1602649445
+%        660825716       913127751      1081211210
+%       1566259315      1255638063       914672042
+
+U1:= 455470314;  U2:= 950423827;
+%-G outtext("grm: "); breakoutimage; inimage; grm:=inint; Drw:- new Drawing(grm);
+
+    for cnt:= 2 step 1 until 6 do
+       warehouse(cnt) begin Hold(960.0); end;
+%-G drw.terminateprogram;
+end Program;
+

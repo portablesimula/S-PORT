@@ -1,0 +1,2 @@
+    external library procedure frontstrip is
+    text procedure frontstrip(t); text t; ;

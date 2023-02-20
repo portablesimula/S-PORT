@@ -1,0 +1,29 @@
+Module findtrig_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+       insert scanto_;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("findtrigger")findtrigger;
+       import name(infix(txtqnt)) m; infix(txtqnt) t;
+       export character res;
+       ---  set m.pos after first occurrence of any char in t
+       ---  return the found character
+       begin infix(txtqnt) mtxt;
+             mtxt:=var(m);
+             repeat while mtxt.cp<mtxt.lp
+             do res:=mtxt.ent.cha(mtxt.cp); mtxt.cp:=mtxt.cp+1;
+                t.cp:=t.sp;
+                repeat while t.cp<t.lp
+                do if t.ent.cha(t.cp)=res then goto X1 endif
+                   t.cp:=t.cp+1 endrepeat;
+%  ????????     if scanto(name(t),res)<>t then goto X1 endif;
+             endrepeat;
+             res:='!0!';
+       X1:   var(m).cp:=mtxt.cp;
+       end;
+end;

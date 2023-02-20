@@ -1,0 +1,2 @@
+    external library procedure skip is
+    text procedure skip(t,c); name t; text t; character c; ;

@@ -1,0 +1,2 @@
+    external library procedure tsub is
+    text procedure tsub(t,p,l); text t; short integer p,l; ;

@@ -1,0 +1,20 @@
+begin short integer gr, ofs;
+external class drawing;
+outtext("Grm: "); breakoutimage; gr:= inint;
+outtext("Offset: "); breakoutimage; ofs:= inint;
+drawing(gr)
+begin real time;
+   time:= cputime;
+   SetColour(14); Drawsector(100,180,79,  0,100,  0);   inchar;
+   SetColour(13); Drawsector(100,180,79,100,150,ofs);   inchar;
+   SetColour(11); Drawsector(100,180,79,250,150,  0);   inchar;
+   SetColour(12); Drawsector(100,180,79,400,250,ofs);   inchar;
+   SetColour(10); Drawsector(100,180,79,650,250,  0);   inchar;
+   SetColour( 9); Drawsector(100,180,79,900,100,  0);   inchar;
+   SetColour(5);  DrawCircle(100,180,81);               inchar;
+   SetColour(5);  DrawCircle(100,180,79);
+   time:= cputime - time;  inchar;
+   outreal(time,6,15);
+end;
+end;
+

@@ -1,0 +1,27 @@
+Module upcompar_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routine     ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("upcompare")upcompare;
+       import infix(txtqnt) s,c; export boolean res;
+       ---  - as frontcompare, except case is ignored for letters of s
+       begin character cs,cc;
+             res:=false;
+             repeat while c.sp < c.lp
+             do if s.cp >= s.lp then goto X1 endif;
+                cc:=c.ent.cha(c.sp); cs:=s.ent.cha(s.cp);
+                if cc<>cs
+                then if cs qua integer = (cc qua integer + 32)
+                     then if ('a'<=cs) and (cs<='z') then goto C1 endif;
+                     endif;
+                     goto X2;
+                endif;
+           C1:  s.cp:=s.cp+1; c.sp:=c.sp+1 endrepeat;
+             res:=true;
+       X1:X2:end;
+end;

@@ -1,0 +1,2 @@
+    external library procedure upc is
+    character procedure upc(c); character c; ;

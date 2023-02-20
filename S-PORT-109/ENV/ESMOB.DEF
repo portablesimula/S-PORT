@@ -1,0 +1,300 @@
+ Module ESMOB("iAPX286");
+%+D %+M begin insert ECOMN,EBASE,EDUMP,ECENT,EBANK;
+%+D %-M begin insert ECOMN,EBASE,EDUMP,ECENT      ;
+%-D %+M begin insert ECOMN,EBASE,      ECENT,EBANK;
+%-D %-M begin insert ECOMN,EBASE      ,ECENT      ;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1991 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---                                                           ---
+       ---     B - Includes banking                                  ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+-- %+E Visible Sysroutine("S?CODE") APX_CODE;
+%+E Visible Sysroutine("GTCODE") APX_CODE;
+%+E import ref() cadr;                -- Reference to Code Memory
+%+E        integer ofst;              -- Offset within Code Memory
+%+E export range(0:MaxByte) val;      -- Byte Content of Code Memory
+%+E end;
+
+-- Inline q-Coding: for UNIX    --- LATER !!!!!!!!!!!!!!!
+------------------------------------------------------------------------
+-- POPR   ESI                                                         --
+-- POPR   EAX                                                         --
+-- LOAD   AL,CS:[EAX+ESI]                                             --
+-- PUSHR  AL                                                          --
+------------------------------------------------------------------------
+
+%page
+
+Visible Routine STMNOT; import Boolean setbrk;
+begin
+%+M   STMBRK(setbrk)
+%-M   if nbreaks=0 then STMBRK(setbrk) endif;
+      SStep:=setbrk;
+end;
+
+Visible Routine BEGTRP;  --- Begin ????? region
+export short integer TrapCode; 
+begin
+      TrapCode:= -1; -- Not implemented yet !!!!!!!
+end;
+
+Visible Routine ENDTRP;  --- End ????? region
+begin
+end;
+
+Visible Routine BEGDEB;  --- Begin Simob session
+begin
+%+X   range(0:MaxWord) stats;
+      InSimob:=true;
+      if wSYSSWP <> NoBody then Call pSYSSWP(wSYSSWP) (1); goto E1 endif;
+%+XD %-C  if TRCSW>0 then BegTrace("BEGIN-1:"); OutTrace; DmpTpkt(ttyUsr) endif;
+%+X %-C  XNX_IOCTL(name2ref(@ttyUsr),TCGETA,0); stats:=OsStat; OsStat:=0;
+%+XD %-C  if TRCSW > 0
+%+XD %-C  then BegTrace("OsStat = "); EdInt(TrcBuf,stats);
+%+XD %-C       OutTrace; DmpTpkt(ttyUsr);
+%+XD %-C  endif;
+
+%+XD %-C  if TRCSW>0 then BegTrace("BEGIN-2:"); OutTrace; DmpTpkt(ttyPkt) endif;
+%+X %-C  XNX_IOCTL(name2ref(@ttyPkt),TCSETA,0); stats:=OsStat; OsStat:=0;
+%+XD %-C  if TRCSW > 0
+%+XD %-C  then BegTrace("OsStat = "); EdInt(TrcBuf,stats);
+%+XD %-C       OutTrace; DmpTpkt(ttyPkt);
+%+XD %-C  endif;
+E1:end;
+
+Visible Routine ENDDEB;  --- End Simob session
+import label Cont;        -- Where to continue after Simob caused by Trap
+begin
+%+X   range(0:MaxWord) stats;
+      TROUTM:=nowhere;
+      if InSimob
+      then if wSYSSWP <> NoBody then Call pSYSSWP(wSYSSWP) (2); goto E1 endif;
+%+XD %-C   if TRCSW>0 then BegTrace("END-1:"); OutTrace; DmpTpkt(ttyUsr) endif;
+%+X %-C   XNX_IOCTL(name2ref(@ttyUsr),TCSETA,0); stats:=OsStat; OsStat:=0;
+%+XD %-C   if TRCSW > 0
+%+XD %-C   then BegTrace("OsStat = "); EdInt(TrcBuf,stats);
+%+XD %-C        OutTrace; DmpTpkt(ttyUsr);
+%+XD %-C   endif;
+      endif;
+E1:   InSimob:=false;
+      if Cont <> NoWhere
+      then
+%+D        if ERRSW > 1
+%+D        then EdTrap("*** ENDDEB ***",EXMODE,STATE);
+%+D             if ERRSW > 3 then STKDMP(0) endif;
+%+D        endif;
+%-E        if STATE.rSP <> InitSp
+%+E        if STATE.rESP <> InitSp
+           then SYSPRI("User's Stack may be lost") endif;
+           InitSP:=SavedSP; TRAPEND(Cont);
+-- ??????  goto Cont;
+      endif;
+end;
+
+%title ******   L I N E    N U M B E R    H A N D L I N G   ******
+
+ Visible Routine GTLNID;  --- get_line_ident;
+ import label addr; infix(String) item; export integer filled;
+ begin integer lno; infix(String) id;
+%+D    if TRCSW > 0  --- SENERE 1
+%+D    then BegTrace("GTLNID("); EdPadr(TrcBuf,addr); EdChar(TrcBuf,',');
+%+D         EdChar(TrcBuf,')'); OutTrace;
+%+D    endif;
+       lno:=GTLNO(addr); if Status <> 0 then goto E1 endif;
+       id.nchr:=CurMod.nchr; id.chradr:=name(CurMod.chr);
+       EdWrd(ref(EdtBuffer),lno); EdcharEdt('(');
+       EdEdtBuf(id); EdcharEdt(')'); id:=PickupEdtbuf;
+       if id.nchr > item.nchr then STAT("GTLNID",xq_tshort); goto E2 endif;
+       filled:=id.nchr; APX_SMOVEI(id.nchr,item.chradr,id.chradr);
+%+D    if TRCSW > 1
+%+D    then BegTrace("GTLNID: Filled = "); EdWrd(TrcBuf,filled);
+%+D         Ed(TrcBuf,", Item = "); Ed(TrcBuf,item); OutTrace;
+%+D    endif;
+E1:E2:end;
+
+Visible Routine GTLNO;  --- get_line_no;
+import label addr; export integer lineno;
+begin ref(ModuleInfo) m; ref(SegmentInfo) s;
+      infix(AnyAddr) adr,bas; range(0:MaxWord) i,j,rela;
+%+M   infix(AnyAddr) MemRef;
+%+D   if TRCSW > 1
+%+D   then BegTrace("GTLNO("); EdPadr(TrcBuf,addr);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%+Mb  if BNKINF<>none then MemRef.AsOaddr:=PRGINF; LDBNK(MemRef.AsPaddr) endif;
+      m:=PRGINF; lineno:=0; adr.AsPaddr:=addr;
+      if m=none then STAT("GTLNO-1",xq_argrange); goto E1 endif;
+      repeat s:=m.first while s <> none
+      do repeat bas:=s.base
+%-E      while bas.AsSegm <> 0
+%+E      while bas.AsOfst <> 0
+         do if    adr.AsOfst <  bas.AsOfst then --- not found
+%-E         elsif adr.AsSegm <> bas.AsSegm then --- not found
+            elsif adr.AsOfst < (bas.AsOfst+s.lim) then goto L1 endif;
+            s:=s+size(SegmentInfo:s.npkt);
+         endrepeat;
+         m:=m+size(ModuleInfo:m.nchr);
+      endrepeat;
+      STAT("GTLNO-2",xq_argrange); goto E2; --- Not Found
+L1:
+%+D   if TRCSW > 0 then EdModinf(TrcBuf,m,20) endif;
+      --- Search line-number-table ---
+      rela:=adr.AsOfst-bas.AsOfst;
+      i:=0; repeat j:=i+1; if j >= s.npkt then goto L2 endif;
+      while rela >= s.pkt(j).rela do i:=j endrepeat;
+ L2:  lineno:=s.pkt(i).lno; CurMod:=m; --- Info to GTLNID
+%+D   if TRCSW > 0  --  SENERE 1
+%+D   then BegTrace("GTLNO: Result = "); EdWrd(TrcBuf,lineno); OutTrace endif;
+E1:E2:end;
+
+Visible Routine GTPADR;  --- get_paddr;
+import infix(String) modid; integer lineno;
+export label addr;
+begin ref(ModuleInfo) m; ref(SegmentInfo) s,t; infix(AnyAddr) bas;
+      range(0:MaxWord) i,n,x,lno,lnx,rela; ref(Any2Byte) px;
+%+M   infix(AnyAddr) MemRef;
+%+D   if TRCSW > 1
+%+D   then BegTrace("GTPADR("); Ed(TrcBuf,modid); EdChar(TrcBuf,',');
+%+D        EdWrd(TrcBuf,lineno); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+
+%+Mb  if BNKINF<>none then MemRef.AsOaddr:=PRGINF; LDBNK(MemRef.AsPaddr) endif;
+      m:=PRGINF; addr := nowhere;
+      if m=none then STAT("GTPADR-1",xq_argrange); goto E1 endif;
+      if modid.nchr = 0 then modid:="MAIN" endif;
+      repeat s:=m.first while s <> none
+      do if m.nchr <> modid.nchr then --- Not found
+         elsif APX_SCMPEQ(modid.nchr,modid.chradr,name(m.chr))
+         then goto L1 endif;
+         m:=m+size(ModuleInfo:m.nchr);
+      endrepeat;
+      STAT("GTPADR-2",xq_argrange); goto E2;
+ L1:
+%+D   if TRCSW > 0 then EdModinf(TrcBuf,m,20) endif;
+      --- Search line-number-table ---
+      t:=none; lnx:=lineno; lno:=65535;
+      repeat bas:=s.base
+%-E   while bas.AsSegm <> 0
+%+E   while bas.AsOfst <> 0
+      do i:=0; n:=s.nPkt;
+         repeat while i < n
+         do x:=s.Pkt(i).lno;
+            if x >= lno then goto L2 elsif x >= lnx
+            then lno:=x; rela:=s.Pkt(i).rela; t:=s endif;
+            i:=i+1;
+         endrepeat;
+   L2:   s:=s+size(SegmentInfo:n);
+      endrepeat;
+      if t = none then STAT("GTPADR-3",xq_argrange); goto E3 endif;
+      bas:=t.base; bas.AsOfst:=bas.AsOfst+rela; px:=bas.AsOaddr;
+%-E   if px.AsWrd=40093 -- 40093=9C9DH=9DH:9CH=POPF:PUSHF = STM-Break
+%+E   if (APX_CODE(px,0)=157) and (APX_CODE(px,1)=156) -- 157:POPF,156:PUSHF
+      then bas.AsOfst:=bas.AsOfst+2 endif;
+      addr:=bas.AsPaddr;
+ 
+%+D   if TRCSW > 1
+%+D   then BegTrace("GTPADR: Result = "); EdPadr(TrcBuf,addr); OutTrace;
+%+D   endif;
+E1:E2:E3:end;
+
+%title ******   E X E C U T I O N    O B S E R V A T I O N   ******
+
+Visible Routine BRKPNT;  --- breakpoint;
+import label addr; Boolean setbrk;
+begin infix(PROGPNT) brk; range(0:MaxWord) i;
+      infix(AnyAddr) mem; ref(Any2Byte) x;
+      mem.AsPaddr:=addr;
+%-M   mem.AsOfst:=mem.AsOfst-2;
+      x:=mem.AsOaddr;
+%+D   if TRCSW > 0
+%+D   then BegTrace("BRKPNT("); EdPadr(TrcBuf,addr); EdChar(TrcBuf,','); 
+%+D        if setbrk then Ed(TrcBuf,"true") else Ed(TrcBuf,"false") endif;
+%+D        Ed(TrcBuf,") -- Content: ");
+%+D %-E    EdHex(TrcBuf,x.AsByte,2); OutTrace;
+%+DE       EdHex(TrcBuf,APX_CODE(x,0),2); OutTrace;
+%+D   endif;
+      if addr = BrkAdr.AsPaddr
+      then if setbrk
+           then brk.addr:=addr;
+%-E             brk.byt:=x.AsByte;
+%+E             brk.byt:=APX_CODE(x,0);
+                if CeepBrk -- Breakpoint is alredy set
+                then STAT("BRKPNT-1",xq_brknop); goto E1 endif;
+                --- Find free entry in brktab:
+                i:= -1; repeat i:=i+1 while i < MaxBreak
+                do if brktab(i).addr=nowhere then goto CF1 endif endrepeat;
+                STAT("BRKPNT-2",xq_maxbrk); goto E2;
+           CF1: CeepBrk:=true; brktab(i):=brk; nbreaks:=nbreaks+1;
+--??            if nbreaks = 1 then MON_SETE(20) endif; --- Enable BP-trap
+           else --- Remove Break-point at addr
+                i:= -1; repeat i:=i+1 while i < MaxBreak
+                do if brktab(i).addr=addr then goto CF2 endif endrepeat;
+                STAT("BRKPNT-3",xq_brknop); goto E3;
+           CF2: if not CeepBrk
+                then STAT("BRKPNT-4",xq_brknop); goto E4 endif;
+                CeepBrk:=false; brktab(i).addr:=nowhere; nbreaks:=nbreaks-1;
+--??            if nbreaks = 0 then MON_CLTE(20) endif; --- Disable BP-trap
+           endif;
+      else
+           if setbrk
+           then brk.addr:=addr;
+%-E             brk.byt:=x.AsByte;
+%+E             brk.byt:=APX_CODE(x,0);
+                if brk.byt = 204  -- INT 3  =  BP-instruction
+                then STAT("BRKPNT-5",xq_brknop); goto E5 endif;
+                --- Find free entry in brktab:
+                i:= -1; repeat i:=i+1 while i < MaxBreak
+                do if brktab(i).addr=nowhere then goto F1 endif endrepeat;
+                STAT("BRKPNT-6",xq_maxbrk); goto E6;
+           F1:
+%+M             x.AsByte:=204; --- Write INT 3 = BP-Instruction --
+%-ME            if x.AsByte(0) <> 157 then OsStat:=4 endif; -- 157: POPF
+%-ME            if x.AsByte(1) <> 156 then OsStat:=4 endif; -- 156: PUSHF
+%-M %+E         if APX_CODE(x,0) <> 157 then OsStat:=4 endif; -- 157: POPF
+%-M %+E         if APX_CODE(x,1) <> 156 then OsStat:=4 endif; -- 156: PUSHF
+                if OsStat>0
+                then STAT("BRKPNT-7",xq_cannot); OsStat:=0; goto E7 endif;
+                brktab(i):=brk; nbreaks:=nbreaks+1;
+--??            if nbreaks = 1 then MON_SETE(20) endif; --- Enable BP-trap
+%-M             if nbreaks = 1 then STMBRK(true) endif; --- Enable STM-trap
+           else --- Remove Break-point at addr
+                i:= -1; repeat i:=i+1 while i < MaxBreak
+                do if brktab(i).addr=addr then goto F2 endif endrepeat;
+                STAT("BRKPNT-8",xq_brknop); goto E8;
+           F2:
+%+M             if x.AsByte <> 204  -- BP-instruction
+%+M             then STAT("BRKPNT-9",xq_brknop); goto E9 endif;
+%+M             x.AsByte:=brktab(i).byt;
+%-ME            if x.AsByte(0) <> 157 then OsStat:=4 endif; -- 157: POPF
+%-ME            if x.AsByte(1) <> 156 then OsStat:=4 endif; -- 156: PUSHF
+%-M %+E         if APX_CODE(x,0) <> 157 then OsStat:=4 endif; -- 157: POPF
+%-M %+E         if APX_CODE(x,1) <> 156 then OsStat:=4 endif; -- 156: PUSHF
+%-M             if OsStat>0
+%-M             then STAT("BRKPNT-9",xq_brknop); OsStat:=0; goto E9 endif;
+                brktab(i).addr:=nowhere; nbreaks:=nbreaks-1;
+--??            if nbreaks = 0 then MON_CLTE(20) endif; --- Disable BP-trap
+%-M             if nbreaks = 0 then STMBRK(SStep) endif;
+           endif;
+      endif;
+E1:E2:E3:E4:E5:E6:E7:E8:E9:
+%+D   if TRCSW > 0
+%+D   then BegTrace("BRKPNT: Done -- Content: ");
+%+D %-E    EdHex(TrcBuf,x.AsByte,2); OutTrace;
+%+DE       EdHex(TrcBuf,APX_CODE(x,0),2); OutTrace;
+%+D   endif;
+end;
+
+end;

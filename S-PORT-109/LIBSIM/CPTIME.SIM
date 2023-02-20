@@ -1,0 +1,2 @@
+    external library procedure cptime is
+    long real procedure cptime; ;

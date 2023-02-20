@@ -1,0 +1,49 @@
+Module daytime_("RTS 108");
+ begin sysinsert rt,sysr,knwn,util,strg,cent;
+
+       -----------------------------------------------------------
+       ---  COPYRIGHT 1990 by               LIBSIM routines    ---
+       ---  Simula a.s.                     - as defined in    ---
+       ---  Oslo, Norway                    DEC handbook III   ---
+       -----------------------------------------------------------
+
+       Visible routine ("daytime")daytime;
+       export infix(txtqnt) res;
+       ---  hh:mm:ss
+       begin range(0:MAX_BYT) n; infix(string) src;
+             DATTIM(STRBUF(0));
+             if status<>0 then status:=0; res:=notext;
+             else res:=BLANKS(8);
+                  src.nchr:=8; src.chradr:=name(bio.utbuff(11));
+                  C_MOVE(src,TX2STR(res));
+             endif;
+       end;
+
+
+       Visible routine ("today")today;
+       export infix(txtqnt) res;
+       ---  yyyy-mm-dd
+       begin infix(string) src;
+             DATTIM(STRBUF(0));
+             if status<>0 then status:=0; res:=notext;
+             else res:=BLANKS(10);
+                  src.nchr:=10; src.chradr:=name(bio.utbuff);
+                  C_MOVE(src,TX2STR(res));
+             endif;
+       end;
+
+       const short integer mdays(13) =
+             (0,0,31,59,90,120,151,180,212,243,273,304,334);
+
+       Visible routine ("dayno")dayno;
+       export short integer res;
+       begin short integer year,month,day; infix(txtqnt) txt;
+             txt:=today;
+                        txt.lp:=4;  year :=gtintT(txt) qua short integer
+             txt.sp:=5; txt.lp:=7;  month:=gtintT(txt) qua short integer
+             txt.sp:=8; txt.lp:=10; day  :=gtintT(txt) qua short integer
+             res:=mdays(month) + day;
+             if (year rem 4)=0
+             then if month>2 then res:=res+1 endif endif;
+       end;
+end;

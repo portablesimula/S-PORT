@@ -1,0 +1,2 @@
+    external library procedure conc2 is
+    text procedure conc2(t1,t2); text t1,t2; ;

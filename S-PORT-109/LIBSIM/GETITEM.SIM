@@ -1,0 +1,2 @@
+    external library procedure getitem is
+    text procedure getitem(tt); name tt; text tt; ;

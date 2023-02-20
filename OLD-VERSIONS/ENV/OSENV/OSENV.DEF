@@ -1,0 +1,108 @@
+%SPORT ON
+class Osenv;
+hidden protected th,KEYIN;
+begin
+% ************************************************************
+% *  Simula a.s. Oslo, Norway 1991                           *
+% *                                                          *
+% *  Class OsEnv   (Corr. to rel. 109.2.2)                   *
+% *                                                          *
+% *  Compile:                                                *
+% *  DOS:      sim -P1 [-Ztarget] [-ddebmode] osenv.sim      *
+% *  OS2:      sim -P1 [-ddebmode] osenv.sim                 *
+% *  - other:  sim -SX [-ddebmode] osenv.sim                 *
+% *                                                          *
+% *  where target is either 0 or 1, and debmode in 0..3      *
+% *                                                          *
+% *  Assumes KEYBOARD.INS at \SIM\KB\KEYBOARD.INS - if not,  *
+% *  edit the following line to reflect its location         *
+
+%-X %INSERT \sim\kb\keyboard.ins  
+%+X %INSERT /sim/kb/keyboard.ins
+
+% ************************************************************
+
+   ! Execute OS-command (tx must be stripped):                ;
+   external Library procedure system = "E@UUCMND" is
+   procedure system(tx); text tx; ;
+
+   ! Get OS identification                                    ;
+   external Library procedure OsIdent = "E@UUOSID" is
+   text procedure OsIdent(val); value val; text val; ;
+
+   ! Get environment string                                   ;
+   external Library procedure Gtenv = "E@UUGENV" is
+   text procedure Gtenv(nam,val); value val; text nam, val; ;
+
+   ! Get argument string                                      ;
+   external Library procedure Gtarg = "E@UUGARG" is
+   text procedure Gtarg(n,v); value v; short integer n; text v; ;
+
+   ! Get Drive specification  (DOS/OS2 only)                  ;
+%-X external Library procedure Getdrv = "E@UUGDRV" is
+%-X short integer procedure Getdrv; ;
+
+   ! Get current directory on specified drive (DOS/OS2 only)  ;
+%-X external Library procedure Getdir = "E@UUGDIR" is
+%-X text procedure Getdir(drv,val); value val; short integer drv; text val; ;
+
+   ! Check Device ready                                       ;
+   external Library procedure DevReady = "E@UUDCHK" is
+   Boolean procedure DevReady(h,c); short integer h,c; ;
+
+   ! Read Byte from handle h                                  ;
+   external Library procedure ReadByte = "E@UURDBT" is
+   short integer procedure ReadByte(h); short integer h; ;
+
+   ! Write one byte arg to handle h                           ;
+   external Library procedure WriteByte = "E@UUWRBT" is
+   procedure WriteByte(h,arg); short integer h,arg; ;
+
+   text procedure GetArgument(n); short integer n;
+      GetArgument:- Gtarg(n,th);
+
+   text procedure GetPATH; GetPATH:- Gtenv("PATH",th);
+
+   text procedure GetPROMPT; GetPROMPT:- Gtenv("PROMPT",th);
+
+   text procedure GetCOMSPEC; GetCOMSPEC:- Gtenv("COMSPEC",th);
+
+   text procedure GetEnvString(Envs); text Envs;
+      GetEnvString:- Gtenv(Envs,th);
+
+   Text procedure TempFile;
+   begin External Library Procedure UUTMPF="E@UUTMPF" is
+         text procedure UUTMPF(t); text t; ;
+%-X      TempFile:-UUTMPF(blanks(12)); ! sim000xx.tmp ;
+%+X      TempFile:-UUTMPF(blanks(17)); ! /tmp/sim000xx.tmp ;
+   end;
+
+   External Library Procedure DeleteFile="E@UUDELF" is
+   procedure DeleteFile(t); text t; ;
+   !*** delete the file, no message if no file (OsStat set) ***;
+
+   text procedure GetEnvironment;
+   begin text gtp, gta, scratch;
+      scratch:- tempFile;
+      inspect new infile(scratch) do begin
+         system("set >" & scratch);
+         if open(blanks(80)) then begin
+            inimage;
+            while not endfile do begin
+               gtp:- intext(80).strip; 
+               if gta==notext then gta:- gtp else
+               if gtp<>notext then gta:- gta & "!10!!13!" & gtp;
+               inimage;
+            end;
+            close;
+            GetEnvironment:- gta;
+         end;
+         DeleteFile(scratch);
+      end;
+   end GetEnvironment;
+
+   character ch; text th;
+   th:- blanks(256); linesperpage(-1);
+   LastKey:- new KeyPkt;
+end Osenv;
+

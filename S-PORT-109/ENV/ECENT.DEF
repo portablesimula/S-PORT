@@ -1,0 +1,1486 @@
+ Module ECENT("iAPX286");
+%+D begin insert ECOMN,EBASE,EDUMP;
+%-D begin insert ECOMN,EBASE      ;
+       -----------------------------------------------------------------
+       ---  COPYRIGHT 1987 by                                        ---
+       ---  Simula a.s.                                              ---
+       ---                                                           ---
+       ---              P O R T A B L E     S I M U L A              ---
+       ---                                                           ---
+       ---                 F O R    i A P X    2 8 6                 ---
+       ---                                                           ---
+       ---                                                           ---
+       ---        T  H  E     E  N  V  I  R  O  N  M  E  N  T        ---
+       ---                                                           ---
+       ---  Selection Switches:                                      ---
+       ---     D - Includes tracing dumps                            ---
+       ---     M - Includes MS-DOS                                   ---
+       ---     O - Includes MS-OS2                                   ---
+       ---     X - Includes XENIX                                    ---
+       ---     C - MS C modifications to XENIX                       ---
+       ---     E - Extended mode -- 32 Bit 386                       ---
+       -----------------------------------------------------------------
+
+       Range(0:MaxByte) BrkByte;
+%-E    Range(0:MaxWord) SimCode,OsCode;
+%+E    Integer          SimCode,OsCode;
+
+%title ******   R E A D    R U N T I M E    O P T I O N S   ******
+Routine RTOPTIONS;
+begin infix(String) S; character c,d; integer v; range(0:MaxWord) i,argi;
+      argi:=0;
+ REP0: REP1: argi:=argi+1; S:=GARG(argi);
+      if S.nchr = 0 then goto E1 endif; --- No Option Argument
+      if var(S.chradr) <> '/' then goto REP0 endif;
+%+D   if TRCSW > 0
+%+D   then BegTrace("Option String: ^"); Ed(TrcBuf,S);
+%+D        EdChar(TrcBuf,'^'); OutTrace;
+%+D   endif;
+      --- Now scan the Option string ---
+      i:=0; repeat i:=i+1 while i < S.nchr
+      do c:=var(S.chradr)(i); v:=1; --- Default Option value
+         if c >= 'a' then c:=((c qua integer) - 32) qua character endif;
+%+D      if TRCSW > 0
+%+D      then BegTrace("Maybe Option: "); EdChar(TrcBuf,c); OutTrace endif;
+         --- If capital letter here, accept it as Option
+         if (c >= 'A') and (c <= 'Z')
+         then --- Option c is specified -- If integer follows, read in v
+%+D           if TRCSW > 0
+%+D           then BegTrace("Option: "); EdChar(TrcBuf,c); OutTrace; endif;
+              d:=var(S.chradr)(i+1)
+              if (d <= '9') and (d >= '0')
+              then v:=d qua integer - ISO_0;
+                   repeat i:=i+1; d:=var(S.chradr)(i+1)
+                   while (d <= '9') and (d >= '0')
+                   do v:=(v*10)+(d qua integer-ISO_0) endrepeat;
+              endif
+%+D           if TRCSW > 0
+%+D           then BegTrace("Set Option: "); EdChar(TrcBuf,c);
+%+D                Ed(TrcBuf," to "); EdWrd(TrcBuf,v); OutTrace;
+%+D           endif;
+              --- Set Option Dependent Parameter Values ---
+              if    c='P' then Poptn:=v
+              elsif c='T' then SMBSW:=v      elsif c='S' then BNKSW:=v
+              elsif c='W' then MINALLOC:=v   elsif c='L' then MAXALLOC:=v
+              elsif c='X' then STEPSIZE:=v   elsif c='R' then WRKTAIL:=v
+              elsif c='Z' then MINFREE:=v    elsif c='B' then BUFLNG:=v
+%+D           elsif c='C' then TRCSW:=v
+%+D           elsif c='E' then ERRSW:=v      elsif c='F' then FILSW:=v
+%+D           else L2: SYSPRI("Illegal Option Specification"); goto E2;
+              endif;
+%+D      else goto L2;
+%-D      else goto E2;
+         endif;
+      endrepeat;
+   E2:goto REP1;
+E1:end;
+%title ******   ININTIATE / TERMINATE   ******
+Visible Routine INITIA; import entry(Xhandlerp) rout;
+begin infix(AnyRef) z1; infix(AnyAddr) z2;
+%+M   infix(VERPAK) vpk;
+      Xhandler:=rout; narea:=0; InSimob:=false;
+      BUFLNG:=1024; MINALLOC:=8; MAXALLOC:=200; STEPSIZE:=65520;
+%+M   MINFREE:=0;
+%+O   MINFREE:=10000;
+%+X %-C   MINFREE:=10000;
+%+XC  MINFREE:=0; STEPSIZE:=16000;
+      repeat while narea < MaxArea
+      do WRKBEG(narea).AsOaddr:=none; narea:=narea+1 endrepeat;
+      narea:=0; ERRSW:=0; FILSW:=0;
+%+M   vpk:=DOS_VERS; DosVersion:=vpk.ver;
+%+M   OSID:=DOS_VERS; OsStat:=0;
+%+O   OS2_VERS(name2ref(@OSID)); OsStat:=0;
+%+X   XNX_UNAME(name2ref(@OSID)); OsStat:=0;
+
+      TrcBuffer.nchr:=80; TrcBuffer.pos:=0; TrcBuf:=ref(TrcBuffer);
+      EdtBuffer.nchr:=80; EdtBuffer.pos:=0;
+      ximg.chradr:=@ximc; ximg.nchr:=2;
+      LTEN:='&';       --- Set up the standard lowten character:
+      DMRK:='.';       --- Set up the standard decimal mark character:
+      z1.nam:=name(z1); z2.AsOaddr:=z1.rf; z2.AsOfst:=InitSP;
+      RTOPTIONS;       --- Read runtime Options
+      STKEND:=z2.AsOaddr; --- NOTE: Above Call is very important !!!!!!
+%+XD %-C  if TRCSW>0 then BegTrace("INIT1:"); OutTrace; DmpTpkt(ttyPkt) endif;
+%+X %-C  XNX_IOCTL(name2ref(@ttyPkt),TCGETA,0);
+%+XD %-C  if TRCSW > 0
+%+XD %-C  then BegTrace("INIT2: OsStat = "); EdInt(TrcBuf,OsStat);
+%+XD %-C       OutTrace; DmpTpkt(ttyPkt);
+%+XD %-C  endif;
+%+X   OsStat:=0;
+end;
+
+Visible Routine TERMIN; import range(0:3) code; infix(String) msg;
+begin
+%-E   range(0:MaxWord) key,n;
+%+E   integer          key,n;
+%+M   infix(AnyRef) img;
+      if OsStat <> 0 then OS_STAT("TERMIN") endif;
+%+D   if TRCSW+BNKSW > 0
+% pje %-D   if BNKSW > 0
+%+D   then BegTrace("TERMIN("); EdWrd(TrcBuf,code); EdChar(TrcBuf,',');
+%+D        Ed(TrcBuf,msg); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      if msg.nchr>0 then SYSPRI(msg) endif; -- The given text is printed
+%+XD %-C  if TRCSW>0 then BegTrace("TERM1:"); OutTrace; DmpTpkt(ttyPkt) endif;
+%+X %-C  XNX_IOCTL(name2ref(@ttyPkt),TCSETA,0);
+%+XD %-C  if TRCSW > 0
+%+XD %-C  then BegTrace("TERM2: OsStat = "); EdInt(TrcBuf,OsStat);
+%+XD %-C       OutTrace; DmpTpkt(ttyPkt);
+%+XD %-C  endif;
+%+X %-C  OsStat:=0;
+      if ParBlk <> none
+      then if (Status) <> 0 or (code<10) then ParBlk.CCODE:=4 endif; -- ?????
+           Status:=0;
+           key:=OPFILE("inform.xcg",F_dirbytefile,nostring,0);
+           if Status <> 0
+           then ParBlk:=none; TERMIN(3,"Can't Open(write) inform.xcg") endif;
+%+M        img.rf:=ParBlk; img.ofst.AsWrd:=0;
+%+M        n:=DOS_WRITE(key-1,ParLng,img.nam);
+%+O        OS2_WRITE(key-1,ParBlk,ParLng,name2ref(@n));
+%+X        n:=XNX_WRITE(ParLng,ParBlk,key-1);
+           if OsStat <> 0
+           then ParBlk:=none; TERMIN(3,"Can't Write inform.xcg") endif;
+           CLFILE(key,nostring); Status:=0;
+%+M        if BnkFil <> 0
+%+M        then
+%+MD            if TRCSW > 0 then BegTrace("Close .bnk File"); OutTrace endif;
+%+M             DOS_CLOSE(BnkFil); BnkFil:=0; OsStat:=0;
+%+M        endif;
+      endif;
+      SIM_EXIT(code);    --- Then leave the program
+end;
+
+%title ******   NEWBUF / GETBUF / DELBUF   ******
+
+%+X Visible Routine XNX_ALOC;
+%+X import integer lng; export ref() area;
+%+X begin
+%+X %-E   range(0:MaxWord) n,stats; Boolean first;
+%+X %-E   infix(AnyAddr) x,z,brk1,brk2;
+%+XD      if TRCSW > 0
+%+XD      then BegTrace("XNX_ALOC(");
+%+XD %-E       EdHex(TrcBuf,lng,4);
+%+XDE          EdHex(TrcBuf,lng,8);
+%+XD           EdChar(TrcBuf,')'); OutTrace;
+%+XD      endif;
+%+X %-E   first:=true; area:=none;
+%+X %-E   brk1.AsOaddr:=none; brk2.AsOaddr:=none;
+%+X %-E   repeat n:=if lng>32000 then 32000 else lng; lng:=lng-n;
+%+X %-E   L:     x.AsOaddr:=XNX_SBRK(n);
+%+X %-E          if OsStat <> 0 then brk2.AsOaddr:=area; goto E1 endif;
+%+XD %-E         if TRCSW > 0
+%+XD %-E         then BegTrace("XNX_ALOC: Part = ");
+%+XD %-E              EdRef(TrcBuf,x.AsOaddr); Ed(TrcBuf,"  Length: ");
+%+XD %-E              EdWrd(TrcBuf,n); OutTrace;
+%+XD %-E         endif;
+%+X %-E          if first
+%+X %-E          then if (lng<>0) and (x.AsOfst<>0)
+%+X %-E               then
+%+X %-E --- ???????        if brk1.AsOaddr=none then brk1:=x endif;
+%+X %-E                    goto L;
+%+X %-E               endif;
+%+X %-E               z:=x; area:=x.AsOaddr; first:=false;
+%+X %-E          else if x.AsSegm <> z.AsSegm
+%+X %-E               then TERMIN(3,"XNX_ALOC failed-2") endif;
+%+X %-E          endif;
+%+X %-E   while lng > 0 do endrepeat;
+%+X %-E  E1:  stats:=OsStat;
+%+X %-E   if brk1.AsOaddr <> none
+%+X %-E   then
+%+XD %-E       if TRCSW > 0
+%+XD %-E       then BegTrace("XNX_ALOC: Release-1 from ");
+%+XD %-E            EdRef(TrcBuf,brk1.AsOaddr); OutTrace;
+%+XD %-E       endif;
+%+X %-E        XNX_BRK(brk1.AsOaddr); OsStat:=stats;
+%+X %-E   endif;
+%+X %-E   if brk2.AsOaddr <> none
+%+X %-E   then
+%+XD %-E       if TRCSW > 0
+%+XD %-E       then BegTrace("XNX_ALOC: Release-2 from ");
+%+XD %-E            EdRef(TrcBuf,brk2.AsOaddr); OutTrace;
+%+XD %-E       endif;
+%+X %-E        XNX_BRK(brk2.AsOaddr); OsStat:=stats;
+%+X %-E   endif;
+
+%+XE      area:=XNX_SBRK(lng);
+%+XD      if TRCSW > 0
+%+XD      then BegTrace("XNX_ALOC: Area= ");
+%+XD           EdRef(TrcBuf,area); OutTrace;
+%+XD      endif;
+%+X end;
+
+Visible Routine DEFBLK;
+import size lng; export ref() area;
+begin
+%-E   infix(Any2Byte) x;
+%+E   infix(Any4Byte) x;
+%+M   infix(WRKPAK) y;
+%+O   infix(AnyAddr) y;
+%+D   if TRCSW > 0
+%+D   then BegTrace("DEFBLK("); EdSize(TrcBuf,lng);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      x.AsSize:=lng;
+%+M   y:=DOS_ALOC((x.AsWrd+15)/16);
+%+O   y.AsOfst:=0; OS2_ALOC(x.AsWrd,name2ref(@y.AsSegm),0);
+%+X %-E   area:=XNX_SBRK(x.AsWrd);
+%+XE  area:=XNX_SBRK(x.AsInt);
+      if OsStat <> 0 then OsStat:=0; area:=none
+%+M   else area:=y.area;
+%+O   else area:=y.AsOaddr;
+      endif;
+%+D   if TRCSW > 0
+%+D   then BegTrace("DEFBLK: Area = "); EdRef(TrcBuf,area); OutTrace endif;
+end;
+
+Routine NEWBUF; import range(0:MaxByte) key;
+begin ref(FileObj) fobj; ref(FileBufr) buf; integer nbytes; name() obj;
+%-E   infix(Any2Byte) spc;
+%+E   infix(Any4Byte) spc;
+      spc.AsSize:=size(FileBufr:BUFLNG);
+%+D   if TRCSW > 0
+%+D   then BegTrace("NEWBUF("); EdWrd(TrcBuf,key); EdChar(TrcBuf,',');
+%+D        EdSize(TrcBuf,spc.AsSize); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+%-E   nbytes:=spc.AsWrd;
+%+E   nbytes:=spc.AsInt;
+      if AllocObj = nobody then FTAB(key).buf:=noname; buf:=none
+      else obj:=call Palloc(AllocObj)(nbytes,entry(UPDFOBJ));
+           buf:=name2ref(obj); fobj:=name2ref(@FTAB(key));
+           fobj.buf:=obj; buf.fobj:=fobj; buf.cnt:=BUFLNG;
+      endif;
+%+D   if TRCSW > 0
+%+D   then BegTrace("NEWBUF: result=");
+%+D        EdRef(TrcBuf,buf); OutTrace;
+%+D   endif;
+end;
+
+Visible Body(Pmovit) UPDFOBJ; -- GC is about to move a fileobj from 'old'
+-- import name() old,new; -- to 'new'. NOTE: called before the move.
+begin ref(FileBufr) buf,bnew;
+      buf:=Name2Ref(old); bnew:=Name2Ref(new);
+%+D   if TRCSW > 0
+%+D   then BegTrace("UPDFOBJ("); EdRef(TrcBuf,buf);
+%+D        Ed(TrcBuf,"==>"); EdRef(TrcBuf,bnew);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D        BegTrace("buf.fobj: "); EdRef(TrcBuf,buf.fobj);
+%+D        Ed(TrcBuf,", buf.fobj.buf: ");
+%+D        EdRef(TrcBuf,Name2Ref(buf.fobj.buf)); OutTrace;
+%+D   endif;
+      buf.fobj.buf:=new;
+end;
+
+Routine DELBUF; import range(0:MaxByte) key;
+begin name(infix(FileBufr)) buf; ref(FileBufr) x;
+      buf:=FTAB(key).buf; x:=Name2Ref(buf);
+%+D   if TRCSW > 0
+%+D   then BegTrace("DELBUF("); EdRef(TrcBuf,x);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D        BegTrace("buf.fobj: "); EdRef(TrcBuf,x.fobj);
+%+D        Ed(TrcBuf,", buf.fobj.buf: ");
+%+D        EdRef(TrcBuf,Name2Ref(x.fobj.buf));
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      FTAB(key).buf:=noname;
+      call Pfree(FreeObj)(buf);
+end;
+
+%title ******  G E T   E N V I R O N M E N T   S T R I N G S   ******
+
+    Visible Routine GENV;
+    import infix(string) nam; export infix(String) val;
+    begin infix(String) S; 
+%-V %+M   infix(AnyAddr) EnvRef;
+%+V %+M   ref(ASCIIZ) x; range(0:MaxWord) i;
+%+O       infix(AnyAddr) EnvRef;
+%+X %-E   ref(ASCIIZ) x; range(0:MaxWord) i;
+%+XE      ref(ASCIIZ) x; integer          i;
+%+D       if TRCSW > 0
+%+D       then BegTrace("GENV("); Ed(TrcBuf,nam);
+%+D            EdChar(TrcBuf,')'); OutTrace;
+%+D       endif;
+
+          if nam.nchr=0 then goto L1 endif;
+
+%-V %+M   EnvRef.AsSegm:=PSPREF.EnvStr; EnvRef.AsOfst:=0;
+%-V %+M   repeat S:=ASCIIZ2String(EnvRef.AsOaddr,255) while S.nchr > 0
+%-V %+M   do EnvRef.AsOfst:=EnvRef.AsOfst+S.nchr+1;
+%+V %+M   i:=0;
+%+V %+M   repeat x:=XNXREF.envp.elt(i); i:=i+1 while x <> none
+%+V %+M   do S:=ASCIIZ2String(x,255);
+%+O       EnvRef:=ENVSEG; EnvRef.AsOfst:=0;
+%+O       repeat S:=ASCIIZ2String(EnvRef.AsOaddr,255) while S.nchr > 0
+%+O       do EnvRef.AsOfst:=EnvRef.AsOfst+S.nchr+1;
+%+X       i:=0;
+%+X       repeat x:=XNXREF.envp.elt(i); i:=i+1 while x <> none
+%+X       do S:=ASCIIZ2String(x,255);
+%+D          if TRCSW > 0 then BegTrace(S); OutTrace endif;
+             if var(S.chradr)(nam.nchr)='='
+             then if APX_SCMPEQ(nam.nchr,nam.chradr,S.chradr)
+                  then val.chradr:=name(var(S.chradr)(nam.nchr+1));
+                       val.nchr:=S.nchr-(nam.nchr+1); goto E1;
+                  endif;
+             endif;
+          endrepeat;
+L1:       if STEQ(nam,"SLIB") then val:="." else val:=nostring endif;
+E1:
+%+D       if TRCSW > 0
+%+D       then BegTrace("GENV: Result = ^"); Ed(TrcBuf,val);
+%+D            EdChar(TrcBuf,'^'); OutTrace;
+%+D       endif;
+    end;
+%title ******  G E T   A R G U M E N T   S T R I N G S   ******
+
+    Visible Routine GARG;
+    import
+%-E        range(0:MaxWord) n;
+%+E        integer          n;
+    export infix(String) val;
+    begin infix(String) S;
+%-E       range(0:MaxWord) i,p,p1;
+%+E       integer          i,p,p1;
+%+O       infix(AnyAddr) ArgRef;
+%+X       ref(ASCIIZ) x;
+%+V %+M   ref(ASCIIZ) x;
+%+D       if TRCSW > 0
+%+D       then BegTrace("GARG("); EdWrd(TrcBuf,n);
+%+D            EdChar(TrcBuf,')'); OutTrace;
+%+D       endif;
+%-V %+M   if n=0 then val:=nostring
+%-V %+M   else p:=0; repeat while n > 0
+%-V %+M        do repeat while (p<PSPREF.npar) and (PSPREF.par(p)=' ')
+%-V %+M           do p:=p+1 endrepeat; p1:=p;
+%-V %+M           repeat while (p<PSPREF.npar) and (PSPREF.par(p) <> ' ')
+%-V %+M           do p:=p+1 endrepeat; n:=n-1;
+%-V %+M        endrepeat;
+%-V %+M        if p=p1 then val:=nostring
+%-V %+M        else val.chradr:=name(PSPREF.par(p1)); val.nchr:=p-p1 endif;
+%-V %+M   endif;
+%+V %+M   
+%+V %+M   if n >= XNXREF.argc then val:=nostring
+%+V %+M   else x:=XNXREF.argv.elt(n); val:=ASCIIZ2String(x,128) endif;
+%+V %+M   
+--- %+M   i:=0;
+--- %+M   repeat x:=XNXREF.argv.elt(i) while x <> none
+--- %+M   do S:=ASCIIZ2String(x,80);
+--- %+MD     if TrcSw > 0 then BegTrace(S); OutTrace endif;
+--- %+M      if i=n then val:=S; goto E1 else i:=i+1 endif;
+--- %+M   endrepeat;
+--- %+M   val:=nostring; E1:
+%+O       i:=0; ArgRef:=ENVSEG;
+%+O       S:=ASCIIZ2String(ArgRef.AsOaddr,80);
+%+OD      if TrcSw > 0 then BegTrace(S); OutTrace endif;
+%+O       if n=0 then val:=S
+%+O       else ArgRef.AsOfst:=ArgRef.AsOfst+S.nchr+1;
+%+O            S:=ASCIIZ2String(ArgRef.AsOaddr,80);
+%+OD           if TrcSw > 0 then BegTrace(S); OutTrace endif;
+%+O            p:=0; repeat while n > 0
+%+O            do repeat while (p<S.nchr) and (var(S.chradr)(p)=' ')
+%+O               do p:=p+1 endrepeat; p1:=p;
+%+O               repeat while (p<S.nchr) and (var(S.chradr)(p) <> ' ')
+%+O               do p:=p+1 endrepeat; n:=n-1;
+%+O            endrepeat;
+%+O            if p=p1 then val:=nostring
+%+O            else val.chradr:=name(var(S.chradr)(p1)); val.nchr:=p-p1 endif;
+%+O       endif;
+%+X       i:=0;
+%+X       repeat x:=XNXREF.argv.elt(i) while x <> none
+%+X       do S:=ASCIIZ2String(x,80);
+%+XD         if TrcSw > 0 then BegTrace(S); OutTrace endif;
+%+X          if i=n then val:=S; goto E1 else i:=i+1 endif;
+%+X       endrepeat;
+%+X       val:=nostring; E1:
+%+D       if TRCSW > 0
+%+D       then BegTrace("GARG: Result = ^"); Ed(TrcBuf,val);
+%+D            EdChar(TrcBuf,'^'); OutTrace;
+%+D       endif;
+    end;
+%title ******    F I L E    H A N D L I N G    ******
+Visible Routine FCRLF;
+import infix(String) img;
+export
+%-E    range(0:MaxWord) res;
+%+E    integer          res;
+begin -- Find n: chr(n)=CR  and chr(n+1)=LF    n=0,1,...
+      -- then res <- img.nchr - n  else  res <- 0 or 1
+      repeat res:=APX_SFINDI(ISO_CR qua character,img.nchr,img.chradr)
+      while res > 1
+      do img.chradr:=name(var(img.chradr)(img.nchr-(res-1)));
+         img.nchr:=res-1;
+         if var(img.chradr) = (ISO_LF qua character) then goto E endif;
+      endrepeat;
+E:end;
+
+Visible Routine GDSPEC;  --- get_dsetspec;
+import range(1:3) code; infix(String) spec; export integer filled;
+begin
+%+D   if TRCSW > 0
+%+D   then BegTrace("GDSPEC("); EdWrd(TrcBuf,code);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      var(spec.chradr):=code qua character; filled:=1;
+end;
+
+Visible Routine CLFILE;  --- close_file;
+import range(1:255) key; infix(String) Actn;
+begin infix(String) s; ref(FileBufr) buf;
+      Boolean purge; integer curlc;
+%-E   range(0:MaxWord) h,n,lng;
+%+E   integer          h,n,lng;
+%+D   if TRCSW+BNKSW > 0
+% pje %-D   if BNKSW > 0
+%+D   then BegTrace("CLOSE FILE with Key: "); EdWrd(TrcBuf,key);
+%+D %+D    Ed(TrcBuf,", Action: "); EdBytes(TrcBuf,Actn);
+%+D        OutTrace;
+%+D %+D    if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+      if key > nsysfile
+      then h:=key-1; purge:=false;
+           buf:=Name2Ref(FTAB(key).buf);
+           if buf <> none
+           then TRMBUF(h,buf); if Status <> 0 then goto E1 endif;
+                DELBUF(key);
+           endif;
+           if Actn.nchr > 2
+           then purge:=var(Actn.chradr)(4) qua integer = 0
+                if Actn.nchr > 10
+                then n:=9;
+                     repeat lng:=var(Actn.chradr)(n) qua integer
+                     while lng > 0
+                     do s.chradr:=name(var(Actn.chradr)(n+1));
+                        s.nchr:=lng;
+%+D                     if TRCSW > 0
+%+D                     then BegTrace("NonStandard Access mode: ");
+%+D                          Ed(TrcBuf,s); OutTrace;
+%+D                     endif;
+                        if STEQ(s,"STRIP")
+                        then
+%+M                          curlc:=DOS_FPTR(h,1,0);
+%+O                          OS2_FPTR(h,0,1,name2ref(@curlc));
+%+X                          curlc:=XNX_LSEEK(1,0,h);
+                             if OsStat=0 then SETLST(key,curlc)
+                             else OS_STAT("CLFILE-1") endif;
+                        endif;
+                        n:=n+lng+1;
+                     endrepeat;
+                endif;
+           endif;
+%+M        DOS_CLOSE(h);
+%+O        OS2_CLOSE(h);
+%+X        XNX_CLOSE(h);
+           if OsStat <> 0 then OS_STAT("CLFILE") endif;
+           if purge
+           then --- Remove File ---
+                EdFileName(ref(EdtBuffer),key); EdCharEdt('!0!');
+                s:=PickupEdtBuf;
+%+D             if TRCSW > 0
+%+D             then BegTrace("PURGE:  "); Ed(TrcBuf,s); OutTrace endif;
+%+M             DOS_DELETE(s.chradr);
+%+O             OS2_DELETE(name2ref(s.chradr),0);
+%+X             XNX_UNLINK(name2ref(s.chradr));
+                OsStat:=0; --- ignore status
+           endif;
+      endif;
+      FTAB(key).type:=0;
+%+D   if TRCSW > 0 then FILDMP endif;
+E1:end;
+
+Visible Routine TempFile; export infix(String) Fnam;
+begin range(0:MaxByte) n,key; n:=0;
+      repeat
+%+M          EdEdtBuf(     "sim000");
+%+O          EdEdtBuf(     "sim000");
+%+X          EdEdtBuf("/tmp/sim000");
+             EdWrd(ref(Edtbuffer),n); EdEdtBuf(".tmp");
+% ?????????  EdCharEdt('!0!');
+             Status:=0; Fnam:=PickUpEdtBuf;
+             key:=OPFILE(Fnam,F_outbytefile
+%                        ,"!0!!1!!0!!2!!1!!2!!0!!0!!0!!8!NOBUFFER!0!!0!"
+ ,"!0!!1!!0!!2!!1!!2!!0!!0!!0!!8!!78!!79!!66!!85!!70!!70!!69!!82!!0!!0!"
+                  ,0); -- Create,Nobuffer
+      while (Status<>0) and (n<99) do n:=n+1 endrepeat;
+      if Status <> 0 then TERMIN(4,"Cannot create TempFile") endif;
+      CLFILE(key,nostring); Status:=0;
+end;
+
+%title ***   O P E N    F I L E   ***
+    Define cCreate    = 0; -- (File must not exist)
+    Define cNoCreate  = 1; -- (File must exist)
+    Define cAnyCreate = 2; -- (File may exist)
+
+%+M Define oReadOnly  =     0; --   00H =           .... .000
+%+M Define oWriteOnly =     1; --   01H =           .... .001
+%+M Define oReadWrite =     2; --   02H =           .... .010
+%+M Define oDenyAll   =    16; --   10H =           .001 ....
+%+M Define oDenyWrite =    32; --   20H =           .010 ....
+%+M Define oDenyRead  =    48; --   30H =           .011 ....
+%+M Define oDenyNone  =    64; --   40H =           .100 ....
+
+%+O Define oReadOnly  =     0; -- 0000H = .... .... .... .000
+%+O Define oWriteOnly =     1; -- 0001H = .... .... .... .001
+%+O Define oReadWrite =     2; -- 0002H = .... .... .... .010
+%+O Define oDenyAll   =    16; -- 0010H = .... .... .001 ....
+%+O Define oDenyWrite =    32; -- 0020H = .... .... .010 ....
+%+O Define oDenyRead  =    48; -- 0030H = .... .... .011 ....
+%+O Define oDenyNone  =    64; -- 0040H = .... .... .100 ....
+%+O Define oNoBuffer  = 16384; -- 4000H = .1.. .... .... ....
+
+%+O Define oNotExistFail    =  0; -- 00H = 0000 ....
+%+O Define oNotExistCreate  = 16; -- 10H = 0001 ....
+%+O Define oExistFail       =  0; -- 00H = .... 0000
+%+O Define oExistOpen       =  1; -- 01H = .... 0001
+%+O Define oExistCreate     =  2; -- 02H = .... 0010
+
+%+X Define oReadOnly=0   -- 0000  Read only
+%+X Define oWriteOnly=1  -- 0001  Write only
+%+X Define oReadWrite=2  -- 0002  Read and Write
+%+X Define oNDELAY=4     -- 0004  Unbuffered I/O
+%+X Define oAPPEND=8     -- 0010  All write at end
+%+X Define oSYNCW =64    -- 0100  Writes garanteed at medium
+%+X Define oCREAT =256   -- 0400  Open with file create
+%+X Define oTRUNC =512   -- 1000  Open with truncation
+%+X Define oEXCL  =1024  -- 2000  Exclusive Create
+                         --       (Does NOT mean Exclusive access)
+
+-- Information cept in FTAB.Amode --
+   Define aRead   =  1  -- 01H = .... ...1
+   Define aWrite  =  2  -- 02H = .... ..1.
+   Define aAppend =  4  -- 04H = .... .1..
+%page
+
+ -- action encoding: (a digit gives the rank of the character, e.g. 0 is NUL)
+ --      action == <0 ! 1 >          -- shared/noshared
+ --                <0 ! 1 >          -- append/noappend
+ --                <0 ! 1 ! 2 >      -- create/nocreate/anycreate
+ --                <0 ! 1 ! 2 >      -- readonly/writeonly/readwrite
+ --                <0 ! 1 >          -- purge/nopurge
+ --                <0 ! 1 ! 2 ! 3 ! 4 ! 5 >
+ --                -- rewind/norewind/next/previous/repeat/release
+ --                <<char>>          -- bytesize: rank(char) (!0! default)
+ --                <<c1><c2>>        -- move:<rank(c1)*256+rank(c2)-32768>
+ --                ( <l><string> )*  -- unknown access modes
+ --                0                 -- terminating NUL character
+ --
+ -- The action string will always be at least 10 chars long, encoded
+ -- with the predefined modes in the above given sequence (e.g. char
+ -- number 3 will always specify the CREATE mode). If no value is given 
+ -- for some mode, RTS will insert the appropriate default character
+ -- at the relevant position. These defaults are:
+ --
+ --      in(byte)file:     "!0!!1!!1!!0!!1!!2!!0!!0!!0!!0!!0!"
+ --      out(byte)file:    "!1!!1!!2!!1!!1!!2!!0!!0!!0!!0!!0!"
+ --      direct(byte)file: "!1!!1!!1!!2!!1!!5!!0!!0!!0!!0!!0!"
+ --
+ -- If an unknown (i.e. non-Sport-defined) value are given as parameter
+ -- to procedure "setaccess", the first character must be '%' (percent),
+ -- otherwise "setaccess" returns FALSE (in all other cases it is TRUE).
+ -- Accepted values will be concatenated with the standard string, with 
+ -- '%' replaced by a character (l) whose rank gives the length of the
+ -- string, excluding the overwritten '%'.
+ -- The action string is always terminated by the NUL character ('!0!').
+%page
+
+Visible Routine OPFILE;  --- open;
+import infix(String) FileSpec; range(1:F_max) FileType;
+       infix(String) Action; integer ImLng;
+export range(0:255) key;
+begin Boolean Shared,Append,Buffered; range(0:2) Create;
+      integer Loc; Character c,d,Fstr(70);
+      range(0:MaxByte) Amode;
+%-E   range(0:MaxWord) Acode,Atr,h,n,i,p1,p,lng;
+%+E   integer          Acode,Atr,h,n,i,p1,p,lng;
+      infix(String) Fnam,TryPath,TryName,Path,s;
+%+O   range(0:MaxWord) Actn,Oflg;
+%+D   if TRCSW > 0
+%+D   then BegTrace("OPFILE(");
+%+D        if FileSpec.nchr > 1 then Ed(TrcBuf,FileSpec) endif;
+%+D        EdChar(TrcBuf,','); EdWrd(TrcBuf,FileType);
+%+D        EdChar(TrcBuf,','); EdBytes(TrcBuf,Action); EdChar(TrcBuf,',')
+%+D        EdWrd(TrcBuf,ImLng); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+
+      -- Check for System Files -- SYSIN/SYSOUT/SYSTRACE --
+      if FileSpec.nchr = 1
+      then key:=var(FileSpec.chradr) qua integer;
+           if key <= nsysfile -- SysFile
+           then case 0:F_max (FileType)
+                when F_infile,F_inbytefile: Amode:=aRead
+                when F_directfile,F_dirbytefile: Amode:=aRead+aWrite
+                otherwise Amode:=aWrite endcase;
+                h:=key-1; Buffered:=false; goto L2;
+           endif;
+      endif;
+
+      if Action.nchr > 0                              --- TEMP !!!!
+      then if var(Action.chradr)(0) qua integer > 1   --- TEMP !!!!
+           then Action:=nostring endif;               --- TEMP !!!!
+      endif;                                          --- TEMP !!!!
+      Buffered:=true;
+%+M   Atr:=0;               -- TEMP ???
+%+O   Atr:=0;
+%+X   Atr:=438; --  666O = rw-rw-rw-
+      if Action.nchr < 10
+      then -- Set Defaults ---
+           Shared:=false; Append:=false; Buffered:=false;
+           case 0:F_max (FileType)
+           when F_infile,F_inbytefile:
+                Create:=cNoCreate;   -- (File must exist)
+                Acode:=oReadOnly;    -- Open for Read only
+                Amode:=aRead;        -- Open for Read only
+           when F_directfile,F_dirbytefile:
+                Create:=cAnyCreate;  -- (File may exist)
+                Acode:=oReadWrite;   -- Open for Read and Write
+                Amode:=aRead+aWrite; -- Open for Read and Write
+           otherwise
+                Create:=cAnyCreate;  -- (File may exist)
+%-X             Acode:=oWriteOnly;   -- Open for Write only
+%+X             Acode:=oWriteOnly+oTRUNC; -- Open with Truncate for Write only
+                Amode:=aWrite;       -- Open for Write
+           endcase;
+      else Shared:=var(Action.chradr)(0) qua integer = 0
+           Append:=var(Action.chradr)(1) qua integer = 0
+           Create:=var(Action.chradr)(2) qua integer;
+           case 0:2 (var(Action.chradr)(3) qua integer)
+           when 0: Acode:=oReadOnly;  Amode:=aRead;
+           when 1: Acode:=oWriteOnly; Amode:=aWrite;
+%+X                if not Append then Acode:=Acode+oTRUNC endif;
+           when 2: Acode:=oReadWrite; Amode:=aRead+aWrite;
+           endcase;
+           if Append then Amode:=Amode+aAppend endif;
+           if Action.nchr > 10
+           then n:=9;
+                repeat lng:=var(Action.chradr)(n) qua integer while lng>0
+                do s.chradr:=name(var(Action.chradr)(n+1)); s.nchr:=lng;
+%+D                if TRCSW > 0
+%+D                then BegTrace("NonStandard Access mode: ");
+%+D                     Ed(TrcBuf,s); OutTrace;
+%+D                endif;
+                   if STEQ(s,"NOBUFFER")
+                   then Buffered:=false;
+%+M
+%+O                     Acode:=wOR(Acode,oNoBuffer);
+%+X                     Acode:=wOR(Acode,oNDELAY);
+                   endif;
+                   n:=n+lng+1;
+                endrepeat;
+           endif;
+      endif;
+
+      ------------------- Set Sharing Control -------------------
+      --- NOTE: Sharing Control is not supported by UNIX V.3  ---
+      ---       Sharing Control is not supported by DOS  2.x  ---
+      ---       Sharing Control wrong for DOS 3.x under UNIX  ---
+      -----------------------------------------------------------
+-- ???? %+M   if DosVersion >= 3
+-- ???? %+M   then if Shared then Acode:=wOR(Acode,oDenyNone)
+-- ???? %+M                  else Acode:=wOR(Acode,oDenyAll) endif;
+-- ???? %+M   endif;
+%+O   if Shared then Acode:=wOR(Acode,oDenyNone)
+%+O             else Acode:=wOR(Acode,oDenyAll) endif;
+
+      -----------------------------------------
+      ---    Compile FileSpec  ==>  Fnam    ---
+      -----------------------------------------
+      p:=0; Path:=nostring;
+      repeat while p < FileSpec.nchr
+      do BB1:BB2: c:=var(FileSpec.chradr)(p); p:=p+1;
+         if (c='/') or (c='\')
+         then
+%+M           c:='\';
+%+O           c:='\';
+%+X           c:='/';
+         elsif c='$'
+         then p1:=p; repeat while p < FileSpec.nchr
+              do d:=var(FileSpec.chradr)(p);
+                 if d qua integer < 65 then goto CC1 endif;
+                 if d qua integer > 90 then goto CC2 endif;
+                 p:=p+1;
+              endrepeat;
+     CC1:CC2: s.chradr:=name(var(FileSpec.chradr)(p1)); s.nchr:=p-p1;
+              if s.nchr > 0
+              then s:=GENV(s);
+                   if p1=1
+                   then i:=0; repeat while i < s.nchr
+                        do
+%+M                        if var(s.chradr)(i)=';'
+%+O                        if var(s.chradr)(i)=';'
+%+X                        if var(s.chradr)(i)=':'
+                           then Path:=s; goto BB1 endif;
+                           i:=i+1;
+                        endrepeat;
+                   endif;
+                   EdEdtBuf(s); goto BB2;
+              endif;
+         endif;
+         if EdtBuffer.pos >= 70
+         then
+%+D           SYSPRI("*** ERROR *** Too long FileName for 'Open'")
+              STAT("OPFILE-ilf",xq_illfn); goto Eillfn;
+         endif;
+         EdcharEdt(c);
+      endrepeat;
+      EdcharEdt(0 qua character); Fnam:=PickupEdtBuf;
+
+      if Path.nchr=0
+      then ---------------------------------------------
+           ---  OPEN FILE WITHOUT $<Path> SEARCHING  ---
+           ---------------------------------------------
+%+O        case 0:2 (Create)
+%+O        when cCreate:    Oflg:=oNotExistCreate + oExistFail; Atr:=0;
+%+O        when cNoCreate:  Oflg:=oNotExistFail   + oExistOpen; Atr:=0;
+%+O        when cAnyCreate: Oflg:=oNotExistCreate + oExistOpen; Atr:=0;
+%+O        endcase;
+%+X        case 0:2 (Create)
+%+X        when cCreate:    Acode:=wOR(Acode,oEXCL+oCREAT);
+%+X        when cAnyCreate: Acode:=wOR(Acode,oCREAT);
+%+X        endcase;
+
+           -- First Try to open the File --
+%+D        if TRCSW > 0
+%+D        then BegTrace("*** OPEN("); Ed(TrcBuf,Fnam);
+%+D             EdChar(TrcBuf,','); EdHex(TrcBuf,Acode,4);
+%+DO            EdChar(TrcBuf,','); EdHex(TrcBuf,Oflg,4);
+%+D             EdChar(TrcBuf,','); EdHex(TrcBuf,Atr,4);
+%+D             edchar(TrcBuf,')'); OutTrace;
+%+D        endif;
+%+M        h:=DOS_OPEN(Acode,Fnam.chradr);
+%+O        OS2_OPEN(name2ref(Fnam.chradr),name2ref(@h),name2ref(@Actn),
+%+O                                              0,Atr,Oflg,Acode,0);
+%+X        h:=XNX_OPEN(Atr,Acode,name2ref(Fnam.chradr));
+
+%+M        if OsStat <> 0  -- File Open failed
+%+M        then if (Create=cAnyCreate) or (Create=cCreate)
+%+M             then OsStat:=0; h:=DOS_CREF(Atr,Fnam.chradr) endif;
+%+M        elsif Create=cCreate -- File must not exist ---
+%+M        then DOS_CLOSE(h); OsStat:=0;
+%+M             STAT("OPFILE-Em1",xq_exist); goto Em1;
+%+M        endif;
+           if OsStat <> 0 then OS_STAT("OPEN-1"); goto E1 endif;
+
+      else ------------------------------------------
+           ---  OPEN FILE WITH $<Path> SEARCHING  ---
+           ------------------------------------------
+           APX_SMOVEI(Fnam.nchr,@Fstr,Fnam.chradr); Fnam.chradr:=@Fstr;
+%+O        Oflg:=oNotExistFail+oExistOpen;
+           p1:=0; repeat while p1 < Path.nchr
+           do p:=p1;
+%+M           repeat while var(Path.chradr)(p) <> ';'
+%+O           repeat while var(Path.chradr)(p) <> ';'
+%+X           repeat while var(Path.chradr)(p) <> ':'
+              do p:=p+1; if p >= Path.nchr then goto EP1 endif endrepeat;
+         EP1: TryPath.chradr:=name(var(Path.chradr)(p1));
+              TryPath.nchr:=p-p1; p1:=p+1;
+              EdEdtBuf(TryPath); EdEdtBuf(Fnam); TryName:=PickUpEdtBuf;
+%+D           if TRCSW > 0
+%+D           then BegTrace("TRY: "); Ed(TrcBuf,TryName);
+%+D                EdChar(TrcBuf,','); EdHex(TrcBuf,Acode,4);
+%+DO               EdChar(TrcBuf,','); EdHex(TrcBuf,Oflg,4);
+%+D                EdChar(TrcBuf,','); EdHex(TrcBuf,Atr,4);
+%+D                edchar(TrcBuf,')'); OutTrace;
+%+D           endif;
+              OsStat:=0;
+%+M           h:=DOS_OPEN(Acode,TryName.chradr);
+%+O           OS2_OPEN(name2ref(TryName.chradr),name2ref(@h),
+%+O                           name2ref(@Actn),0,Atr,Oflg,Acode,0);
+%+X           h:=XNX_OPEN(Atr,Acode,name2ref(TryName.chradr));
+              if OsStat = 0 then Fnam:=TryName; goto L1 endif;
+           endrepeat;
+           --- Not found in any Path:
+           if Create=cCreate --- Try to Create a new File ---
+           then OsStat:=0;
+%+O             Oflg:=oNotExistCreate+oExistFail;
+%+D             if TRCSW > 0
+%+D             then BegTrace("CREATE: "); Ed(TrcBuf,Fnam);
+%+D                  EdChar(TrcBuf,','); EdHex(TrcBuf,Acode,4);
+%+DO                 EdChar(TrcBuf,','); EdHex(TrcBuf,Oflg,4);
+%+D                  EdChar(TrcBuf,','); EdHex(TrcBuf,Atr,4);
+%+D                  edchar(TrcBuf,')'); OutTrace;
+%+D             endif;
+%+M             h:=DOS_CREF(Atr,Fnam.chradr);
+%+O             OS2_OPEN(name2ref(Fnam.chradr),name2ref(@h),name2ref(@Actn),
+%+O                          0,Atr,Oflg,Acode,0);  -- Create file, if possible
+%+X             h:=XNX_CREAT(Atr,name2ref(Fnam.chradr));
+                if OsStat <> 0 then OS_STAT("OPEN-2"); goto E2 endif;
+           else
+                OsStat:=0; STAT("OPEN-3",xq_nexist); goto E3;
+           endif;
+
+      endif;
+L1:   key:=h+1;
+      if Append
+      then
+%+M        Loc:=DOS_FPTR(h,2,0);
+%+O        OS2_FPTR(h,0,2,name2ref(@Loc));
+%+X        Loc:=XNX_LSEEK(2,0,h);
+           if OsStat <> 0 then OS_STAT("OPFILE-4"); goto E4 endif;
+%+M   elsif wAND(Acode,oWriteOnly)=oWriteOnly
+%+M         then n:=DOS_WRITE(h,0,@n); --- Truncate DOS-File
+%+O   elsif wAND(Acode,oWriteOnly)=oWriteOnly
+%+O         then OS2_NEWSIZE(h,0);     --- Truncate OS2-File
+      endif;
+      --- FTAB(key).FNAM <-- Fnam truncated to 70 char ---
+      n:=Fnam.nchr-1; if n > 70 then n:=70 endif;
+      APX_SMOVEI(n,name(FTAB(key).FNAM.chr),Fnam.chradr);
+      FTAB(key).FNAM.nchr:=n;
+L2:
+      FTAB(key).fac:=if ImLng = 0 then 1 else ImLng + 2;
+      FTAB(key).Type:=FileType; FTAB(key).Amode:=Amode; FTAB(key).DifLoc:=0;
+      case 0:F_max (FileType)                --- TEMP   TEMP   !!!
+      when F_outfile:    Buffered:=false;    --- TEMP   TEMP   !!!
+      when F_printfile:  Buffered:=false;    --- TEMP   TEMP   !!!
+      when F_directfile: Buffered:=false;    --- TEMP   TEMP   !!!
+      when F_reloutfile: Buffered:=false;    --- TEMP   TEMP   !!!
+      endcase;                               --- TEMP   TEMP   !!!
+      if Buffered
+      then NEWBUF(key) else FTAB(key).buf:=noname endif;
+%+M Em1:
+Eillfn:
+E1:E2:E3:E4:
+%+D   if TRCSW+BNKSW > 0
+% pje %-D   if BNKSW > 0
+%+D   then BegTrace("OPEN FILE: ");
+%+D        if FileSpec.nchr > 1 then Ed(TrcBuf,FileSpec) endif;
+%+D        Ed(TrcBuf,", Type: "); EdWrd(TrcBuf,FileType);
+%+D %+D    Ed(TrcBuf,", Action: "); EdBytes(TrcBuf,Action);
+%+D        Ed(TrcBuf,", ImageLength: "); EdWrd(TrcBuf,ImLng);
+%+D        if Status=0 then Ed(TrcBuf,", Key:="); EdWrd(TrcBuf,key);
+%+D        else Ed(TrcBuf,", Status:="); EdWrd(TrcBuf,Status) endif;
+%+D        OutTrace;
+%+D %+D    if TRCSW > 2 then FILDMP endif;
+%+D   endif;
+end;
+%title ******   INBYTE - IN2BYT   ******
+
+Visible Routine INBYTE;  --- inbyte;
+import range(1:255) key; export range(0:255) res;
+begin ref(FileBufr) buf;
+%-E   range(0:MaxWord) h,n;
+%+E   integer          h,n;
+%+D   if TRCSW > 1
+%+D   then BegTrace("INBYTE("); EdWrd(TrcBuf,key);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      h:=key-1;
+      buf:=Name2Ref(FTAB(key).buf);
+      if FTAB(key).DifLoc <> 0
+      then CHGLOC(h,true); if Status<>0 then goto E1 endif endif;
+      if buf <> none
+      then L: n:=buf.nxt;
+           if n < buf.lim then res:=buf.byt(n) qua integer; buf.nxt:=n+1
+           else TRMBUF(h,buf); if Status <> 0 then goto E2 endif;
+                INIBUF(h,buf); if Status=0 then goto L endif;
+           endif;
+      else --- Direct read from file ---
+%+M        n:=DOS_READ(h,1,@ximc);
+%+O        OS2_READ(h,name2ref(@ximc),1,name2ref(@n));
+%+X        n:=XNX_READ(1,name2ref(@ximc),h);
+           if OsStat <> 0 then OS_STAT("INBYTE-3")
+           elsif n <> 1 then STAT("INBYTE-4",xq_eof)
+           else res:=ximc qua integer endif;
+      endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("INBYTE: Result = "); EdWrd(TrcBuf,res); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:E2:end;
+
+Visible known("IN2BYT") IN2BYTE;
+import range(1:255) key;
+%-E  export infix(Any2Byte) val;
+%+E  export infix(Any4Byte) val;
+begin
+%+E   val.AsInt:=0;
+      val.AsByte(1):=INBYTE(key);
+      if status = 0 then val.AsByte(0):=INBYTE(key) endif;
+end;
+
+%title ******   OUTBYT - OUT2BY   ******
+
+Visible Routine OUTBYT;  --- outbyte;
+import range(1:255) key; range(0:255) arg;
+begin ref(FileBufr) buf;
+%-E   range(0:MaxWord) h,n;
+%+E   integer          h,n;
+%+D   if TRCSW > 1
+%+D   then BegTrace("OUTBYT("); EdWrd(TrcBuf,key); EdChar(Trcbuf,',');
+%+D        EdWrd(TrcBuf,arg); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      h:=key-1;
+      buf:=Name2Ref(FTAB(key).buf);
+      if FTAB(key).DifLoc <> 0
+      then CHGLOC(h,false); if Status<>0 then goto E1 endif endif;
+      if buf <> none
+      then L: n:=buf.nxt;
+           if n < buf.cnt
+           then buf.byt(n):=arg qua character;
+                buf.nxt:=n+1; buf.mode:=2;
+           else TRMBUF(h,buf); if Status <> 0 then goto E2 endif;
+                INIBUF(h,buf);
+                if Status=xq_eof   then Status:=0 endif;
+                if Status=xq_nread then Status:=0 endif;
+                if Status=0 then goto L endif;
+           endif;
+      else ximc:=arg qua character;
+%+M        n:=DOS_WRITE(h,1,@ximc);
+%+O        OS2_WRITE(h,name2ref(@ximc),1,name2ref(@n));
+%+X        n:=XNX_WRITE(1,name2ref(@ximc),h);
+           if OsStat <> 0 then OS_STAT("OUTBYT-3")
+           elsif n <> 1 then STAT("OUTBYT-4",xq_ffull) endif;
+      endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("OUTBYT:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:E2:end;
+
+Visible known("OUT2BY") OUT2BYTE;
+import range(1:255) key;
+%-E infix(Any2Byte) val;
+%+E infix(Any4Byte) val;
+begin OUTBYT(key,val.AsByte(1));
+      if status = 0 then OUTBYT(key,val.AsByte(0)) endif;
+end;
+%title ******   BINTXT   ******
+
+Visible known("BINTXT") BINTXT; -- bytefile intext
+import range(1:255) key; infix(string) dst; export short integer filled;
+begin ref(FileBufr) buf;
+%-E   range(0:MaxWord) h,n,cnt,rst;
+%+E   integer          h,n,cnt,rst;
+%+D   if TRCSW > 1
+%+D   then BegTrace("BINTXT("); EdWrd(TrcBuf,key); EdChar(Trcbuf,',');
+%+D        EdWrd(TrcBuf,dst.nchr); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      h:=key-1; filled:=0; cnt:=dst.nchr;
+      buf:=Name2Ref(FTAB(key).buf);
+      if cnt=0 then goto E0 endif;
+      if FTAB(key).DifLoc <> 0
+      then CHGLOC(h,true); if Status<>0 then goto E1 endif endif;
+      if buf <> none
+      then L: if (buf.nxt+cnt) <= buf.lim
+           then --- Complete read from buffer ---
+                APX_SMOVEI(cnt,dst.chradr,@buf.byt(buf.nxt));
+                buf.nxt:=buf.nxt+cnt; filled:=filled+cnt; goto E2;
+           elsif buf.lim > buf.nxt
+           then --- Partial read from buffer ---
+                rst:=buf.lim-buf.nxt;
+                APX_SMOVEI(rst,dst.chradr,@buf.byt(buf.nxt));
+                cnt:=cnt-rst; buf.nxt:=buf.lim; filled:=filled+rst;
+                dst.chradr:=name(var(dst.chradr)(rst));
+           endif;
+           TRMBUF(h,buf); if Status <> 0 then goto E3 endif;
+           if cnt > (buf.cnt/2) then goto D endif;
+           INIBUF(h,buf); if Status=0 then goto L endif;
+      else D: --- Direct read from file ---
+%+M        n:=DOS_READ(h,cnt,dst.chradr);
+%+O        OS2_READ(h,name2ref(dst.chradr),cnt,name2ref(@n));
+%+X        n:=XNX_READ(cnt,name2ref(dst.chradr),h);
+           if OsStat <> 0 then OS_STAT("BINTXT-3")
+           elsif n <> cnt then STAT("BINTXT-4",xq_eof) endif;
+           filled:=filled+n;
+      endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("BINTXT: Filled = "); EdWrd(TrcBuf,filled); OutTrace
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E0:E1:E2:E3:end;
+
+%title ******   BOUTXT   ******
+
+Visible known("BOUTXT") BOUTXT; -- bytefile outtext
+import range(1:255) key; infix(string) src;
+begin ref(FileBufr) buf;
+%-E   range(0:MaxWord) h,n,cnt,rst;
+%+E   integer          h,n,cnt,rst;
+%+D   if TRCSW > 1
+%+D   then BegTrace("BOUTXT("); EdWrd(TrcBuf,key); EdChar(Trcbuf,',');
+%+D        EdWrd(TrcBuf,src.nchr); EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+      h:=key-1; cnt:=src.nchr;
+      buf:=Name2Ref(FTAB(key).buf);
+      if cnt=0 then goto E0 endif;
+      if FTAB(key).DifLoc <> 0
+      then CHGLOC(h,false); if Status<>0 then goto E1 endif endif;
+      if buf <> none
+      then L: rst:=buf.cnt-buf.nxt;
+           if cnt <= rst --- Complete write into buffer ---
+           then APX_SMOVEI(cnt,@buf.byt(buf.nxt),src.chradr);
+                buf.nxt:=buf.nxt+cnt; buf.mode:=2; goto E2;
+           elsif rst > 0  --- Partial write into buffer ---
+           then APX_SMOVEI(rst,@buf.byt(buf.nxt),src.chradr);
+                cnt:=cnt-rst; buf.nxt:=buf.cnt; buf.mode:=2;
+                src.chradr:=name(var(src.chradr)(rst));
+           endif;
+           TRMBUF(h,buf); if Status <> 0 then goto E3 endif;
+           if cnt > (buf.cnt/2) then goto D endif;
+           INIBUF(h,buf);
+           if Status=xq_eof   then Status:=0 endif;
+           if Status=xq_nread then Status:=0 endif;
+           if Status=0 then goto L endif;
+      else D: --- Direct write into file ---
+%+M        n:=DOS_WRITE(h,cnt,src.chradr);
+%+O        OS2_WRITE(h,name2ref(src.chradr),cnt,name2ref(@n));
+%+X        n:=XNX_WRITE(cnt,name2ref(src.chradr),h);
+           if OsStat <> 0 then OS_STAT("BOUTXT-4")
+           elsif n <> cnt then STAT("BOUTXT-4",xq_ffull) endif;
+      endif;
+%+D   if TRCSW > 2
+%+D   then BegTrace("BOUTXT:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E0:E1:E2:E3:end;
+
+%title ******   CHGLOC   ******
+Visible Routine CHGLOC;
+%-E import range(0:MaxWord) h; Boolean input;
+%+E import integer          h; Boolean input;
+begin ref(FileBufr) buf; integer diflc,curlc,newlc,lstlc;
+%-E   range(0:MaxWord) key,n;
+%+E   integer          key,n;
+%+D   if TRCSW > 3
+%+D   then BegTrace("CHGLOC("); EdWrd(TrcBuf,h); EdChar(TrcBuf,',');
+%+D        EdBool(TrcBuf,input); EdChar(TrcBuf,')'); OutTrace
+%+D        if TRCSW > 3 then EdFile(TrcBuf,h+1) endif;
+%+D   endif;
+      key:=h+1; diflc:=FTAB(key).DifLoc; FTAB(key).DifLoc:=0;
+      buf:=Name2Ref(FTAB(key).buf);
+      if buf <> none
+      then if buf.mode <> 0 --- Buffer in use
+           then --- Check if new loc within same buffer ---
+                if buf.lim<buf.nxt then buf.lim:=buf.nxt endif;
+                diflc:=diflc+buf.nxt;
+                if diflc >= 0
+                then if diflc < buf.lim
+                     then buf.nxt:=diflc; goto E2 endif;
+                endif;
+                diflc:=diflc-buf.lim;
+                TRMBUF(h,buf); if Status <> 0 then goto E3 endif;
+           endif;
+      endif;
+%+M   curlc:=DOS_FPTR(h,1,0);
+%+O   OS2_FPTR(h,0,1,name2ref(@curlc));
+%+X   curlc:=XNX_LSEEK(1,0,h);
+      if OsStat <> 0 then OS_STAT("CHGLOC-1"); goto E1 endif;
+      --- Get Last Location ---
+%+M   lstlc:=DOS_FPTR(h,2,0);
+%+O   OS2_FPTR(h,0,2,name2ref(@lstlc));
+%+X   lstlc:=XNX_LSEEK(2,0,h);
+      if OsStat <> 0 then OS_STAT("CHGLOC-4"); goto E4 endif;
+      --- Check New Location ---
+      newlc:=curlc+diflc;
+      if lstlc < newlc
+      then if input then STAT("CHGLOC-5",xq_eof); goto E5;
+           elsif FTAB(key).Type=F_directfile
+           then SETLST(key,newlc); --- ZERO FILL EXPANSION ---
+                if OsStat <> 0
+                then OS_STAT("CHGLOC-6"); goto E6 endif;
+           endif;
+      endif;
+      --- Set New Location ---
+%+M   newlc:=DOS_FPTR(h,0,newlc);
+%+O   OS2_FPTR(h,newlc,0,name2ref(@newlc));
+%+X   newlc:=XNX_LSEEK(0,newlc,h);
+      if OsStat <> 0 then OS_STAT("CHGLOC-7") endif;
+%+D   if TRCSW > 3
+%+D   then BegTrace("CHGLOC:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:E2:E3:E4:E5:E6:end;
+%title ******   SETLST   ******
+
+Visible Routine SETLST; import range(1:255) key; integer newlc;
+begin ref(FileBufr) buf; integer lstlc,wrtlc,decr;
+%-E   range(0:MaxWord) h,n; short integer dif;
+%+E   integer          h,n; integer       dif;
+%+D   if TRCSW > 3
+%+D   then BegTrace("SETLST("); EdWrd(TrcBuf,key); EdChar(TrcBuf,',');
+%+D        EdInt(TrcBuf,newlc); OutTrace
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+      h:=key-1;
+      --- Get Last Location ---
+%+M   lstlc:=DOS_FPTR(h,2,0);
+%+O   OS2_FPTR(h,0,2,name2ref(@lstlc));
+%+X   lstlc:=XNX_LSEEK(2,0,h);
+      if OsStat <> 0 then OS_STAT("SETLST-1"); goto E1 endif;
+      --- Check New Location ---
+      if lstlc < newlc
+      then --- ZERO FILL EXPANSION ---
+           decr:=FTAB(key).fac;
+%+M        wrtlc:=newlc - 2;
+%+O        wrtlc:=newlc - 2;
+%+X        wrtlc:=newlc - 1;
+           repeat
+%+M               wrtlc:=DOS_FPTR(h,0,wrtlc);
+%+O               OS2_FPTR(h,wrtlc,0,name2ref(@wrtlc));
+%+X               wrtlc:=XNX_LSEEK(0,wrtlc,h);
+                  if OsStat <> 0
+                  then OS_STAT("SETLST-2"); goto E2 endif;
+%+M               n:=DOS_WRITE(h,2,@NULLs);
+%+O               OS2_WRITE(h,name2ref(@NULLs),2,name2ref(@n));
+%+X               n:=XNX_WRITE(1,name2ref(@NULLs(1)),h);
+                  if OsStat <> 0
+                  then OS_STAT("SETLST-3"); goto E3 endif;
+                  wrtlc:=wrtlc-decr;
+           while wrtlc > lstlc do endrepeat;
+      endif;
+      --- Set New Location ---
+%+M   newlc:=DOS_FPTR(h,0,newlc);
+%+O   OS2_FPTR(h,newlc,0,name2ref(@newlc));
+%+X   newlc:=XNX_LSEEK(0,newlc,h);
+      if OsStat <> 0 then OS_STAT("SETLST-4"); goto E4 endif;
+      if lstlc > newlc
+      then --- Free tail of file ---
+%+X        XNX_CHSIZE(newlc,h);
+%+M        n:=DOS_WRITE(h,0,@n);
+%+O        OS2_NEWSIZE(h,newlc);
+           if OsStat <> 0
+           then OS_STAT("SETLST-5"); goto E5 endif;
+      endif; 
+%+D   if TRCSW > 3
+%+D   then BegTrace("SETLST:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,key) endif;
+%+D   endif;
+E1:E2:E3:E4:E5:end;
+%title ******   INIBUF   ******
+Visible Routine INIBUF;
+import
+%-E    range(0:MaxWord) h; ref(FileBufr) buf;
+%+E    integer          h; ref(FileBufr) buf;
+begin
+%-E   range(0:MaxWord) n;
+%+E   integer          n;
+%+D   if TRCSW > 3
+%+D   then BegTrace("INIBUF:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,h+1) endif;
+%+D   endif;
+%+M   buf.FileLoc:=DOS_FPTR(h,1,0);
+%+O   OS2_FPTR(h,0,1,name2ref(@buf.FileLoc));
+%+X   buf.FileLoc:=XNX_LSEEK(1,0,h);
+      if OsStat <> 0 then OS_STAT("INIBUF-1"); goto E1 endif;
+      if bAND(FTAB(h+1).Amode,aRead) <> aRead
+      then n:=0; STAT("INIBUF-0",xq_nread); goto F1 endif;
+%+M   n:=DOS_READ(h,buf.cnt,@buf.byt);
+%+O   OS2_READ(h,name2ref(@buf.byt),buf.cnt,name2ref(@n));
+%+X   n:=XNX_READ(buf.cnt,name2ref(@buf.byt),h);
+      if OsStat <> 0 then n:=0; OS_STAT("INIBUF-2")
+      elsif n=0 then STAT("INIBUF-3",xq_eof) endif;
+F1:   buf.nxt:=0; buf.lim:=n; buf.mode:=1;
+%+D   if TRCSW > 3
+%+D   then BegTrace("INIBUF:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,h+1) endif;
+%+D   endif;
+E1:end;
+
+%title ******   TRMBUF   ******
+
+Visible Routine TRMBUF;
+import
+%-E    range(0:MaxWord) h; ref(FileBufr) buf;
+%+E    integer          h; ref(FileBufr) buf;
+begin integer wrtlc;
+%-E   range(0:MaxWord) n;
+%+E   integer          n;
+%+D   if TRCSW > 3
+%+D   then BegTrace("TRMBUF:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,h+1) endif;
+%+D   endif;
+      if buf.mode = 1  --- Buffer is not updated
+      then wrtlc:=buf.FileLoc+buf.lim;
+%+M        wrtlc:=DOS_FPTR(h,0,wrtlc);
+%+O        OS2_FPTR(h,wrtlc,0,name2ref(@wrtlc));
+%+X        wrtlc:=XNX_LSEEK(0,wrtlc,h);
+           if OsStat <> 0 then OS_STAT("TRMBUF-1") endif;
+      elsif buf.mode = 2  --- Buffer is updated
+      then wrtlc:=buf.FileLoc;
+%+M        wrtlc:=DOS_FPTR(h,0,wrtlc);
+%+O        OS2_FPTR(h,wrtlc,0,name2ref(@wrtlc));
+%+X        wrtlc:=XNX_LSEEK(0,wrtlc,h);
+           if OsStat <> 0 then OS_STAT("TRMBUF-2"); goto E endif;
+           --- Write out buffer ---
+           if buf.lim<buf.nxt then buf.lim:=buf.nxt endif;
+%+M        n:=DOS_WRITE(h,buf.lim,@buf.byt);
+%+O        OS2_WRITE(h,name2ref(@buf.byt),buf.lim,name2ref(@n));
+%+X        n:=XNX_WRITE(buf.lim,name2ref(@buf.byt),h);
+           if OsStat <> 0 then OS_STAT("TRMBUF-3");
+           elsif n < buf.lim then STAT("TRMBUF-4",xq_ffull) endif;
+      endif;
+      --- Buffer not in use any more ---
+      buf.nxt:=buf.cnt; buf.lim:=buf.cnt; buf.mode:=0;
+%+D   if TRCSW > 3
+%+D   then BegTrace("TRMBUF:"); OutTrace;
+%+D        if TRCSW > 3 then EdFile(TrcBuf,h+1) endif;
+%+D   endif;
+E:end;
+%title ******    R T S    U T I L I T I E S    ******
+
+Visible Routine LOWTEN; import character c;
+begin LTEN:=c end;
+
+Visible Routine DCMARK; import character c;
+begin DMRK:=c end;
+
+Visible Routine ECASE;
+begin SYSPRI("*** ERROR *** Case index is out of range") end;
+
+Visible Routine OSCMND; import infix(String) cmnd;
+begin ------ Perform MS-DOS/MS-OS2/XENIX Command ------
+%+M   infix(String) comspc,para; range(0:MaxWord) RetCode;
+%+M   ref(EdBuff) CmdBuf; infix(EdBuff) CmdBuffer; character buf(80);
+%+O   infix(String) comspc; ref(ASCIIZ) Cmd,Par; integer xstat;
+%+O   ref(EdBuff) CmdBuf; infix(EdBuff) CmdBuffer; character buf(80);
+%+X %-E infix(String) S; range(0:MaxWord) xstat;
+%+XE    infix(String) S; integer          xstat;
+
+%+D   if TRCSW > 0
+%+D   then BegTrace("OSCMND("); Ed(TrcBuf,cmnd);
+%+D        EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+
+%+M   comspc:=GENV("COMSPEC");
+%+M   CmdBuffer.nchr:=80; CmdBuffer.pos:=0; CmdBuf:=name2ref(@CmdBuffer)
+%+M   EdChar(CmdBuf,(cmnd.nchr+3) qua character);
+%+M   Ed(CmdBuf,"/c "); Ed(CmdBuf,cmnd);
+%+M   EdChar(CmdBuf,ISO_CR qua character); para:=Pickup(CmdBuf);
+%+M   RetCode:=DOS_EXEC(comspc.chradr,para.chradr);
+
+%+O   comspc:=GENV("COMSPEC"); Cmd:=name2ref(comspc.chradr);
+%+O   CmdBuffer.nchr:=80; CmdBuffer.pos:=0; CmdBuf:=name2ref(@CmdBuffer)
+%+O   Par:=name2ref(@CmdBuf.chr); Ed(CmdBuf,comspc);
+%+O   EdChar(CmdBuf,0 qua character);
+%+O   if cmnd.nchr > 0 then Ed(CmdBuf,"/c "); Ed(CmdBuf,cmnd) endif;
+%+O   EdChar(CmdBuf,0 qua character);
+%+O   EdChar(CmdBuf,0 qua character); Pickup(CmdBuf);
+%+O   OS2_EXECPGM(name2ref(@buf),80,0,Par,none,name2ref(@xstat),Cmd);
+
+%+X   EdEdtbuf(cmnd); EdcharEdt(0 qua character);
+%+X   S:=PickupEdtBuf; xstat:=XNX_SYSTEM(name2ref(S.chradr));
+---   if OsStat <> 0
+---   then ---------------
+           OsStat:=0; --- ignore status pt.
+---   endif;
+end;
+%title ******   E X C E P T I O N    H A N D L I N G   ******
+
+--  Routine EdLineId; import ref(EdBuff) BF; label addr;
+--  begin infix(String) s; range(0:MaxWord) p,n; p:=BF.pos;
+--        if (p+25) >= BF.nchr then PrintOut(BF); p:=0 endif;
+--        s.nchr:=25; s.chradr:=@BF.chr(p); n:=GTLNID(addr,s);
+--        if status=0 then BF.pos:=p+n else status:=0 endif;
+--  end;
+
+
+Sysroutine("GTOUTM") SIM_GTOUTM; -- Get Outermost
+export label adr;  end;
+
+Visible Routine STMBRK;  --- Statement Start Exceptions
+import Boolean setbrk;    -- False:OFF, True:ON
+begin infix(AnyRef) z1; infix(AnyAddr) z2; ref(Any2Byte) x;
+%+D   if TRCSW > 0
+%+D   then BegTrace("STMBRK("); if setbrk then Ed(TrcBuf,"true:ON")
+%+D        else Ed(TrcBuf,"false:OFF") endif; EdChar(TrcBuf,')'); OutTrace;
+%+D   endif;
+----- z1.nam:=name(z1); z2.AsOaddr:=z1.rf; z2.AsOfst:=InitSP; x:=z2.AsOaddr;
+----- if setbrk then x.AsByte(1):=1 else x.AsByte(1):=0 endif;
+      if setbrk then STKEND.AsByte(1):=1 else STKEND.AsByte(1):=0 endif;
+%+D   if TRCSW > 0 then BegTrace("STMBRK: Done"); OutTrace endif;
+end;
+
+Visible Routine TRAPH;  --- Trap handler
+export infix(TrapPkt) trap; -- NOTE: Also used as import, special case
+begin range(0:M_max) MD; label TrpAdr,cont; infix(string) s;
+%+M   label adr; range(0:MaxBreak) i; infix(AnyAddr) aa; ref(Any2Byte) x;
+%+O   label adr; range(0:MaxBreak) i; infix(AnyAddr) aa;
+%+X   label adr; range(0:MaxBreak) i; infix(AnyAddr) aa;
+      MD:=EXMODE; EXMODE:=M_EXCP;
+%+EX  trap.UserBP:=trap.UserBP(11)
+%-E %+X trap.UserBP:=trap.UserBP(15); trap.rSP:=trap.OldBP+34;
+%-E %+X if (trap.TADR.AsSegm=63) and (trap.TADR.AsOfst=8)   -- 003F:0008
+%-E %+X then --- XENIX/286  Trap from  SCO-XENIX/386 Kernel
+%-E %+XD     if ERRSW > 4 then STKDMP(0) endif;
+%-E %+X      trap.TADR.AsSegm:=trap.UserBP(51)
+%-E %+X      trap.TADR.AsOfst:=trap.UserBP(49)
+%-E %+X      trap.UserBP:=trap.UserBP(33);
+%-E %+X      trap.rSP:=trap.OldBP+116;
+%-E %+X      trap.rAX:=trap.UserBP(43);
+%-E %+X      trap.rCX:=trap.UserBP(41);
+%-E %+X      trap.rDX:=trap.UserBP(39);
+%-E %+X      trap.rBX:=trap.UserBP(37);
+%-E %+X      trap.rSI:=trap.UserBP(31);
+%-E %+X      trap.rDI:=trap.UserBP(29);
+%-E %+X      trap.rDS:=trap.UserBP(27);
+%-E %+X      trap.rES:=trap.UserBP(25);
+%-E %+X endif;
+%-E %+X if (trap.TADR.AsSegm=63) and (trap.TADR.AsOfst=30)  -- 003F:001E
+%-E %+X then --- XENIX/286  Trap from  386/ix UNIX/386 Kernel
+%-E %+XD     if ERRSW > 4 then STKDMP(0) endif;
+%-E %+X      trap.TADR.AsSegm:=trap.UserBP(68);
+%-E %+X      trap.TADR.AsOfst:=trap.UserBP(66);
+%-E %+X      trap.UserBP:=trap.UserBP(50);
+%-E %+X      trap.rSP:=trap.OldBP+154;
+%-E %+X      trap.rAX:=trap.UserBP(60);
+%-E %+X      trap.rCX:=trap.UserBP(58);
+%-E %+X      trap.rDX:=trap.UserBP(56);
+%-E %+X      trap.rBX:=trap.UserBP(54);
+%-E %+X      trap.rSI:=trap.UserBP(48);
+%-E %+X      trap.rDI:=trap.UserBP(46);
+%-E %+X      trap.rDS:=trap.UserBP(44);
+%-E %+X      trap.rES:=trap.UserBP(42);
+%-E %+X endif;
+%+D   if ERRSW > 1
+%+D   then EdTrap("*** TRAP HANDLER ***",MD,trap);
+%+D        if ERRSW > 3 then STKDMP(0) endif;
+%+D   endif;
+      case 0:M_max (MD)
+      when M_USER: --- Activate the exception monitor
+%+M        if trap.OsCode  = 1   --- Single Step trap ---
+%+M        then if BrkAdr.AsPaddr = nowhere  --  STM-Break
+%+M             then if IStep
+%+M                  then IStep:=false; trap.SimCode:=11; --- Interrupt Break
+%+M                  else trap.SimCode:=14 endif;         --- Statement Break
+%+M             else if CeepBrk -- Reset INT 3 = BP-Instruction at BrkAdr
+%+M                  then x:=BrkAdr.AsOaddr; x.AsByte:=204 endif;
+%+M                  trap.FLAGS:=wAND(trap.FLAGS,-257); -- FEFFH -- NOT TF-flag
+%+M                  BrkAdr.AsPaddr:=nowhere; EXMODE:=M_USER; goto EXX2;
+%+M             endif;
+%+M        elsif trap.SimCode = 10  --- Breakpoint trap ---
+%+M        then
+%+M             if BrkAdr.AsPaddr = nowhere
+%+M             then BrkState:=trap; BrkAdr:=trap.TADR; CeepBrk:=true;
+%+M                  BrkAdr.AsOfst:=BrkAdr.AsOfst-1; x:=BrkAdr.AsOaddr;
+%+DM                 if ERRSW > 0
+%+DM                 then EdTrap("*** BREAKPOINT ***",MD,trap) endif;
+%+M                  i:=0; repeat while i < MaxBreak
+%+M                  do if brktab(i).addr = BrkAdr.AsPaddr
+%+M                     then BrkByte:=brktab(i).byt;
+%+DM                         if ERRSW > 1
+%+DM                         then EdTrap("*** BREAK-2 ***",MD,trap) endif;
+%+M                     endif; i:=i+1;
+%+M                  endrepeat;
+%+M             else --- Second BREAKPOINT trap
+%+M  ---             Check   BrkAdr = trap.TADR - 1    !!!!!!!!!!!!!!!!!1
+%+M                  x:=BrkAdr.AsOaddr;
+%+DM                 if ERRSW > 1
+%+DM                 then EdTrap("*** SECOND-BREAK-1 ***",MD,trap) endif;
+%+M                  x.AsByte:=BrkByte;  -- Restore Intruction Byte
+%+M                  trap:=BrkState;     -- Restore Complete State
+%+M                  trap.TADR:=BrkAdr;  -- Execute Instruction again
+%+M                  trap.FLAGS:=wOR(trap.FLAGS,256); -- 100H -- TF-flag
+%+DM                 if ERRSW > 1
+%+DM                 then EdTrap("*** DO SINGLE-STEP ***",MD,trap) endif;
+%+M                  EXMODE:=M_USER; goto EXX1;
+%+M             endif;
+%+M        endif;
+           EXMODE:=M_EXCP; OsCode:=trap.OsCode; SimCode:=trap.SimCode;
+           if SimCode = 10  --- Breakpoint trap ---
+           then TrpAdr:=BrkAdr.AsPaddr else TrpAdr:=trap.TADR.AsPaddr endif;
+           s:=nostring;
+
+%+O        if SimCode=11 -- Interrupt
+%+O        then if IStep then SimCode:=11; -- Interrupt;
+%+O             else if SStep then -- Nothing
+%+O                  elsif nbreaks=0 then STMBRK(true) endif;
+%+O                  IStep:=true; EXMODE:=M_USER; goto EXX1;
+%+O             endif;
+%+O        elsif OsCode=1 -- Single Step Trap
+%+O        then if SStep
+%+O             then if IStep then SimCode:=11; IStep:=false --- Interrupt Break
+%+O                           else SimCode:=14 endif;        --- Statement Break
+%+O             elsif IStep
+%+O             then SimCode:=11; --- Interrupt Break
+%+O                  IStep:=false;
+%+O                  if nbreaks=0 then STMBRK(false) endif;
+%+O             else aa:=trap.TADR; adr:=aa.AsPaddr;
+%+OD                 if ERRSW+TRCSW > 0
+%+OD                 then SYSPRI("*** Search for Statement Break ***") endif;
+%+O                  i:= 0; repeat while i < MaxBreak
+%+O                  do if brktab(i).addr=adr
+%+O                     then
+%+OD                         if ERRSW+TRCSW > 0
+%+OD                         then SYSPRI("***  Got  it  ***") endif;
+%+O                          goto G1
+%+O                     endif
+%+O                     i:=i+1;
+%+O                  endrepeat;
+%+OD                 if ERRSW+TRCSW > 0 then SYSPRI("*** Not found ***") endif;
+%+O                  EXMODE:=M_USER; goto EXX2;
+%+O              G1: SimCode:=10; --- Breakpoint Trap
+%+O             endif;
+%+O        endif;
+
+%+X        case 0:13 (OsCode)
+%+X        when  1:  SimCode:=0;  s:="01:SIGHUP  - Hangup"
+%+X        when  2:               s:="02:SIGINT  - Interrupt";
+%+X                  if IStep then SimCode:=11; -- Interrupt;
+%+X                  else if SStep then -- Nothing
+%+X                       elsif nbreaks=0 then STMBRK(true) endif;
+%+X                       IStep:=true; EXMODE:=M_USER; goto EXX1;
+%+X                  endif;
+%+X        when  3:  SimCode:=0;  s:="03:SIGQUIT - Quit"
+%+X        when  4:  SimCode:=9;  s:="04:SIGILL  - Illegal Instruction";
+%+X        when  5:               s:="05:SIGTRAP - Trace Trap";
+%+X             if SStep
+%+X             then if IStep then SimCode:=11; IStep:=false --- Interrupt Break
+%+X                           else SimCode:=14 endif;        --- Statement Break
+%+X             elsif IStep
+%+X             then SimCode:=11; --- Interrupt Break
+%+X                  IStep:=false;
+%+X                  if nbreaks=0 then STMBRK(false) endif;
+%+X             else aa:=trap.TADR; adr:=aa.AsPaddr;
+%+XD                 if ERRSW+TRCSW > 0
+%+XD                 then SYSPRI("*** Search for Statement Break ***") endif;
+%+X                  i:= 0; repeat while i < MaxBreak
+%+X                  do if brktab(i).addr=adr
+%+X                     then
+%+XD                         if ERRSW+TRCSW > 0
+%+XD                         then SYSPRI("***  Got  it  ***") endif;
+%+X                          goto G1
+%+X                     endif
+%+X                     i:=i+1;
+%+X                  endrepeat;
+%+XD                 if ERRSW+TRCSW > 0 then SYSPRI("*** Not found ***") endif;
+%+X                  EXMODE:=M_USER; goto EXX2;
+%+X              G1: SimCode:=10; --- Breakpoint Trap
+%+X             endif;
+
+%+X        when  6:  SimCode:=0;  s:="06:SIGIOT  - I/O Trap"
+%+X        when  7:  SimCode:=0;  s:="07:SIGEMT  - Emulator Trap Instruction"
+%+X        when  8:  SimCode:=0;  s:="08:SIGFPE  - Floating-point Exception"
+%+X        when  9:  SimCode:=0;  s:="09:SIGKILL - Kill (can't be caught)"
+%+X        when 10:  SimCode:=16; s:="10:SIGBUS  - Bus Error";
+%+X        when 11:  SimCode:=16; s:="11:SIGSEGV - Segment Violation";
+%+X        when 12:  SimCode:=0;  s:="12:SIGSYS  - Bad Argument to System Call"
+%+X        otherwise SimCode:=0;  s:=" *** Unknown Trap ***" endcase;
+%+D        if ERRSW+TRCSW > 0
+%+D        then SYSPRI("*** Call the RTS exception handler ***") endif;
+           if Xhandler = nobody
+           then TERMIN(3,"No Exception Handler Available") endif;
+           TROUTM:=nowhere; TROUTM:=SIM_GTOUTM;
+           repeat
+%+D               if ERRSW+TRCSW > 0
+%+D               then BegTrace("SimCode: "); EdWrd(TrcBuf,SimCode);
+%+D                    Ed(TrcBuf,"  TrpAdr: "); EdPadr(TrcBuf,TrpAdr);
+%+D                    OutTrace;
+%+D               endif;
+                  cont:=call Xhandlerp(Xhandler)(SimCode,s,TrpAdr);
+%+D               if ERRSW+TRCSW > 0 then EdCont(cont) endif;
+           while cont=TrpAdr do SimCode:=13 endrepeat;
+           if cont = nowhere
+           then TERMIN(3,"Can't Continue after interrupt") endif;
+           EXMODE:=M_USER; --- Clear exception mode
+           STATE:=trap; SavedSP:=InitSp;
+%-E        InitSP:=STATE.rSP;
+%+E        InitSP:=STATE.rESP;
+%+M        trap.TADR.AsPaddr:=cont; trap.FLAGS:=0;
+%+O        trap.TADR.AsPaddr:=cont; trap.FLAGS:=0;
+%+X        trap.CONT.AsPaddr:=cont;
+      when M_ENVM:  --- Exception within the Environment
+           STAT("TRAPH-1",xq_value);  --- Set status: Unsuccessful
+      otherwise TERMIN(3,"Exception during exception") endcase;
+%+M EXX1:EXX2:
+%+O EXX1:EXX2:
+%+X EXX1:EXX2:
+ end;
+
+
+end;

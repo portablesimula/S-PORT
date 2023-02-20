@@ -1,0 +1,2 @@
+    external library procedure front is
+    text procedure front(t); text t; ;
